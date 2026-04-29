@@ -2,9 +2,7 @@ from fastapi import FastAPI
 from app.db.database import engine, Base
 from app.models.auth import user
 
-from app.api.v1.routes import authentication as auth
-
-from fastapi import FastAPI
+from app.api.v1.routes.auth import authentication as auth
 
 app = FastAPI(
     title="FastAPI App",
