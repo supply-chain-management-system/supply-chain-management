@@ -1,25 +1,28 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
+import BusinessManagerLayout from './features/business_manager/layouts/BusinessManagerLayout';
+import DashboardPage from './features/business_manager/pages/DashboardPage';
+import FactoryPage from './features/business_manager/pages/FactoryPage';
+import WarehousePage from './features/business_manager/pages/WarehousePage';
+import LogisticsPage from './features/business_manager/pages/LogisticsPage';
+import SuppliersPage from './features/business_manager/pages/SuppliersPage';
+
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Default route redirecting to business manager dashboard for now */}
         <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
 
-        {/* BUSINESS MANAGER MODULE ROUTES
-          All your pages will live under the /business-manager path
-        */}
-        <Route path="/business-manager">
-          <Route path="dashboard" element={<div>Business Manager Dashboard Placeholder</div>} />
-          <Route path="factory" element={<div>Factory Monitoring Placeholder</div>} />
-          <Route path="warehouse" element={<div>Warehouse Supervision Placeholder</div>} />
-          <Route path="logistics" element={<div>Logistics Tracking Placeholder</div>} />
-          <Route path="suppliers" element={<div>Supplier Updates Placeholder</div>} />
+        {/* Business Manager Routes wrapped in Layout */}
+        <Route path="/business-manager" element={<BusinessManagerLayout />}>
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="factory" element={<FactoryPage />} />
+          <Route path="warehouse" element={<WarehousePage />} />
+          <Route path="logistics" element={<LogisticsPage />} />
+          <Route path="suppliers" element={<SuppliersPage />} />
         </Route>
 
-        {/* Catch-all for 404 Not Found */}
-        <Route path="*" element={<div>404 - Page Not Found</div>} />
+        <Route path="*" element={<div className="p-8 text-red-500">404 - Page Not Found</div>} />
       </Routes>
     </Router>
   );
