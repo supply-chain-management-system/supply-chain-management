@@ -2,9 +2,11 @@ from app.models.auth.user import User
 from app.core.security import hash_password
 
 
-def create_user(db, user):
+def create_user(db: Session, name: str, email: str, password: str):
     db_user = User(
-        name=user.name, email=user.email, password=hash_password(user.password)
+        name=name,
+        email=email,
+        password=password,
     )
     db.add(db_user)
     db.commit()
