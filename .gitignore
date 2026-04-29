@@ -1,0 +1,30 @@
+# --- Environments ---
+.env
+.env.local
+.env.*.local
+# This catches your virtual environment folder
+env/
+venv/
+.venv/
+
+# --- Python / FastAPI ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.python-version
+dist/
+build/
+
+# --- Node / Client ---
+node_modules/
+dist-ssr/
+*.local
+
+# --- Operating System ---
+.DS_Store
+Thumbs.db
+
+# --- Databases ---
+*.sqlite3
+*.db
