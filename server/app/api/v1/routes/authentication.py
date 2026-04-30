@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import get_db
+from app.db.database import get_db
 from models import Buseness_owners
 from schemas import OwnerCreate
 from core import hash_password
