@@ -1,5 +1,6 @@
 from app.models.auth.user import User
 from app.core.security import hash_password
+from sqlalchemy.orm import Session
 
 
 def create_user(db: Session, name: str, email: str, password: str):
