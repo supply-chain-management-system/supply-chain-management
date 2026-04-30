@@ -20,6 +20,7 @@ router = APIRouter()
     description="Creates a new user account.",
     response_description="The created user object",
 )
+
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = get_user_by_email(db, user.email)
     if existing_user:
