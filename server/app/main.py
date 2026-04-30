@@ -3,7 +3,7 @@ from app.db.database import engine, Base
 from app.models.auth import user
 
 
-from app.api.v1.routes import authentication as auth
+
 
 from app.api.v1.routes.business_manager import dashboard as bm_dashboard
 
