@@ -18,6 +18,10 @@ build/
 
 # --- Node / Client ---
 node_modules/
+./client/vite/
+./client/vite
+.vite/
+.cache/
 dist-ssr/
 *.local
 
@@ -28,3 +32,4 @@ Thumbs.db
 # --- Databases ---
 *.sqlite3
 *.db
+.\client\.vite
