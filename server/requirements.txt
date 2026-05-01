@@ -9,3 +9,5 @@ python-dotenv
 alembic
 pymysql
 pydantic[email]
+aiosmtplib
+email-validator
