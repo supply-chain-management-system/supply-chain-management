@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../../../redux/authslice";
 import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { loading, error } = useSelector((state) => state.auth);
 
   const [form, setForm] = useState({ email: "", password: "" });
@@ -43,7 +45,7 @@ export default function Login() {
     e.preventDefault();
     setTouched({ email: true, password: true });
     if (!isFormValid) return;
-    dispatch(loginUser({ ...form, remember }));
+    dispatch(loginUser({ ...form, remember, navigate }));
   };
 
   return (
@@ -213,7 +215,7 @@ export default function Login() {
           </button>
         </form>
 
-        {/* SSO divider */}
+        
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-white/8" />
           <span className="text-[12px] text-white/25">or continue with</span>
