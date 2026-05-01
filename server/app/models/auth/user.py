@@ -6,18 +6,6 @@ from sqlalchemy import DateTime
 from datetime import datetime
 
 
-class Company(Base):
-    __tablename__ = "companies"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    registration_number = Column(String, unique=True, index=True)
-    address = Column(String)
-    industry = Column(String)
-
-    users = relationship("User", back_populates="company")
-
-
 class RoleEnum(str, enum.Enum):
     admin = "admin"
     owner = "owner"
