@@ -5,7 +5,7 @@ from app.api.deps import get_db
 from app.models.factory_manager.production import Production
 
 
-router=APIRouter(prefix='/factory' ,tags='factory')
+router=APIRouter(prefix='/factory' ,tags=['factory'])
 
 @router.post('/product_create')
 
