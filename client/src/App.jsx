@@ -7,12 +7,16 @@ import WarehousePage from './features/business_manager/pages/WarehousePage';
 import LogisticsPage from './features/business_manager/pages/LogisticsPage';
 import SuppliersPage from './features/business_manager/pages/SuppliersPage';
 import AddManager from './features/admin_front/AddManager';
+import Login from './features/auth/pages/login';
+import Signup from './features/auth/pages/signup';
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
 
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/business-manager" element={<BusinessManagerLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="factory" element={<FactoryPage />} />

@@ -4,6 +4,7 @@ from app.db.database import Base
 import enum
 from sqlalchemy import DateTime
 from datetime import datetime
+from app.models.company.company import Company
 
 
 class RoleEnum(str, enum.Enum):
@@ -16,19 +17,6 @@ class RoleEnum(str, enum.Enum):
     co_manager = "co_manager"
 
 
-class Role(Base):
-    __tablename__ = "roles"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, nullable=False)
-    description = Column(String, nullable=True)
-    is_active = Column(Boolean, default=True)
-
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    users = relationship("User", back_populates="role")
-
-
 class User(Base):
     __tablename__ = "users"
 
@@ -37,11 +25,9 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
 
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
-    role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
-
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     company = relationship("Company", back_populates="users")
-    role = relationship("Role", back_populates="users")
+    role = Column(Enum(RoleEnum))
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     is_company_verified = Column(Boolean, default=False)
