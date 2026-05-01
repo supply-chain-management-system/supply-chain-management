@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from app.db.database import engine, Base
 from app.models.auth import user
-
-
-from app.api.v1.routes.auth import authentication as auth
+from app.models.business_manager import domain
 
 from app.api.v1.routes.business_manager import dashboard as bm_dashboard
+from app.api.v1.routes.auth import authentication as auth
+from app.api.v1.routes.business_manager import team as bm_team
 
 
 app = FastAPI(
@@ -21,6 +21,8 @@ Base.metadata.create_all(bind=engine)
 app.include_router(auth.router, prefix="/api/v1")
 
 app.include_router(bm_dashboard.router, prefix="/api/v1")
+
+app.include_router(bm_team.router, prefix="/api/v1")
 
 @app.get("/")
 def root():
