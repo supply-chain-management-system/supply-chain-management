@@ -7,6 +7,8 @@ from alembic import context
 from app.models.auth.user import User, Company, Role
 from app.models.company_auth.managers import InviteToken
 
+from app.models.factory_manager.production import Factory,Production
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
