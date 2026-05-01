@@ -4,11 +4,7 @@ from sqlalchemy.orm import Session
 
 
 def create_user(db: Session, name: str, email: str, password: str):
-    db_user = User(
-        name=name,
-        email=email,
-        password=password,
-    )
+    db_user = User(name=name, email=email, password=password, role="owner")
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
