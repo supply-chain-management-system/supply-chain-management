@@ -7,7 +7,6 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await api.post("/login", { email, password, remember });
 
-      // Store token if returned
       const token = response.data?.token || response.data?.access;
       if (token) {
         remember
@@ -15,7 +14,6 @@ export const loginUser = createAsyncThunk(
           : sessionStorage.setItem("token", token);
       }
 
-      // Navigate AFTER success — called here from the thunk using the passed fn
       navigate("/business-manager/dashboard");
 
       return response.data;
