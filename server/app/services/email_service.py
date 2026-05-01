@@ -14,10 +14,13 @@ conf = ConnectionConfig(
     MAIL_STARTTLS=os.getenv("MAIL_STARTTLS", "True").lower() in ("true", "1", "t"),
     MAIL_SSL_TLS=os.getenv("MAIL_SSL_TLS", "False").lower() in ("true", "1", "t"),
     USE_CREDENTIALS=True,
-    VALIDATE_CERTS=True
+    VALIDATE_CERTS=True,
 )
 
-async def send_role_invitation_email(email_to: str, role: str, business_name: str, invite_link: str):
+
+async def send_role_invitation_email(
+    email_to: str, role: str, business_name: str, invite_link: str
+):
     """
     A reusable function that any teammate can import to send an invitation.
     """
@@ -40,7 +43,7 @@ async def send_role_invitation_email(email_to: str, role: str, business_name: st
         subject=f"Invitation to join {business_name} on NexusGrid",
         recipients=[email_to],
         body=html_content,
-        subtype=MessageType.html
+        subtype=MessageType.html,
     )
 
     fm = FastMail(conf)

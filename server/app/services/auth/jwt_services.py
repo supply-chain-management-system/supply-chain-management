@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Response
+from fastapi import HTTPException, Response, status
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
@@ -17,7 +17,14 @@ def login_user(db: Session, email: str, password: str, response: Response):
     db_user = get_user_by_email(db, email)
 
     if not db_user or not verify_password(password, db_user.password):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or password"
+        )
+
+    if not getattr(db_user, "is_active", True):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="User account is inactive"
+        )
 
     access_token = create_access_token(
         {"sub": db_user.email, "role": db_user.role.name if db_user.role else None}
