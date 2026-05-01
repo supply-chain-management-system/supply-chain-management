@@ -11,6 +11,7 @@ import SuppliersPage from './features/business_manager/pages/SuppliersPage';
 import AddManager from './features/admin_front/AddManager';
 import Login from './features/auth/pages/login';
 import Signup from './features/auth/pages/signup';
+import CompanyOnboarding from './features/auth/layouts/companyonboard'; 
 
 function App() {
   // 1. Theme toggle state
@@ -45,6 +46,7 @@ function App() {
           <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/company-onboarding" element={<CompanyOnboarding />} />
 
           <Route path="/business-manager" element={<BusinessManagerLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />

@@ -1,22 +1,20 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../api/api";
+import { useNavigate } from "react-router-dom";
 
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async ({ email, password, remember, navigate }, { rejectWithValue }) => {
     try {
+      
       const response = await api.post("/login", { email, password, remember });
 
-      // Store token if returned
-      const token = response.data?.token || response.data?.access;
-      if (token) {
-        remember
-          ? localStorage.setItem("token", token)
-          : sessionStorage.setItem("token", token);
-      }
+      if (response.data.user.is_company_data == true) {
 
-      // Navigate AFTER success — called here from the thunk using the passed fn
-      navigate("/business-manager/dashboard");
+        navigate("/business-manager/dashboard");
+      }else{
+        navigate("/company-onboarding");
+      }
 
       return response.data;
     } catch (err) {
@@ -47,6 +45,14 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+      setCompany: (state, action) => {
+    if (state.user) {
+      state.user.companyId       = action.payload.id;
+      state.user.companyName     = action.payload.name;
+      state.user.companyVerified = action.payload.is_verified;
+    }
+  },
+    
   },
   extraReducers: (builder) => {
     builder
@@ -69,5 +75,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, setCompany } = authSlice.actions;
 export default authSlice.reducer;

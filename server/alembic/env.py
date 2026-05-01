@@ -4,7 +4,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
-from app.models.auth.user import User, Role
+from app.models.auth.user import User
 from app.models.company.company import Company
 from app.models.company_auth.managers import InviteToken
 
