@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
 from app.schemas.auth import user
 from sqlalchemy.orm import Session
 
@@ -11,81 +11,57 @@ from app.core.security import (
     create_access_token,
     hash_password,
 )
-
+from app.services.auth.jwt_services import login_user, refresh_access_token
 from jose import jwt, JWTError
 
-router = APIRouter()
+router = APIRouter(tags=["authentication"])
 
 
 @router.post(
     "/signup",
+    status_code=status.HTTP_201_CREATED,
     summary="Register a new user",
-    description="Creates a new user account.",
-    response_description="The created user object",
+    description="Creates a new user account",
 )
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = get_user_by_email(db, user.email)
 
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+        )
 
     hashed_password = hash_password(user.password)
 
-    return create_user(
+    new_user = create_user(
         db,
         name=user.name,
         email=user.email,
         password=hashed_password,
     )
 
-
-@router.post(
-    "/login",
-    summary="User Login",
-    description="Logs in a user and returns a JWT access token.",
-)
-def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = get_user_by_email(db, user.email)
-    print(f"Login attempt for email: {user.email}, User found: {db_user is not None}")
-    print(
-        verify_password(user.password, db_user.password)
-        if db_user
-        else "No user to verify"
-    )
-    if not db_user or not verify_password(user.password, db_user.password):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
-
-    token = create_access_token({"sub": db_user.email})
-    refresh_token = create_refresh_token({"sub": db_user.email})
     return {
-        "access_token": token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
+        "message": "User created successfully",
+        "user": {"id": new_user.id, "email": new_user.email, "name": new_user.name},
     }
 
 
 @router.post(
-    "/refresh",
-    summary="Create access token with refresh token",
-    description="Uses a refresh token to create a new access token.",
+    "/login",
+    status_code=status.HTTP_200_OK,
+    summary="User Login",
+    description="Logs in user and sets tokens in cookies",
 )
-def refresh_token(request: Request):
-    auth_header = request.headers.get("Authorization")
+def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
+    data = login_user(db, user.email, user.password, response)
+    return data
 
-    if not auth_header:
-        raise HTTPException(status_code=401, detail="Missing token")
 
-    token = auth_header.split(" ")[1]
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-        if payload.get("type") != "refresh":
-            raise HTTPException(status_code=401, detail="Invalid token type")
-
-        new_access_token = create_access_token({"sub": payload["sub"]})
-
-        return {"access_token": new_access_token, "token_type": "bearer"}
-
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
+@router.post(
+    "/refresh",
+    status_code=status.HTTP_200_OK,
+    summary="Refresh Access Token",
+    description="Generates new access token using refresh token from cookies",
+)
+def refresh(request: Request, response: Response):
+    return refresh_access_token(request, response)
