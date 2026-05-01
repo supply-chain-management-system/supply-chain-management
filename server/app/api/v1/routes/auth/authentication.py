@@ -53,7 +53,8 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     description="Logs in user and sets tokens in cookies",
 )
 def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
-    return login_user(db, user.email, user.password, response)
+    data = login_user(db, user.email, user.password, response)
+    return data
 
 
 @router.post(
