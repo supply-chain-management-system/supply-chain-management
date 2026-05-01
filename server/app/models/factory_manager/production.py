@@ -2,7 +2,7 @@ from sqlalchemy import  Column,Integer,String,Enum,DATETIME,ForeignKey
 from db.database import Base
 from sqlalchemy.sql import  func  
 import enum
-from auth.
+from models.auth.user import 
 
 from enum import Enum
 
