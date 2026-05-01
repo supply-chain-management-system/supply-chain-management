@@ -1,9 +1,7 @@
 from app.db.database import engine, Base
 from app.models.auth import user
 
-
 from app.api.v1.routes.business_manager import dashboard as bm_dashboard
-
 from fastapi import FastAPI
 from app.api.v1.routes.auth import authentication as auth
 from app.api.v1.routes.admin import admin_pages as admin_featuers
@@ -20,7 +18,6 @@ app = FastAPI(
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router, prefix="/api/v1")
-
 app.include_router(bm_dashboard.router, prefix="/api/v1")
 app.include_router(admin_featuers.router, prefix="/api/v1")
 
