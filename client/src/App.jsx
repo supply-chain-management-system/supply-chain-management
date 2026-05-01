@@ -6,14 +6,13 @@ import FactoryPage from './features/business_manager/pages/FactoryPage';
 import WarehousePage from './features/business_manager/pages/WarehousePage';
 import LogisticsPage from './features/business_manager/pages/LogisticsPage';
 import SuppliersPage from './features/business_manager/pages/SuppliersPage';
-
+import AddManager from './features/admin_front/AddManager';
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
 
-        {/* Business Manager Routes wrapped in Layout */}
         <Route path="/business-manager" element={<BusinessManagerLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="factory" element={<FactoryPage />} />
@@ -21,7 +20,7 @@ function App() {
           <Route path="logistics" element={<LogisticsPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
         </Route>
-
+                   <Route path="/addmanagers" element={<AddManager />} />
         <Route path="*" element={<div className="p-8 text-red-500">404 - Page Not Found</div>} />
       </Routes>
     </Router>

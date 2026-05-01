@@ -4,6 +4,9 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+from app.models.auth.user import User, Company, Role
+from app.models.company_auth.managers import InviteToken
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
