@@ -1,0 +1,82 @@
+from fastapi import HTTPException, Response
+from sqlalchemy.orm import Session
+from jose import jwt, JWTError
+
+from app.services.auth.user_crud import get_user_by_email
+from app.core.security import (
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+)
+import os
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+
+def login_user(db: Session, email: str, password: str, response: Response):
+    db_user = get_user_by_email(db, email)
+
+    if not db_user or not verify_password(password, db_user.password):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+
+    access_token = create_access_token(
+        {"sub": db_user.email, "role": db_user.role.name if db_user.role else None}
+    )
+
+    refresh_token = create_refresh_token({"sub": db_user.email})
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60 * 30,
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 7,
+    )
+
+    return {
+        "message": "Login successful",
+        "user": {
+            "email": db_user.email,
+            "name": db_user.name,
+            "role": db_user.role.name if db_user.role else None,
+        },
+    }
+
+
+def refresh_access_token(request, response: Response):
+    token = request.cookies.get("refresh_token")
+
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing refresh token")
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        new_access_token = create_access_token({"sub": payload["sub"]})
+
+        response.set_cookie(
+            key="access_token",
+            value=new_access_token,
+            httponly=True,
+            secure=False,
+            samesite="lax",
+            max_age=60 * 30,
+        )
+
+        return {"message": "Token refreshed"}
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
