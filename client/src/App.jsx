@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
+// Layouts and Pages
 import BusinessManagerLayout from './features/business_manager/layouts/BusinessManagerLayout';
 import DashboardPage from './features/business_manager/pages/DashboardPage';
 import FactoryPage from './features/business_manager/pages/FactoryPage';
@@ -7,23 +9,54 @@ import WarehousePage from './features/business_manager/pages/WarehousePage';
 import LogisticsPage from './features/business_manager/pages/LogisticsPage';
 import SuppliersPage from './features/business_manager/pages/SuppliersPage';
 import AddManager from './features/admin_front/AddManager';
-function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
 
-        <Route path="/business-manager" element={<BusinessManagerLayout />}>
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="factory" element={<FactoryPage />} />
-          <Route path="warehouse" element={<WarehousePage />} />
-          <Route path="logistics" element={<LogisticsPage />} />
-          <Route path="suppliers" element={<SuppliersPage />} />
-        </Route>
-                   <Route path="/addmanagers" element={<AddManager />} />
-        <Route path="*" element={<div className="p-8 text-red-500">404 - Page Not Found</div>} />
-      </Routes>
-    </Router>
+function App() {
+  // 1. Theme toggle state
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // 2. Apply the dark class to the HTML root
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]);
+
+  return (
+    // 3. Global wrapper that applies the Tailwind background and text colors based on the theme
+    <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
+      
+      {/* 4. A global floating toggle button (Absolute positioning puts it in the top right) */}
+      <div className="absolute top-4 right-4 z-50">
+        <button
+          onClick={() => setIsDarkMode(!isDarkMode)}
+          className="px-4 py-2 rounded-lg font-semibold shadow-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-yellow-500 dark:text-gray-900 dark:hover:bg-yellow-400 transition-all"
+        >
+          {isDarkMode ? "☀️ Light" : "🌙 Dark"}
+        </button>
+      </div>
+
+      {/* 5. Your existing routing logic */}
+      <Router>
+        <Routes>
+          <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
+
+          <Route path="/business-manager" element={<BusinessManagerLayout />}>
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="factory" element={<FactoryPage />} />
+            <Route path="warehouse" element={<WarehousePage />} />
+            <Route path="logistics" element={<LogisticsPage />} />
+            <Route path="suppliers" element={<SuppliersPage />} />
+          </Route>
+          
+          <Route path="/addmanagers" element={<AddManager />} />
+          
+          <Route path="*" element={<div className="p-8 text-red-500 font-bold flex justify-center items-center h-screen">404 - Page Not Found</div>} />
+        </Routes>
+      </Router>
+      
+    </div>
   );
 }
 
