@@ -13,6 +13,9 @@ import Login from './features/auth/pages/login';
 import Signup from './features/auth/pages/signup';
 import CompanyOnboarding from './features/auth/layouts/companyonboard'; 
 
+
+import CreateProduct from './features/factory_manager/pages/dashboard';
+
 function App() {
   // 1. Theme toggle state
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -57,6 +60,8 @@ function App() {
           </Route>
           
           <Route path="/addmanagers" element={<AddManager />} />
+
+          <Route path='createproduct' element={<CreateProduct/>}/>
           
           <Route path="*" element={<div className="p-8 text-red-500 font-bold flex justify-center items-center h-screen">404 - Page Not Found</div>} />
         </Routes>

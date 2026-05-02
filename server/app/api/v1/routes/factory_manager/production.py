@@ -3,7 +3,7 @@ from app.schemas.factory_manager.production import production_create,productget
 from sqlalchemy.orm  import session
 from app.api.deps import get_db
 from app.models.factory_manager.production import Production
-
+from app.models.auth.user import User
 
 router=APIRouter(prefix='/factory' ,tags=['factory'])
 
@@ -27,7 +27,14 @@ def create_product(data:production_create,db:session=Depends(get_db)):
         'data':new_product
     }
 
-@router.get('products',response_model=list[productget])
+@router.get('/products',response_model=list[productget])
 def get_product(db:session=Depends(get_db)):
     products=db.query(Production).all()
     return products
+
+
+@router.get('/user' )
+
+def get_user(db:session=Depends(get_db)):
+    user=db.query(User).filter(User.role=='factory_manager').all()
+    return user
