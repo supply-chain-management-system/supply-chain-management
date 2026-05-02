@@ -12,6 +12,8 @@ import AddManager from './features/admin_front/AddManager';
 import Login from './features/auth/pages/login';
 import Signup from './features/auth/pages/signup';
 import CompanyOnboarding from './features/auth/layouts/companyonboard'; 
+import FaceRegistration from './features/auth/pages/register-face';
+import FaceVerification from './features/auth/pages/face-verification';
 
 function App() {
   // 1. Theme toggle state
@@ -45,6 +47,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register-face" element={<FaceRegistration />} />
+            <Route path="/face-verification" element={<FaceVerification />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/company-onboarding" element={<CompanyOnboarding />} />
 
