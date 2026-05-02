@@ -15,6 +15,7 @@ import CompanyOnboarding from './features/auth/layouts/companyonboard';
 
 
 import CreateProduct from './features/factory_manager/pages/dashboard';
+import DashboardPagefac from './features/business_manager/pages/DashboardPage';
 
 function App() {
   // 1. Theme toggle state
@@ -62,6 +63,7 @@ function App() {
           <Route path="/addmanagers" element={<AddManager />} />
 
           <Route path='createproduct' element={<CreateProduct/>}/>
+          <Route path='factorydash' element={<DashboardPagefac/>}/>
           
           <Route path="*" element={<div className="p-8 text-red-500 font-bold flex justify-center items-center h-screen">404 - Page Not Found</div>} />
         </Routes>
