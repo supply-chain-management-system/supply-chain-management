@@ -19,7 +19,10 @@ from app.api.v1.routes.auth import authentication as auth
 from app.api.v1.routes.business_manager import team as bm_team
 from app.api.v1.routes.admin import admin_pages as admin_featuers
 from app.api.v1.routes.company import company
+
+
 from app.api.v1.routes.factory_manager import production
+from app.api.v1.routes.factory_manager import team
 
 app = FastAPI(
     title="FastAPI App",
@@ -44,6 +47,7 @@ app.include_router(admin_featuers.router, prefix="/api/v1")
 app.include_router(bm_team.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1/company")
 app.include_router(production.router,prefix='/api/v1/production')
+app.include_router(team.router,prefix='/api/v1/factory_team')
 
 
 

@@ -14,8 +14,12 @@ import Signup from './features/auth/pages/signup';
 import CompanyOnboarding from './features/auth/layouts/companyonboard'; 
 
 
+
+
 import Factorydash from './features/factory_manager/pages/dashboard';
-import Createproduct from './features/factory_manager/pages/productcreate'
+import Createproduct from './features/factory_manager/pages/production_page'
+import Team from './features/factory_manager/pages/factory_team'
+import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 
 function App() {
   // 1. Theme toggle state
@@ -63,9 +67,11 @@ function App() {
           <Route path="/addmanagers" element={<AddManager />} />
 
 
-          
-              <Route path='createproduct' element={<Createproduct/>}/>
+          <Route path="/" element={<LayoutFactory />}>
+              <Route path='production' element={<Createproduct/>}/>
           <Route path='factorydash' element={<Factorydash/>}/>
+          <Route path='factoryteam' element={<Team/>}/>
+          </Route>
 
 
  
