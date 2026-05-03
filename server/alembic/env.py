@@ -10,6 +10,7 @@ from app.models.company_auth.managers import InviteToken
 
 
 from app.models.factory_manager.production import Factory,Production
+from app.models.factory_manager.teams import Worker,Productionteam
 
 
 # this is the Alembic Config object, which provides

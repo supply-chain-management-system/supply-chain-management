@@ -1,28 +1,19 @@
-import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import React from 'react';
+import Navbar from '../component/navbar';
+import Sidebar from '../component/sidebar';
 
-
-const DashboardLayout = ({ children }) => {
+const Layout = ({ children }) => {
   return (
-    <div className="flex h-screen bg-gray-50">
-
-  
-      <Sidebar />
-
-
-      <div className="flex-1 flex flex-col">
-
-      
-        <Navbar />
-
- 
-        <main className="p-6 overflow-y-auto">
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      <div className="flex pt-16">
+        <Sidebar />
+        <main className="flex-1 ml-64 p-8">
           {children}
         </main>
-
       </div>
     </div>
   );
 };
 
-export default DashboardLayout;
+export default Layout;

@@ -7,6 +7,7 @@ from app.models.auth.user import User
 
 router=APIRouter(prefix='/factory' ,tags=['factory'])
 
+
 @router.post('/product_create')
 
 def create_product(data:production_create,db:session=Depends(get_db)):
