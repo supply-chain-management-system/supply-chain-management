@@ -375,26 +375,20 @@ const handleGoogleResponse = () => {
           </button>
         </form>
 
-        {/* ── Divider ─────────────── */}
         <div className="flex items-center gap-3 my-6">
           <div className="flex-1 h-px bg-white/[0.07]" />
           <span className="text-[11px] text-white/25 tracking-widest uppercase">or continue with</span>
           <div className="flex-1 h-px bg-white/[0.07]" />
         </div>
 
-        {/* ── Social buttons ──────── */}
-        <div className="grid grid-cols-2 gap-3">
-          <SocialButton
-            onClick={() => window.google?.accounts.id.prompt()}
-            icon={<GoogleIcon />}
-          >
-            Google
-          </SocialButton>
+        <SocialButton
+          onClick={() => window.google?.accounts.id.prompt()}
+          icon={<GoogleIcon />}
+        >
+          Google
+        </SocialButton>
 
-
-        </div>
-
-        {/* ── Footer link ─────────── */}
+        
         <p className="mt-7 text-center text-xs text-white/25 tracking-wide">
           Don't have an account?{" "}
           <a href="/signup" className="text-emerald-400/80 hover:text-emerald-400 font-medium transition-colors">
