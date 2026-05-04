@@ -114,7 +114,7 @@ const googleInitialized = useRef(false);
 useEffect(() => {
   setMounted(true);
 
-  if (googleInitialized.current) return; // ← guard against double-invoke
+  if (googleInitialized.current) return; 
   googleInitialized.current = true;
 
   const initGoogle = () => {
@@ -152,7 +152,13 @@ const handleGoogleResponse = () => {
           credentials: "include",
           body: JSON.stringify({ code: response.code }),
         });
-        if (res.ok) navigate("/dashboard");
+        const data = await res.json();
+        console.log("Google login response:", data);
+        if (res.ok && data.user.company_verified) {
+          navigate("/admindashboard")}
+          else {
+            navigate("/company-onboarding")
+          }
       } catch (err) {
         console.error("Google login failed", err);
       }

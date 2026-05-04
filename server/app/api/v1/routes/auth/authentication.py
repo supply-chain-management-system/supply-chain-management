@@ -88,7 +88,6 @@ async def google_auth(
 
     body = await request.json()
     token = body.get("code")
-    print(token)
 
     if not token:
         raise HTTPException(status_code=400, detail="Token missing")
@@ -139,5 +138,13 @@ async def google_auth(
 
     return {
         "message": "Google login successful",
-        "user": {"id": user.id, "email": user.email, "name": user.name},
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role.name if user.role else None,
+            "company_id": user.company_id,
+            "company_name": user.company.name if user.company else None,
+            "company_verified": (user.company.is_verified if user.company else False),
+        },
     }

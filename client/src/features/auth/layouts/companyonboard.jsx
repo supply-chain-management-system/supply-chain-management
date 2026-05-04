@@ -121,7 +121,7 @@ export default function CompanyOnboarding() {
       // Update Redux so layout knows company exists
       dispatch(setCompany(res.data.company));
 
-      navigate("/business-manager/dashboard");
+      navigate("/admindashboard");
     } catch (err) {
       setError(err.response?.data?.detail || "Something went wrong. Please try again.");
     } finally {
