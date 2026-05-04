@@ -15,6 +15,7 @@ import CompanyOnboarding from './features/auth/layouts/companyonboard';
 import A_Layout from './features/admin_front/admin_layout/A_Layout';
 import Admin_dashboard from './features/admin_front/admin_pages/Admin_dashboard';
 import ManagerGrid from './features/admin_front/admin_pages/Managers';
+import RequestsPage from './features/business_manager/pages/RequestsPage';
 function App() {
   // 1. Theme toggle state
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -56,6 +57,7 @@ function App() {
             <Route path="warehouse" element={<WarehousePage />} />
             <Route path="logistics" element={<LogisticsPage />} />
             <Route path="suppliers" element={<SuppliersPage />} />
+            <Route path="requests" element={<RequestsPage />} />
           </Route>
              
           <Route  element={<A_Layout />}>

@@ -31,7 +31,7 @@ const BusinessManagerLayout = () => {
           {/* Brand */}
           <div className="flex items-center gap-2 mr-4 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-black text-sm shadow">N</div>
-            <span className="text-white font-bold text-lg tracking-tight">NexusGrid</span>
+            <span className="text-white font-bold text-lg tracking-tight">Korvex</span>
             <span className="ml-1 text-[10px] text-blue-400 font-semibold uppercase tracking-widest bg-blue-900/40 px-2 py-0.5 rounded-full">Business</span>
           </div>
 
