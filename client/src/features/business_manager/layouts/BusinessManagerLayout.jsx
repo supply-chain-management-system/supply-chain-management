@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useState } from 'react';
-import { logout } from '../../redux/authSlice';
+import { logout } from '../../../redux/authSlice';
 
 const BusinessManagerLayout = () => {
   const dispatch = useDispatch();

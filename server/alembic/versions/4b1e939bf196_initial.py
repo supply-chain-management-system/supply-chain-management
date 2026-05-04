@@ -1,8 +1,8 @@
-"""initial clean
+"""initial
 
-Revision ID: 1b3899bd650d
+Revision ID: 4b1e939bf196
 Revises: 
-Create Date: 2026-05-01 11:06:18.387369
+Create Date: 2026-05-01 14:17:46.888695
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1b3899bd650d'
+revision: str = '4b1e939bf196'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -28,6 +28,8 @@ def upgrade() -> None:
     sa.Column('address', sa.String(), nullable=True),
     sa.Column('industry', sa.String(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.Column('is_verified', sa.Boolean(), nullable=True),
+    sa.Column('is_data_verified', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
@@ -47,30 +49,19 @@ def upgrade() -> None:
     op.create_index(op.f('ix_invite_tokens_email'), 'invite_tokens', ['email'], unique=False)
     op.create_index(op.f('ix_invite_tokens_id'), 'invite_tokens', ['id'], unique=False)
     op.create_index(op.f('ix_invite_tokens_token'), 'invite_tokens', ['token'], unique=True)
-    op.create_table('roles',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('name', sa.String(), nullable=False),
-    sa.Column('description', sa.String(), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('name')
-    )
-    op.create_index(op.f('ix_roles_id'), 'roles', ['id'], unique=False)
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('email', sa.String(), nullable=False),
     sa.Column('password', sa.String(), nullable=False),
     sa.Column('company_id', sa.Integer(), nullable=True),
-    sa.Column('role_id', sa.Integer(), nullable=False),
+    sa.Column('role', sa.Enum('admin', 'owner', 'business_manager', 'warehouse_manager', 'factory_manager', 'logistics_manager', 'co_manager', name='roleenum'), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('is_verified', sa.Boolean(), nullable=True),
-    sa.Column('is_company_verified', sa.Boolean(), nullable=True),
+    sa.Column('is_approved_company', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['company_id'], ['companies.id'], ),
-    sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
@@ -84,8 +75,6 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_users_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
-    op.drop_index(op.f('ix_roles_id'), table_name='roles')
-    op.drop_table('roles')
     op.drop_index(op.f('ix_invite_tokens_token'), table_name='invite_tokens')
     op.drop_index(op.f('ix_invite_tokens_id'), table_name='invite_tokens')
     op.drop_index(op.f('ix_invite_tokens_email'), table_name='invite_tokens')
