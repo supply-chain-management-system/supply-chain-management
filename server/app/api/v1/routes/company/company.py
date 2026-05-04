@@ -16,3 +16,5 @@ def create_company(
     current_user: User = Depends(require_role(["owner"])),
 ):
     return setup_company(db, data, current_user)
+
+

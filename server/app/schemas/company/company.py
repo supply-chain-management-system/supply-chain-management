@@ -25,3 +25,5 @@ class CompanySetupSchema(BaseModel):
         if not v.strip():
             raise ValueError("Company name cannot be empty")
         return v.strip()
+    
+    
