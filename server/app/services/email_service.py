@@ -48,3 +48,47 @@ async def send_role_invitation_email(
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
+
+async def send_verification_otp_email(email_to: str, user_name: str, otp: str):
+    """
+    Send OTP verification email to user
+    """
+
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2 style="color: #1e293b;">Verify Your Email</h2>
+
+        <p>Use the OTP below to verify your email address:</p>
+
+        <div style="
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            margin: 20px 0;
+            color: #2563eb;
+        ">
+            {otp}
+        </div>
+
+        <p>This OTP is valid for <strong>5 minutes</strong>.</p>
+
+        <p style="margin-top: 20px;">
+            If you did not request this, please ignore this email.
+        </p>
+
+        <p style="margin-top: 30px; font-size: 12px; color: #64748b;">
+            © NexusGrid
+        </p>
+    </div>
+    """
+
+    message = MessageSchema(
+        subject="Your OTP Code - Korvex",
+        recipients=[email_to],
+        body=html_content,
+        subtype=MessageType.html,
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message)

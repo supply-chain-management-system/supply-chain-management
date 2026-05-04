@@ -108,7 +108,7 @@ export default function Signup() {
       setTouched({});
 
       // Redirect to login after 2s
-      setTimeout(() => navigate("/login"), 2000);
+      setTimeout(() => navigate("/register-face"), 2000);
 
     } catch (err) {
       setError(err.response?.data?.detail || "Something went wrong");
