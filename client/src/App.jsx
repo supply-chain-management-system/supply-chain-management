@@ -74,6 +74,9 @@ function App() {
 
           
 
+
+
+
           <Route path="/addmanagers" element={<AddManager />} />
 
 
@@ -82,6 +85,9 @@ function App() {
           <Route path='factorydash' element={<Factorydash/>}/>
           <Route path='factoryteam' element={<Team/>}/>
           </Route>
+
+
+ 
 
           
           <Route path="*" element={<div className="p-8 text-red-500 font-bold flex justify-center items-center h-screen">404 - Page Not Found</div>} />
