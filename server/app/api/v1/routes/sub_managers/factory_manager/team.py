@@ -2,9 +2,9 @@ from fastapi import APIRouter,Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
 
-from app.schemas.factory_manager.factory_team import worker_create,team_create,get_worker
-from app.models.factory_manager.teams import Worker,Productionteam
-from app.models.factory_manager.production import Production
+from app.schemas.sub_managers.factory_manager.factory_team import worker_create,team_create,get_worker
+from app.models.sub_managers.factory_manager.teams import Worker,Productionteam
+from app.models.sub_managers.factory_manager.production import Production
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 

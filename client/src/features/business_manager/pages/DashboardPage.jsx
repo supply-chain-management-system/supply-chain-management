@@ -64,6 +64,8 @@ const DashboardPage = () => {
       setFormData({ ...formData, email: '' });
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.detail || 'Failed to send invitation.' });
+
+
       console.log(error.response?.data?.detail)
     } finally {
       setLoading(false);
