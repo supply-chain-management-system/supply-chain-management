@@ -23,8 +23,9 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=False)
-
+    password = Column(String, nullable=True)
+    otp_code = Column(String, nullable=True)
+    otp_expiry = Column(DateTime, nullable=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     company = relationship("Company", back_populates="users")
     role = Column(Enum(RoleEnum))
