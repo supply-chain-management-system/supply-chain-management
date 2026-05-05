@@ -1,18 +1,24 @@
+from urllib import response
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
 from app.schemas.auth import user
 from sqlalchemy.orm import Session
 
+from datetime import datetime, timedelta, timezone
 from app.schemas.auth.user import UserCreate, UserLogin
 from app.services.auth.user_crud import create_user, get_user_by_email
 from app.api.deps import get_db
-from app.core.security import create_refresh_token, verify_password, create_access_token
+from app.core.security import create_refresh_token
 from app.core.security import (
-    verify_password,
     create_access_token,
     hash_password,
 )
+from app.services.auth.user_crud import get_or_create_user
+from app.services.auth.google_auth import verify_google_token
+from .otp import generate_otp
 from app.services.auth.jwt_services import login_user, refresh_access_token
 from jose import jwt, JWTError
+from app.services.email_service import send_verification_otp_email
 
 router = APIRouter(tags=["authentication"])
 
@@ -23,7 +29,7 @@ router = APIRouter(tags=["authentication"])
     summary="Register a new user",
     description="Creates a new user account",
 )
-def signup(user: UserCreate, db: Session = Depends(get_db)):
+async def signup(user: UserCreate, db: Session = Depends(get_db)):
     existing_user = get_user_by_email(db, user.email)
 
     if existing_user:
@@ -33,13 +39,16 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 
     hashed_password = hash_password(user.password)
 
+    otp = generate_otp()
     new_user = create_user(
         db,
         name=user.name,
         email=user.email,
         password=hashed_password,
+        otp_code=otp,
+        otp_expiry=datetime.now(timezone.utc) + timedelta(minutes=3),
     )
-
+    await send_verification_otp_email(new_user.email, new_user.name, otp=otp)
     return {
         "message": "User created successfully",
         "user": {"id": new_user.id, "email": new_user.email, "name": new_user.name},
@@ -65,3 +74,77 @@ def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
 )
 def refresh(request: Request, response: Response):
     return refresh_access_token(request, response)
+
+
+@router.post(
+    "/google",
+    status_code=status.HTTP_200_OK,
+    summary="Google Login",
+    description="Login or register user using Google",
+)
+async def google_auth(
+    request: Request, response: Response, db: Session = Depends(get_db)
+):
+
+    body = await request.json()
+    token = body.get("code")
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Token missing")
+
+    idinfo = verify_google_token(code=token)
+
+    if not idinfo:
+        raise HTTPException(status_code=401, detail="Invalid Google token")
+
+    email = idinfo.get("email")
+    name = idinfo.get("name")
+    google_id = idinfo.get("sub")
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email not available")
+
+    user = get_user_by_email(db, email)
+
+    if not user:
+        user = create_user(
+            db,
+            name=name,
+            email=email,
+            password=None,
+            otp_code=None,
+            otp_expiry=None,
+        )
+
+    access_token = create_access_token({"sub": user.email, "user_id": user.id})
+
+    refresh_token = create_refresh_token({"sub": user.email})
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+    )
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+    )
+
+    return {
+        "message": "Google login successful",
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role.name if user.role else None,
+            "company_id": user.company_id,
+            "company_name": user.company.name if user.company else None,
+            "company_verified": (user.company.is_verified if user.company else False),
+        },
+    }

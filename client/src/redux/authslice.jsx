@@ -10,9 +10,9 @@ export const loginUser = createAsyncThunk(
       const response = await api.post("/login", { email, password, remember });
 
 
-      if (response.data.user.is_company_data == true) {
+      if (response.data.user.is_approved_company == true) {
 
-        navigate("/business-manager/dashboard");
+        navigate("/admindashboard");
       }else{
         navigate("/company-onboarding");
       }
