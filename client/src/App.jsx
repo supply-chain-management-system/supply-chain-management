@@ -17,6 +17,14 @@ import A_Layout from './features/admin_front/admin_layout/A_Layout';
 import Admin_dashboard from './features/admin_front/admin_pages/Admin_dashboard';
 import ManagerGrid from './features/admin_front/admin_pages/Managers';
 
+
+
+
+import Factorydash from './features/factory_manager/pages/dashboard';
+import  ProductionManagement from './features/factory_manager/pages/production_page'
+import Team from './features/factory_manager/pages/factory_team'
+import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
+
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -65,6 +73,18 @@ function App() {
 
 
           
+ feature/SP-10-company-based-Auth-with-face-id-setup
+          <Route path="/addmanagers" element={<AddManager />} />
+
+
+          <Route path="/" element={<LayoutFactory />}>
+              <Route path='production' element={<ProductionManagement/>}/>
+          <Route path='factorydash' element={<Factorydash/>}/>
+          <Route path='factoryteam' element={<Team/>}/>
+          </Route>
+
+
+ 
           
           <Route path="*" element={<div className="p-8 text-red-500 font-bold flex justify-center items-center h-screen">404 - Page Not Found</div>} />
         </Routes>
