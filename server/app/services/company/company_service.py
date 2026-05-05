@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models.company.company import Company
-from app.models.auth.user import User
+from app.models.auth.user import User, RoleEnum
 from app.schemas.company.company import CompanySetupSchema
 
 
@@ -20,14 +20,14 @@ def setup_company(db: Session, data: CompanySetupSchema, current_user: User) -> 
         address=data.address,
         registration_number=data.registration_number,
         is_active=True,
-        is_verified=False,
+        is_verified=True,
     )
     db.add(company)
     db.flush()
 
     current_user.company_id = company.id
-    current_user.role = "owner"
-
+    current_user.role = RoleEnum.owner
+    current_user.is_approved_company = True
     db.commit()
     db.refresh(company)
     db.refresh(current_user)
