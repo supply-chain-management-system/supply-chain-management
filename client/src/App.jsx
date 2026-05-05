@@ -17,7 +17,7 @@ import CompanyOnboarding from './features/auth/layouts/companyonboard';
 
 
 import Factorydash from './features/factory_manager/pages/dashboard';
-import Createproduct from './features/factory_manager/pages/production_page'
+import  ProductionManagement from './features/factory_manager/pages/production_page'
 import Team from './features/factory_manager/pages/factory_team'
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 
@@ -68,7 +68,7 @@ function App() {
 
 
           <Route path="/" element={<LayoutFactory />}>
-              <Route path='production' element={<Createproduct/>}/>
+              <Route path='production' element={<ProductionManagement/>}/>
           <Route path='factorydash' element={<Factorydash/>}/>
           <Route path='factoryteam' element={<Team/>}/>
           </Route>

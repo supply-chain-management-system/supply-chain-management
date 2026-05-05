@@ -12,11 +12,12 @@ class production_create(BaseModel):
 
 
 class productget(BaseModel):
+    id:int
     product_name:str
     target_qty:int
     output_qty:int
     status:str
-    factory_id:str
+    factory_id:int
 
     class config:
         from_attributes=True

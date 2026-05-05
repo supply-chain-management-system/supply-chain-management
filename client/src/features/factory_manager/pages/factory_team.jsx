@@ -174,7 +174,7 @@ console.log(workers.id)
             <p className="text-slate-500 mt-1">Configure your operations unit and assign personnel to active production lines.</p>
           </div>
           
-          <div className="flex items-center gap-3">
+          {/* <div className="flex items-center gap-3">
             <div className="relative">
               <select className="appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-4 pr-10 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer text-sm font-medium">
                 <option>Line A - High Precision Component Assembly</option>
@@ -183,7 +183,7 @@ console.log(workers.id)
               </select>
               <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
-          </div>
+          </div> */}
         </div>
 
         
@@ -244,7 +244,7 @@ console.log(workers.id)
             </div>
 
        
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-700 px-1">Role Assignment</h3>
               <div className="grid grid-cols-3 gap-3">
                 {ROLES.map((role) => {
@@ -266,7 +266,7 @@ console.log(workers.id)
                   );
                 })}
               </div>
-            </div>
+            </div> */}
 
        
           <button 
@@ -288,7 +288,7 @@ console.log(workers.id)
                 <p className="text-sm text-slate-500 mt-0.5">Personnel currently assigned to this high-precision production line.</p>
               </div>
               
-              <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
+              {/* <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-lg border border-gray-200">
                 <span className={`text-xs font-medium px-2 ${autoAssign ? 'text-blue-600' : 'text-gray-500'}`}>Manual</span>
                 <button 
                   onClick={() => setAutoAssign(!autoAssign)}
@@ -297,7 +297,7 @@ console.log(workers.id)
                   <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${autoAssign ? 'translate-x-5' : 'translate-x-1'}`} />
                 </button>
                 <span className={`text-xs font-medium px-2 ${!autoAssign ? 'text-blue-600' : 'text-gray-500'}`}>Auto</span>
-              </div>
+              </div> */}
             </div>
 
      
@@ -399,7 +399,7 @@ console.log(workers.id)
             </div>
 
 
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4">
+            {/* <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2 text-slate-600">
                   <Users className="w-5 h-5 text-blue-600" />
@@ -427,7 +427,7 @@ console.log(workers.id)
                   <p className="text-xs text-slate-500 font-medium">Avg Time</p>
                 </div>
               </div>
-            </div>
+            </div> */}
 
           </div>
         </div>
