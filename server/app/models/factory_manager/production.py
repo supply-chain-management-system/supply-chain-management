@@ -31,7 +31,6 @@ class Production(Base):
     
     __tablename__='production'
 
-
     id=Column(Integer,primary_key=True,index=True)
     product_name=Column(String,nullable=False)
     target_qty=Column(Integer,default=0)

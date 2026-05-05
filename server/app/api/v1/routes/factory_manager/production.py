@@ -34,7 +34,7 @@ def get_product(db:session=Depends(get_db)):
     return products
 
 
-@router.get('/user' )
+@router.get('/user')
 
 def get_user(db:session=Depends(get_db)):
     user=db.query(User).filter(User.role=='factory_manager').all()
