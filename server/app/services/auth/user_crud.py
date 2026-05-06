@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from app.api.deps import get_db
+from app.db.deps import get_db
 from app.models.auth.user import User
 from app.core.security import hash_password
 from sqlalchemy.orm import Session

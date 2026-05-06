@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
 from app.schemas.auth.user import UserCreate, UserLogin
 from app.services.auth.user_crud import create_user, get_user_by_email
-from app.api.deps import get_db
+from app.db.deps import get_db, get_tenant_db
 from app.core.security import create_refresh_token
 from app.core.security import (
     create_access_token,
@@ -29,7 +29,7 @@ router = APIRouter(tags=["authentication"])
     summary="Register a new user",
     description="Creates a new user account",
 )
-async def signup(user: UserCreate, db: Session = Depends(get_db)):
+async def signup(user: UserCreate, db: Session = Depends(get_tenant_db)):
     existing_user = get_user_by_email(db, user.email)
 
     if existing_user:
@@ -61,7 +61,7 @@ async def signup(user: UserCreate, db: Session = Depends(get_db)):
     summary="User Login",
     description="Logs in user and sets tokens in cookies",
 )
-def login(user: UserLogin, response: Response, db: Session = Depends(get_db)):
+def login(user: UserLogin, response: Response, db: Session = Depends(get_tenant_db)):
     data = login_user(db, user.email, user.password, response)
     return data
 
@@ -83,7 +83,7 @@ def refresh(request: Request, response: Response):
     description="Login or register user using Google",
 )
 async def google_auth(
-    request: Request, response: Response, db: Session = Depends(get_db)
+    request: Request, response: Response, db: Session = Depends(get_tenant_db)
 ):
 
     body = await request.json()
@@ -126,14 +126,17 @@ async def google_auth(
         httponly=True,
         secure=False,
         samesite="lax",
+        max_age=60 * 30,
+        path="/",
     )
-
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
         secure=False,
         samesite="lax",
+        max_age=60 * 60 * 24 * 7,
+        path="/",
     )
 
     return {
@@ -144,6 +147,7 @@ async def google_auth(
             "name": user.name,
             "role": user.role.name if user.role else None,
             "company_id": user.company_id,
+            "public_id": user.company.public_id if user.company else None,
             "company_name": user.company.name if user.company else None,
             "company_verified": (user.company.is_verified if user.company else False),
         },

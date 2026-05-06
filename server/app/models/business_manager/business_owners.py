@@ -1,12 +1,12 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from database import Base
+from app.db.database import BaseTenant
 
-class Buseness_owners(Base):
-    __tablename__ = "buseness_owners"
 
+class BusinessOwners(BaseTenant):
+    __tablename__ = "business_owners"
+    __table_args__ = {"schema": None}
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
     email = Column(String, unique=True, index=True)
     password = Column(String)
-    business_id = Column(Integer, ForeignKey("business.id"))

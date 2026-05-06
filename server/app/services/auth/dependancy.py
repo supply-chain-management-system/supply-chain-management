@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, Request, status
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
-from app.api.deps import get_db
+from app.db.deps import get_tenant_db
 from app.models.auth.user import User
 from dotenv import load_dotenv
 
@@ -21,10 +21,9 @@ security = HTTPBearer()
 
 def get_current_user(
     request: Request,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_tenant_db),
 ) -> User:
     token = request.cookies.get("access_token")
-
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -71,12 +70,26 @@ def get_current_user(
 
 
 def require_role(required_roles: list):
+    print(f"Required roles for this endpoint: {required_roles}")
+
     def role_checker(current_user: User = Depends(get_current_user)):
+        print(
+            f"Current user: {current_user.email}, Role: {current_user.role.name if current_user.role else 'No role'}"
+        )
         if not current_user.role or current_user.role.name not in required_roles:
+            print(
+                f"Access denied for user {current_user.email}. Required roles: {required_roles}, User role: {current_user.role.name if current_user.role else 'No role'}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Access denied. Required roles: {required_roles}",
             )
+        print(
+            f"Access granted for user {current_user.email} with role {current_user.role.name}"
+        )
         return current_user
+
+    print(f"Role checker created for roles: {required_roles}")
+    print(f"Role checker dependencies: {role_checker}")
 
     return role_checker

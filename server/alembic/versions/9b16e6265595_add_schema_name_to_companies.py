@@ -1,8 +1,8 @@
-"""initial
+"""add schema_name to companies
 
-Revision ID: 4b1e939bf196
+Revision ID: 9b16e6265595
 Revises: 
-Create Date: 2026-05-01 14:17:46.888695
+Create Date: 2026-05-06 10:44:40.116661
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '4b1e939bf196'
+revision: str = '9b16e6265595'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,18 +24,28 @@ def upgrade() -> None:
     op.create_table('companies',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('registration_number', sa.String(), nullable=True),
-    sa.Column('address', sa.String(), nullable=True),
     sa.Column('industry', sa.String(), nullable=True),
+    sa.Column('company_size', sa.String(), nullable=True),
+    sa.Column('mode', sa.Enum('personal', 'team', 'enterprise', name='companymode'), nullable=False),
+    sa.Column('schema_name', sa.String(), nullable=False),
+    sa.Column('public_id', sa.String(length=10), nullable=False),
+    sa.Column('registration_number', sa.String(), nullable=True),
+    sa.Column('website', sa.String(), nullable=True),
+    sa.Column('address', sa.String(), nullable=True),
+    sa.Column('country', sa.String(), nullable=True),
+    sa.Column('phone', sa.String(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('is_verified', sa.Boolean(), nullable=True),
-    sa.Column('is_data_verified', sa.Boolean(), nullable=True),
+    sa.Column('is_profile_complete', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_companies_id'), 'companies', ['id'], unique=False)
+    op.create_index(op.f('ix_companies_name'), 'companies', ['name'], unique=False)
+    op.create_index(op.f('ix_companies_public_id'), 'companies', ['public_id'], unique=True)
     op.create_index(op.f('ix_companies_registration_number'), 'companies', ['registration_number'], unique=True)
+    op.create_index(op.f('ix_companies_schema_name'), 'companies', ['schema_name'], unique=True)
     op.create_table('invite_tokens',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sa.String(), nullable=True),
@@ -53,7 +63,9 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('email', sa.String(), nullable=False),
-    sa.Column('password', sa.String(), nullable=False),
+    sa.Column('password', sa.String(), nullable=True),
+    sa.Column('otp_code', sa.String(), nullable=True),
+    sa.Column('otp_expiry', sa.DateTime(), nullable=True),
     sa.Column('company_id', sa.Integer(), nullable=True),
     sa.Column('role', sa.Enum('admin', 'owner', 'business_manager', 'warehouse_manager', 'factory_manager', 'logistics_manager', 'co_manager', name='roleenum'), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
@@ -79,7 +91,10 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_invite_tokens_id'), table_name='invite_tokens')
     op.drop_index(op.f('ix_invite_tokens_email'), table_name='invite_tokens')
     op.drop_table('invite_tokens')
+    op.drop_index(op.f('ix_companies_schema_name'), table_name='companies')
     op.drop_index(op.f('ix_companies_registration_number'), table_name='companies')
+    op.drop_index(op.f('ix_companies_public_id'), table_name='companies')
+    op.drop_index(op.f('ix_companies_name'), table_name='companies')
     op.drop_index(op.f('ix_companies_id'), table_name='companies')
     op.drop_table('companies')
     # ### end Alembic commands ###

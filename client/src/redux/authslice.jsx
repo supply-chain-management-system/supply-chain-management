@@ -6,31 +6,33 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async ({ email, password, remember, navigate }, { rejectWithValue }) => {
     try {
-      
       const response = await api.post("/login", { email, password, remember });
 
-
-      if (response.data.user.is_approved_company == true) {
-
-        navigate("/admindashboard");
-      }else{
+      console.log("Login response:", response.data);
+      if (response.data.user.company_verified == true) {
+        const publicId = response.data.user.public_id;
+        navigate(`/company/${publicId}/admin/dashboard`);
+      } else {
         navigate("/company-onboarding");
       }
 
       return response.data;
     } catch (err) {
       return rejectWithValue(
-        err.response?.data || { detail: "Something went wrong. Please try again." }
+        err.response?.data || {
+          detail: "Something went wrong. Please try again.",
+        },
       );
     }
-  }
+  },
 );
 
 const authSlice = createSlice({
   name: "auth",
   initialState: {
     user: null,
-    token: localStorage.getItem("token") || sessionStorage.getItem("token") || null,
+    token:
+      localStorage.getItem("token") || sessionStorage.getItem("token") || null,
     isAuthenticated: false,
     loading: false,
     error: null,
@@ -46,14 +48,13 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-      setCompany: (state, action) => {
-    if (state.user) {
-      state.user.companyId       = action.payload.id;
-      state.user.companyName     = action.payload.name;
-      state.user.companyVerified = action.payload.is_verified;
-    }
-  },
-    
+    setCompany: (state, action) => {
+      if (state.user) {
+        state.user.companyId = action.payload.id;
+        state.user.companyName = action.payload.name;
+        state.user.companyVerified = action.payload.is_verified;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -64,14 +65,18 @@ const authSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user;
+        state.user = {
+          ...action.payload.user,
+          public_id: action.payload.user.public_id, 
+        };
         state.token = action.payload.token || action.payload.access || null;
         state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.isAuthenticated = false;
-        state.error = action.payload?.detail || "Login failed. Please try again.";
+        state.error =
+          action.payload?.detail || "Login failed. Please try again.";
       });
   },
 });

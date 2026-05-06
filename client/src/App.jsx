@@ -40,6 +40,7 @@ function App() {
         </button>
       </div>
 
+
       <Router>
         <Routes>
           <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
@@ -49,7 +50,7 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/company-onboarding" element={<CompanyOnboarding />} />
 
-          <Route path="/business-manager" element={<BusinessManagerLayout />}>
+          <Route path="/company/:publicId/business-manager" element={<BusinessManagerLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="factory" element={<FactoryPage />} />
             <Route path="warehouse" element={<WarehousePage />} />

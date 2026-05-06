@@ -39,7 +39,6 @@ def login_user(db: Session, email: str, password: str, response: Response):
         secure=False,
         samesite="lax",
         max_age=60 * 30,
-        path="/",
     )
     response.set_cookie(
         key="refresh_token",
@@ -48,7 +47,6 @@ def login_user(db: Session, email: str, password: str, response: Response):
         secure=False,
         samesite="lax",
         max_age=60 * 60 * 24 * 7,
-        path="/",
     )
 
     company = db_user.company
@@ -60,9 +58,11 @@ def login_user(db: Session, email: str, password: str, response: Response):
             "name": db_user.name,
             "role": db_user.role.name if db_user.role else None,
             "company_id": db_user.company_id,
-            "company_name": company.name if company else None,
-            "company_verified": (company.is_verified if company else False),
-            "is_company_data": (company.is_data if company else False),
+            "company_name": db_user.company.name if db_user.company else None,
+            "public_id": db_user.company.public_id if db_user.company else None,
+            "company_verified": (
+                db_user.company.is_verified if db_user.company else False
+            ),
         },
     }
 
