@@ -1,8 +1,9 @@
 from fastapi import APIRouter,Depends
-from app.schemas.factory_manager.production import production_create,productget
+from app.schemas.sub_managers.factory_manager import production_create,productget
+
 from sqlalchemy.orm  import session
 from app.api.deps import get_db
-from app.models.factory_manager.production import Production
+from app.models.sub_managers.factory_manager.production import Production
 from app.models.auth.user import User
 
 router=APIRouter(prefix='/factory' ,tags=['factory'])

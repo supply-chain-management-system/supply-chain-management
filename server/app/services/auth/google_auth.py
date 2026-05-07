@@ -13,6 +13,7 @@ def verify_google_token(code: str):
 
         token_response = http_requests.post(
             "https://oauth2.googleapis.com/token",
+
             data={
                 "code": code,
                 "client_id": GOOGLE_CLIENT_ID,
