@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, Request, status
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
-from app.db.deps import get_tenant_db
+from app.db.deps import get_db
 from app.models.auth.user import User
 from dotenv import load_dotenv
 
@@ -21,7 +21,7 @@ security = HTTPBearer()
 
 def get_current_user(
     request: Request,
-    db: Session = Depends(get_tenant_db),
+    db: Session = Depends(get_db),
 ) -> User:
     token = request.cookies.get("access_token")
     if not token:

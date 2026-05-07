@@ -6,6 +6,7 @@ from app.services.company.company_service import setup_company
 from app.services.auth.dependancy import require_role
 from app.models.auth.user import User
 from app.models.business_manager.business_owners import BusinessOwners
+from sqlalchemy import text
 
 router = APIRouter()
 
@@ -22,13 +23,24 @@ def create_company(
 
 @router.post("/test-owner")
 def create_owner(db: Session = Depends(get_tenant_db)):
+
     owner = BusinessOwners(
         name="Test User", email="test@example.com", password="123456"
     )
 
+    current = db.execute(text("SELECT current_schema()")).scalar()
+
+    print("CURRENT SCHEMA:", current)
+
     db.add(owner)
+
     db.commit()
+
     db.refresh(owner)
+
+    rows = db.query(BusinessOwners).all()
+
+    print(rows)
 
     return {"message": "Owner created", "id": owner.id}
 
@@ -36,6 +48,8 @@ def create_owner(db: Session = Depends(get_tenant_db)):
 @router.get("/test-owner")
 def get_owners(db: Session = Depends(get_tenant_db)):
     owners = db.query(BusinessOwners).all()
+    current = db.execute(text("SELECT current_schema()")).scalar()
+    print("CURRENT SCHEMA:", current)
 
     return {
         "count": len(owners),

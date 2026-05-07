@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 
 def get_db():
+    print("run this")
     db = SessionLocal()
     try:
         yield db
@@ -12,21 +13,23 @@ def get_db():
         db.close()
 
 
-def get_tenant_db(request: Request, db: Session = Depends(get_db)):
-    print(request.state.anything)
-    print(f"Request state schema: {getattr(request.state, 'schema', None)}")
+def get_tenant_db(request: Request):
     schema = getattr(request.state, "schema", None)
-    print(f"Using tenant schema: {schema}")
 
-    if not schema:
-        print(
-            "No tenant schema found in request state. Using default database connection."
-        )
-        return db
+    db = SessionLocal()
 
-    connection = db.connection().execution_options(schema_translate_map={None: schema})
-    print(f"Created tenant-specific connection for schema: {schema}")
+    try:
+        if schema:
+            print(f"Using tenant schema: {schema}")
 
-    db.bind = connection
+            db.bind = db.bind.execution_options(schema_translate_map={None: schema})
 
-    return db
+        yield db
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+    finally:
+        db.close()

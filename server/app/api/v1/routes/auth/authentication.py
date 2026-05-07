@@ -1,9 +1,16 @@
+from email.mime.text import MIMEText
+import os
 from urllib import response
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
 from app.schemas.auth import user
 from sqlalchemy.orm import Session
-
+from app.schemas.auth.user import (
+    OTPVerifySchema,
+    ResendOTPSchema,
+    ForgotPasswordSchema,
+    ResetPasswordSchema,
+)
 from datetime import datetime, timedelta, timezone
 from app.schemas.auth.user import UserCreate, UserLogin
 from app.services.auth.user_crud import create_user, get_user_by_email
@@ -13,14 +20,27 @@ from app.core.security import (
     create_access_token,
     hash_password,
 )
+from app.core.security import pwd_context
+from app.services.auth.mail_service import send_reset_password_email
+from app.models.auth.user import User
 from app.services.auth.user_crud import get_or_create_user
 from app.services.auth.google_auth import verify_google_token
 from .otp import generate_otp
-from app.services.auth.jwt_services import login_user, refresh_access_token
+from app.services.auth.jwt_services import (
+    login_user,
+    refresh_access_token,
+    create_reset_token,
+)
+import os
+from dotenv import load_dotenv
 from jose import jwt, JWTError
 from app.services.email_service import send_verification_otp_email
 
 router = APIRouter(tags=["authentication"])
+load_dotenv()
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = "HS256"
+FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 
 @router.post(
@@ -152,3 +172,150 @@ async def google_auth(
             "company_verified": (user.company.is_verified if user.company else False),
         },
     }
+
+
+@router.post("/verify-otp")
+async def verify_otp(data: OTPVerifySchema, db: Session = Depends(get_db)):
+
+    user = db.query(User).filter(User.email == data.email).first()
+
+    if user.otp_code != data.otp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid OTP"
+        )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    if user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User already verified"
+        )
+
+    if not user.otp_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="OTP not found"
+        )
+
+    if user.otp_expiry < datetime.utcnow():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="OTP expired"
+        )
+
+    user.is_verified = True
+    user.otp_code = None
+    user.otp_expiry = None
+
+    db.commit()
+    db.refresh(user)
+
+    return {"success": True, "message": "OTP verified successfully"}
+
+
+@router.post("/resend-otp")
+async def resend_otp(data: ResendOTPSchema, db: Session = Depends(get_db)):
+
+    user = db.query(User).filter(User.email == data.email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    if user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User already verified"
+        )
+
+    otp = generate_otp()
+
+    user.otp_code = otp
+    user.otp_expiry = datetime.utcnow() + timedelta(minutes=5)
+
+    db.commit()
+
+    await send_verification_otp_email(user.email, user.name, otp=otp)
+    print("NEW OTP:", otp)
+
+    return {"success": True, "message": f"OTP sent to {user.email}"}
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    data: ForgotPasswordSchema,
+    db: Session = Depends(get_db),
+):
+
+    user = db.query(User).filter(User.email == data.email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    token = create_reset_token(user.email)
+
+    reset_link = f"{FRONTEND_URL}/reset-password/{token}"
+
+    await send_reset_password_email(
+        email_to=user.email,
+        user_name=user.name,
+        reset_link=reset_link,
+    )
+
+    return {"message": "Password reset link sent successfully"}
+
+
+@router.post("/reset-password")
+def reset_password(
+    data: ResetPasswordSchema,
+    db: Session = Depends(get_db),
+):
+
+    if data.password != data.confirm_password:
+        raise HTTPException(
+            status_code=400,
+            detail="Passwords do not match",
+        )
+
+    try:
+        payload = jwt.decode(
+            data.token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+        )
+
+        email = payload.get("sub")
+
+        if not email:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid token",
+            )
+
+    except JWTError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or expired token",
+        )
+
+    user = db.query(User).filter(User.email == email).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
+
+    hashed_password = pwd_context.hash(data.password)
+
+    user.password = hashed_password
+
+    user.updated_at = datetime.utcnow()
+
+    db.commit()
+
+    return {"message": "Password reset successful"}

@@ -19,6 +19,7 @@ def setup_company(db: Session, data: CompanySetupSchema, current_user: User) -> 
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You already belong to a company.",
         )
+
     schema_name = generate_unique_schema(db, data.name)
     public_id = generate_public_id()
     company = Company(

@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Response, status
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
-
+from fastapi.responses import JSONResponse
 from app.services.auth.user_crud import get_user_by_email
 from app.core.security import (
     verify_password,
@@ -9,8 +9,12 @@ from app.core.security import (
     create_refresh_token,
 )
 import os
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
+load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = "HS256"
 
 
 def login_user(db: Session, email: str, password: str, response: Response):
@@ -19,6 +23,17 @@ def login_user(db: Session, email: str, password: str, response: Response):
     if not db_user or not verify_password(password, db_user.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid email or password"
+        )
+    if not db_user.is_verified:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "detail": "Email not verified",
+                "user": {
+                    "email": db_user.email,
+                    "is_verified": False,
+                },
+            },
         )
 
     if not getattr(db_user, "is_active", True):
@@ -58,6 +73,7 @@ def login_user(db: Session, email: str, password: str, response: Response):
             "name": db_user.name,
             "role": db_user.role.name if db_user.role else None,
             "company_id": db_user.company_id,
+            "is_verified": db_user.is_verified,
             "company_name": db_user.company.name if db_user.company else None,
             "public_id": db_user.company.public_id if db_user.company else None,
             "company_verified": (
@@ -94,3 +110,9 @@ def refresh_access_token(request, response: Response):
 
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+
+def create_reset_token(email: str):
+    payload = {"sub": email, "exp": datetime.utcnow() + timedelta(minutes=15)}
+
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)

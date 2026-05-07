@@ -11,13 +11,18 @@ export const loginUser = createAsyncThunk(
       console.log("Login response:", response.data);
       if (response.data.user.company_verified == true) {
         const publicId = response.data.user.public_id;
-        navigate(`/company/${publicId}/admin/dashboard`);
+        navigate(`/admindashboard`);
       } else {
         navigate("/company-onboarding");
       }
 
       return response.data;
     } catch (err) {
+      print(err.data)
+      if (status === 403 && data?.user?.is_verified === false) {
+        navigate("/verify-email");
+        return rejectWithValue({ detail: "Email not verified", silent: true });
+      }
       return rejectWithValue(
         err.response?.data || {
           detail: "Something went wrong. Please try again.",
