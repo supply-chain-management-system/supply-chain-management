@@ -2,7 +2,8 @@ from fastapi import APIRouter,Depends
 from app.schemas.sub_managers.factory_manager.production import productget,production_create
 
 from sqlalchemy.orm  import session
-from app.api.deps import get_db
+
+from app.db.deps import get_db
 from app.models.sub_managers.factory_manager.production import Production
 from app.models.auth.user import User
 

@@ -25,7 +25,8 @@ class Company(Base):
     company_size = Column(String, nullable=True)
 
     mode = Column(Enum(CompanyMode), nullable=False)
-
+    schema_name = Column(String, unique=True, nullable=False, index=True)
+    public_id = Column(String(10), unique=True, index=True, nullable=False)
     registration_number = Column(String, unique=True, index=True, nullable=True)
     website = Column(String, nullable=True)
     address = Column(String, nullable=True)

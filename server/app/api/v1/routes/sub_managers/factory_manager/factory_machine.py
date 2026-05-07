@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from  app.api.deps import get_db
+from  app.db.deps import get_db
+
 from app.schemas.sub_managers.factory_manager.factory_machine import MachineCreate, MachineResponse, MachineUpdate
 from app.services.sub_managers.factory_manager.factory_machine import create_machine as  create_machine_service
 from app.services.sub_managers.factory_manager.factory_machine import get_machine as  get_machine_service
