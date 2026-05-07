@@ -38,10 +38,8 @@ function WarehouseDashboard() {
 
   return (
     <div className="bg-[#f8fafc] min-h-screen p-4 md:p-8">
-      {/* Centered Container for Normal Navbar Layout */}
       <div className="max-w-7xl mx-auto">
         
-        {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -61,7 +59,6 @@ function WarehouseDashboard() {
           </div>
         </div>
 
-        {/* KPI CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard 
             title="Products" 
@@ -92,7 +89,6 @@ function WarehouseDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* INVENTORY TABLE AREA */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -136,7 +132,6 @@ function WarehouseDashboard() {
             </div>
           </div>
 
-          {/* SIDEBAR ALERTS */}
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <h2 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 text-rose-600">
@@ -184,7 +179,6 @@ function WarehouseDashboard() {
   );
 }
 
-// Sub-component for Cards
 const StatCard = ({ title, value, icon, trend, isAlert }) => (
   <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm transition-all hover:shadow-md">
     <div className="flex items-center justify-between mb-4">

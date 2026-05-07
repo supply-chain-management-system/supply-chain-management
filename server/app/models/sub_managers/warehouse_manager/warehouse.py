@@ -35,7 +35,7 @@ class Product(Base):
 
 
 class Inventory(Base):
-    __tablename__ = "inventory"
+    __tablename__ = "inventory_ware"
 
     id = Column(Integer, primary_key=True, index=True)
 

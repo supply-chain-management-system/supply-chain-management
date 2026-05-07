@@ -40,7 +40,7 @@ def get_products(db:session=Depends(get_db)):
     return products
 
 
-@router.post("/stock_update")
+@router.post("/inventory")
 def update_inventory(data:InventoryUpdate, db:session = Depends(get_db)):
     
     inventory = db.query(Inventory).filter(

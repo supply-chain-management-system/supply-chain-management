@@ -44,10 +44,8 @@ function StockUpdatePage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // Note: Updated to use your 'api' instance for consistent headers/base URL
-      await api.post("/inventory/update", form);
+      await api.post("/inventory", form);
       
-      // Using a modern notification approach could replace standard alerts
       alert("Stock updated successfully ✅");
 
       setForm({
@@ -67,7 +65,6 @@ function StockUpdatePage() {
     <div className="bg-[#f8fafc] min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-xl">
         
-        {/* HEADER SECTION */}
         <div className="text-center mb-8">
           <div className="inline-flex p-3 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4">
             <ArrowLeftRight className="text-indigo-600" size={32} />
@@ -76,7 +73,6 @@ function StockUpdatePage() {
           <p className="text-slate-500 font-medium mt-2">Log inbound or outbound stock transactions.</p>
         </div>
 
-        {/* MAIN ACTION CARD */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
           
           {/* VISUAL INDICATOR BAR */}
