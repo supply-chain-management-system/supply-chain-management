@@ -9,6 +9,9 @@ from app.services.sub_managers.factory_manager.factory_machine import get_machin
 from app.services.sub_managers.factory_manager.factory_machine import update_machine as update_machine_service
 from app.services.sub_managers.factory_manager.factory_machine import delete_machine as delete_machine_service
 
+
+
+
 router = APIRouter(prefix="/machines", tags=["Machines"])
 
 
