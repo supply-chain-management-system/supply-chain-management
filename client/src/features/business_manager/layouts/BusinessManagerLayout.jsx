@@ -3,6 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useState } from 'react';
 import { logout } from '../../../redux/authSlice';
 
+// IMPORT THE NEW COPILOT WIDGET
+import CopilotWidget from '../components/CopilotWidget';
+
 const BusinessManagerLayout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -24,14 +27,14 @@ const BusinessManagerLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6fb] font-sans flex flex-col">
+    <div className="min-h-screen bg-[#f4f6fb] font-sans flex flex-col relative">
       {/* TOP NAVBAR */}
       <header className="bg-[#0f172a] border-b border-slate-700/60 sticky top-0 z-50 shadow-lg">
         <div className="max-w-screen-xl mx-auto px-4 flex items-center h-16 gap-6">
           {/* Brand */}
           <div className="flex items-center gap-2 mr-4 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-black text-sm shadow">N</div>
-            <span className="text-white font-bold text-lg tracking-tight">NexusGrid</span>
+            <span className="text-white font-bold text-lg tracking-tight">Korvex</span>
             <span className="ml-1 text-[10px] text-blue-400 font-semibold uppercase tracking-widest bg-blue-900/40 px-2 py-0.5 rounded-full">Business</span>
           </div>
 
@@ -119,11 +122,15 @@ const BusinessManagerLayout = () => {
       </header>
 
       {/* PAGE CONTENT */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-24"> {/* Added pb-24 to ensure content doesn't hide behind the widget */}
         <div className="max-w-screen-xl mx-auto px-4 py-8">
           <Outlet />
         </div>
       </main>
+
+      {/* GLOBAL COPILOT WIDGET */}
+      <CopilotWidget />
+      
     </div>
   );
 };

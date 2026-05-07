@@ -16,9 +16,11 @@ import FaceVerification from './features/auth/pages/face-verification';
 import A_Layout from './features/admin_front/admin_layout/A_Layout';
 import Admin_dashboard from './features/admin_front/admin_pages/Admin_dashboard';
 import ManagerGrid from './features/admin_front/admin_pages/Managers';
+import RequestsPage from './features/business_manager/pages/RequestsPage';
 import OTPVerification from './features/auth/pages/verify-email';
 import ForgotPassword from './features/auth/pages/forgot-password';
 import ResetPassword from './features/auth/pages/reset-password';
+
 
 
 
@@ -75,6 +77,7 @@ function App() {
             <Route path="warehouse" element={<WarehousePage />} />
             <Route path="logistics" element={<LogisticsPage />} />
             <Route path="suppliers" element={<SuppliersPage />} />
+            <Route path="requests" element={<RequestsPage />} />
           </Route>
              
           <Route  element={<A_Layout />}>
