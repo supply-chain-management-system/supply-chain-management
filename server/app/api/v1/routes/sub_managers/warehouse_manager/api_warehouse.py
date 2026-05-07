@@ -1,6 +1,7 @@
 from fastapi import APIRouter,Depends
 from sqlalchemy.orm  import session
-from app.api.deps import get_db
+from app.db.deps import get_db
+
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse,Rack,Product,Inventory
 
 from app.schemas.sub_managers.warehouse_manager.ware_schemas import WarehouseCreate,WarehouseOut,RackCreate,RackOut,ProductCreate,ProductOut,InventoryOut,InventoryUpdate
