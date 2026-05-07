@@ -1,8 +1,11 @@
 from datetime import datetime, timedelta
-from app.api.deps import get_db
+from app.db.deps import get_db
 from app.models.auth.user import User
 from app.core.security import hash_password
 from sqlalchemy.orm import Session
+
+import uuid
+from datetime import datetime
 
 
 def create_user(
@@ -32,11 +35,6 @@ def get_user_by_email(db, email):
     return db.query(User).filter(User.email == email).first()
 
 
-import uuid
-from datetime import datetime
-from sqlalchemy.orm import Session
-
-
 async def get_or_create_user(
     email: str,
     name: str | None,
@@ -47,7 +45,6 @@ async def get_or_create_user(
     Returns a plain dict with user data.
     """
     try:
-        # Step 1 — Try to find existing user by email
         existing_user = db.query(User).filter(User.email == email).first()
 
         if existing_user:

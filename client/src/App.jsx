@@ -16,6 +16,9 @@ import FaceVerification from './features/auth/pages/face-verification';
 import A_Layout from './features/admin_front/admin_layout/A_Layout';
 import Admin_dashboard from './features/admin_front/admin_pages/Admin_dashboard';
 import ManagerGrid from './features/admin_front/admin_pages/Managers';
+import OTPVerification from './features/auth/pages/verify-email';
+import ForgotPassword from './features/auth/pages/forgot-password';
+import ResetPassword from './features/auth/pages/reset-password';
 
 
 
@@ -54,11 +57,14 @@ function App() {
         </button>
       </div>
 
+
       <Router>
         <Routes>
           <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/register-face" element={<FaceRegistration />} />
+            <Route path="/verify-email" element={<OTPVerification />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/face-verification" element={<FaceVerification />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/company-onboarding" element={<CompanyOnboarding />} />

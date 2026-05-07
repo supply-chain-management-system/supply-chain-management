@@ -106,9 +106,9 @@ export default function Signup() {
       setSuccess(res.data.message || "Account created successfully!");
       setForm({ name: "", email: "", password: "", confirmPassword: "" });
       setTouched({});
+      localStorage.setItem("email", form.email);
 
-      // Redirect to login after 2s
-      setTimeout(() => navigate("/register-face"), 2000);
+      setTimeout(() => navigate("/verify-email"), 2000);
 
     } catch (err) {
       setError(err.response?.data?.detail || "Something went wrong");
