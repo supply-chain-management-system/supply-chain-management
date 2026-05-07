@@ -3,14 +3,11 @@ from app.db.database import engine, Base
 from app.models.auth import user
 
 
-
-
 from app.models.auth.user import User
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.routes.business_manager import dashboard as bm_dashboard
 from fastapi import FastAPI
-
 
 
 from app.models.business_manager import domain
@@ -23,11 +20,7 @@ from app.api.v1.routes.business_manager import ai_agent as bm_ai
 from app.middlewares.comapny.company_middleware import TenantMiddleware
 
 
-
-from app.api.v1.routes.factory_manager import production
-from app.api.v1.routes.factory_manager import team
-
-
+from app.api.v1.routes.sub_managers.factory_manager import production, team
 
 app = FastAPI(
     title="FastAPI App",
@@ -54,10 +47,10 @@ app.include_router(bm_dashboard.router, prefix="/api/v1")
 app.include_router(admin_featuers.router, prefix="/api/v1")
 app.include_router(bm_team.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1/company")
-app.include_router(production.router,prefix='/api/v1/production')
-app.include_router(team.router,prefix='/api/v1/factory_team')
-app.include_router(bm_ai.router, prefix="/api/v1")
 
+app.include_router(production.router, prefix='/api/v1/production')
+app.include_router(team.router, prefix='/api/v1/factory_team')
+app.include_router(bm_ai.router, prefix="/api/v1")
 
 
 @app.get("/")
