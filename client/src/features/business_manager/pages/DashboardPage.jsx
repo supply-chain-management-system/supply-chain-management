@@ -60,10 +60,16 @@ const DashboardPage = () => {
     try {
       const response = await apiClient.post('/business-manager/team/invite', formData);
       setMessage({ type: 'success', text: response.data.message });
+     
       setFormData({ ...formData, email: '' });
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.detail || 'Failed to send invitation.' });
-    } finally { setLoading(false); }
+
+
+      console.log(error.response?.data?.detail)
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStockLog = async (e) => {
