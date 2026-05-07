@@ -22,9 +22,8 @@ from app.api.v1.routes.company import company
 from app.middlewares.comapny.company_middleware import TenantMiddleware
 
 
-from app.api.v1.routes.sub_managers.factory_manager import production
-from app.api.v1.routes.sub_managers.factory_manager import team
-from app.api.v1.routes.sub_managers.factory_manager import factory_machine
+from app.api.v1.routes.sub_managers.factory_manager import production,team,factory_machine
+
 
 app = FastAPI(
     title="FastAPI App",
