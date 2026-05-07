@@ -25,6 +25,9 @@ import  ProductionManagement from './features/factory_manager/pages/production_p
 import Team from './features/factory_manager/pages/factory_team'
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 
+import { Ribbon } from 'lucide-react';
+import Machine from './features/factory_manager/pages/factory_machine';
+
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -69,6 +72,7 @@ function App() {
             <Route path="/admindashboard" element={<Admin_dashboard />} />
             <Route path="/managers" element={<ManagerGrid/>} />
             <Route path="/addmanagers" element={<AddManager />} />
+           
           </Route>
 
 
@@ -84,6 +88,7 @@ function App() {
           <Route path='production' element={<ProductionManagement/>}/>
           <Route path='factorydash' element={<Factorydash/>}/>
           <Route path='factoryteam' element={<Team/>}/>
+           <Route path='/factory_machine' element={<Machine/>}/>
           </Route>
 
 

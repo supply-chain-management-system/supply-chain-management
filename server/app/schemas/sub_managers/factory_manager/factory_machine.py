@@ -15,6 +15,11 @@ class MachineBase(BaseModel):
     last_maintenance_date: Optional[date] = None
     next_maintenance_date: Optional[date] = None
 
+class MachineUpdate(BaseModel):
+    name: Optional[str]
+    type: Optional[str]
+    status: Optional[str]
+    location: Optional[str]
 
 class MachineCreate(MachineBase):
     pass
@@ -25,4 +30,4 @@ class MachineResponse(MachineBase):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes  = True

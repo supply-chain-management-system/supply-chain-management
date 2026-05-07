@@ -15,7 +15,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard',  active: true },
   { icon: Factory, label: 'Production', path:'/production', active: false },
   { icon: Users, label: 'Teams',path:'/factoryteam', active: false },
-  { icon: Settings2, label: 'Machines', active: false },
+  { icon: Settings2, label: 'Machines',path:'/factory_machine', active: false },
   { icon: Package, label: 'Materials', active: false },
   { icon: ClipboardList, label: 'Requests', active: false },
   { icon: FileOutput, label: 'Output Logs', active: false },

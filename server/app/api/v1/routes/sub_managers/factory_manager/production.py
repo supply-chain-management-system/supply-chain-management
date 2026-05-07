@@ -1,5 +1,5 @@
 from fastapi import APIRouter,Depends
-from app.schemas.sub_managers.factory_manager import production_create,productget
+from app.schemas.sub_managers.factory_manager.production import productget,production_create
 
 from sqlalchemy.orm  import session
 from app.api.deps import get_db
