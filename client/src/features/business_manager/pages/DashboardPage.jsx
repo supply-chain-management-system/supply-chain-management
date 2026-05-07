@@ -64,11 +64,11 @@ const DashboardPage = () => {
       setFormData({ ...formData, email: '' });
     } catch (error) {
       setMessage({ type: 'error', text: error.response?.data?.detail || 'Failed to send invitation.' });
- feature/SP-10-company-based-Auth-with-face-id-setup
       console.log(error.response?.data?.detail)
     } finally {
       setLoading(false);
-    };
+    }
+  };
 
   const handleStockLog = async (e) => {
     e.preventDefault();
