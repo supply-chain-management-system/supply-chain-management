@@ -51,6 +51,7 @@ async def send_role_invitation_email(
 
 
 async def send_verification_otp_email(email_to: str, user_name: str, otp: str):
+    print(f"Preparing to send OTP email to {email_to} with OTP: {otp}")
     """
     Send OTP verification email to user
     """
