@@ -1,6 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
-from database import Base
+from app.db.database import Base # (Using the fixed import from earlier)
 
 class Buseness_owners(Base):
     __tablename__ = "buseness_owners"
@@ -9,4 +8,4 @@ class Buseness_owners(Base):
     name = Column(String)
     email = Column(String, unique=True, index=True)
     password = Column(String)
-    business_id = Column(Integer, ForeignKey("business.id"))
+    business_id = Column(Integer, ForeignKey("companies.id"))

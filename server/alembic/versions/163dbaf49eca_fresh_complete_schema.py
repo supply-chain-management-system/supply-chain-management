@@ -1,18 +1,18 @@
-"""initial
+"""Fresh complete schema
 
-Revision ID: 48a76d5e92af
+Revision ID: 163dbaf49eca
 Revises: 
-Create Date: 2026-05-02 15:09:46.291680
+Create Date: 2026-05-05 14:37:49.670199
 
 """
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '48a76d5e92af'
+revision: str = '163dbaf49eca'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -42,6 +42,18 @@ def upgrade() -> None:
     op.create_index(op.f('ix_companies_id'), 'companies', ['id'], unique=False)
     op.create_index(op.f('ix_companies_name'), 'companies', ['name'], unique=False)
     op.create_index(op.f('ix_companies_registration_number'), 'companies', ['registration_number'], unique=True)
+    op.create_table('inventory',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('sku_id', sa.String(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('qty', sa.Integer(), nullable=True),
+    sa.Column('threshold', sa.Integer(), nullable=True),
+    sa.Column('warehouse_id', sa.Integer(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_inventory_id'), 'inventory', ['id'], unique=False)
+    op.create_index(op.f('ix_inventory_sku_id'), 'inventory', ['sku_id'], unique=True)
+    op.create_index(op.f('ix_inventory_warehouse_id'), 'inventory', ['warehouse_id'], unique=False)
     op.create_table('invite_tokens',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sa.String(), nullable=True),
@@ -55,6 +67,26 @@ def upgrade() -> None:
     op.create_index(op.f('ix_invite_tokens_email'), 'invite_tokens', ['email'], unique=False)
     op.create_index(op.f('ix_invite_tokens_id'), 'invite_tokens', ['id'], unique=False)
     op.create_index(op.f('ix_invite_tokens_token'), 'invite_tokens', ['token'], unique=True)
+    op.create_table('suppliers',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('contact_email', sa.String(), nullable=False),
+    sa.Column('lead_time_days', sa.Integer(), nullable=True),
+    sa.Column('rating', sa.Integer(), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_suppliers_id'), 'suppliers', ['id'], unique=False)
+    op.create_table('buseness_owners',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(), nullable=True),
+    sa.Column('email', sa.String(), nullable=True),
+    sa.Column('password', sa.String(), nullable=True),
+    sa.Column('business_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['business_id'], ['companies.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_buseness_owners_email'), 'buseness_owners', ['email'], unique=True)
+    op.create_index(op.f('ix_buseness_owners_id'), 'buseness_owners', ['id'], unique=False)
     op.create_table('factories',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -67,7 +99,9 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('email', sa.String(), nullable=False),
-    sa.Column('password', sa.String(), nullable=False),
+    sa.Column('password', sa.String(), nullable=True),
+    sa.Column('otp_code', sa.String(), nullable=True),
+    sa.Column('otp_expiry', sa.DateTime(), nullable=True),
     sa.Column('company_id', sa.Integer(), nullable=True),
     sa.Column('role', sa.Enum('admin', 'owner', 'business_manager', 'warehouse_manager', 'factory_manager', 'logistics_manager', 'co_manager', name='roleenum'), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
@@ -80,6 +114,20 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+    op.create_table('approvals',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('type', sa.String(), nullable=False),
+    sa.Column('payload', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
+    sa.Column('status', sa.String(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('requester_id', sa.Integer(), nullable=False),
+    sa.Column('reviewer_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['requester_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['reviewer_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_approvals_id'), 'approvals', ['id'], unique=False)
+    op.create_index(op.f('ix_approvals_status'), 'approvals', ['status'], unique=False)
     op.create_table('production',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('product_name', sa.String(), nullable=False),
@@ -94,23 +142,60 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_production_id'), 'production', ['id'], unique=False)
+    op.create_table('workers',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(), nullable=False),
+    sa.Column('role', sa.Enum('Worker', 'Operator', 'Supervisor', name='worker_role'), nullable=True),
+    sa.Column('status', sa.Enum('Active', 'Leave', name='worker_status'), nullable=True),
+    sa.Column('factory_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['factory_id'], ['factories.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_workers_id'), 'workers', ['id'], unique=False)
+    op.create_table('production_team',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('team_name', sa.String(), nullable=True),
+    sa.Column('production_id', sa.Integer(), nullable=True),
+    sa.Column('worker_id', sa.Integer(), nullable=True),
+    sa.Column('role', sa.Enum('Worker', 'Operator', 'Supervisor', name='worker_role'), nullable=True),
+    sa.ForeignKeyConstraint(['production_id'], ['production.id'], ),
+    sa.ForeignKeyConstraint(['worker_id'], ['workers.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_index(op.f('ix_production_team_id'), 'production_team', ['id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f('ix_production_team_id'), table_name='production_team')
+    op.drop_table('production_team')
+    op.drop_index(op.f('ix_workers_id'), table_name='workers')
+    op.drop_table('workers')
     op.drop_index(op.f('ix_production_id'), table_name='production')
     op.drop_table('production')
+    op.drop_index(op.f('ix_approvals_status'), table_name='approvals')
+    op.drop_index(op.f('ix_approvals_id'), table_name='approvals')
+    op.drop_table('approvals')
     op.drop_index(op.f('ix_users_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
     op.drop_table('users')
     op.drop_index(op.f('ix_factories_id'), table_name='factories')
     op.drop_table('factories')
+    op.drop_index(op.f('ix_buseness_owners_id'), table_name='buseness_owners')
+    op.drop_index(op.f('ix_buseness_owners_email'), table_name='buseness_owners')
+    op.drop_table('buseness_owners')
+    op.drop_index(op.f('ix_suppliers_id'), table_name='suppliers')
+    op.drop_table('suppliers')
     op.drop_index(op.f('ix_invite_tokens_token'), table_name='invite_tokens')
     op.drop_index(op.f('ix_invite_tokens_id'), table_name='invite_tokens')
     op.drop_index(op.f('ix_invite_tokens_email'), table_name='invite_tokens')
     op.drop_table('invite_tokens')
+    op.drop_index(op.f('ix_inventory_warehouse_id'), table_name='inventory')
+    op.drop_index(op.f('ix_inventory_sku_id'), table_name='inventory')
+    op.drop_index(op.f('ix_inventory_id'), table_name='inventory')
+    op.drop_table('inventory')
     op.drop_index(op.f('ix_companies_registration_number'), table_name='companies')
     op.drop_index(op.f('ix_companies_name'), table_name='companies')
     op.drop_index(op.f('ix_companies_id'), table_name='companies')

@@ -3,6 +3,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useState } from 'react';
 import { logout } from '../../../redux/authSlice';
 
+// IMPORT THE NEW COPILOT WIDGET
+import CopilotWidget from '../components/CopilotWidget';
+
 const BusinessManagerLayout = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -24,7 +27,7 @@ const BusinessManagerLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6fb] font-sans flex flex-col">
+    <div className="min-h-screen bg-[#f4f6fb] font-sans flex flex-col relative">
       {/* TOP NAVBAR */}
       <header className="bg-[#0f172a] border-b border-slate-700/60 sticky top-0 z-50 shadow-lg">
         <div className="max-w-screen-xl mx-auto px-4 flex items-center h-16 gap-6">
@@ -119,11 +122,15 @@ const BusinessManagerLayout = () => {
       </header>
 
       {/* PAGE CONTENT */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-24"> {/* Added pb-24 to ensure content doesn't hide behind the widget */}
         <div className="max-w-screen-xl mx-auto px-4 py-8">
           <Outlet />
         </div>
       </main>
+
+      {/* GLOBAL COPILOT WIDGET */}
+      <CopilotWidget />
+      
     </div>
   );
 };
