@@ -14,3 +14,22 @@ class UserCreate(UserBase):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+class OTPVerifySchema(BaseModel):
+    email: str
+    otp: str
+
+
+class ResendOTPSchema(BaseModel):
+    email: str
+
+
+class ForgotPasswordSchema(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordSchema(BaseModel):
+    token: str
+    password: str
+    confirm_password: str

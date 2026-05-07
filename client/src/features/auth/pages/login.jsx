@@ -1,8 +1,15 @@
 import { useState, useEffect, useRef } from "react";
+
 import { useDispatch, useSelector } from "react-redux";
+
 import { loginUser } from "../../../redux/authslice";
+
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Zap, ArrowRight } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
+
+
+
 
 
 function FloatingInput({ id, label, type = "text", value, onChange, onBlur, error, icon: Icon, rightSlot }) {
@@ -95,8 +102,6 @@ const GoogleIcon = () => (
 );
 
 
-
-
 /* ── Main Component ───────────────────────────────────────── */
 export default function Login() {
   const dispatch = useDispatch();
@@ -155,10 +160,10 @@ const handleGoogleResponse = () => {
         const data = await res.json();
         console.log("Google login response:", data);
         if (res.ok && data.user.company_verified) {
-          navigate("/admindashboard")}
-          else {
-            navigate("/company-onboarding")
-          }
+          navigate("/admindashboard");
+        } else {
+          navigate("/company-onboarding");
+        }
       } catch (err) {
         console.error("Google login failed", err);
       }
@@ -388,7 +393,7 @@ const handleGoogleResponse = () => {
         </div>
 
         <SocialButton
-          onClick={() => window.google?.accounts.id.prompt()}
+          onClick={handleGoogleResponse}
           icon={<GoogleIcon />}
         >
           Google

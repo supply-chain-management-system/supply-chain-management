@@ -231,7 +231,7 @@ const DashboardPage = () => {
           <form onSubmit={handleInvite} className="space-y-3 mt-4">
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Business Name</label>
-              <input type="text" name="business_name" value={formData.business_name} onChange={handleChange} required className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-900" placeholder="Korvex Corp" />
+              <input type="text" name="business_name" value={formData.business_name} onChange={handleChange} required className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-900" placeholder="NexusGrid Corp" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
