@@ -3,12 +3,13 @@ from sqlalchemy.orm import Session
 from  app.db.deps import get_db
 
 from app.schemas.sub_managers.factory_manager.factory_machine import MachineCreate, MachineResponse, MachineUpdate
-from app.services.sub_managers.factory_manager.factory_machine import create_machine as  create_machine_service
-from app.services.sub_managers.factory_manager.factory_machine import get_machine as  get_machine_service
-from app.services.sub_managers.factory_manager.factory_machine import get_machines as get_machines_service
-from app.services.sub_managers.factory_manager.factory_machine import update_machine as update_machine_service
-from app.services.sub_managers.factory_manager.factory_machine import delete_machine as delete_machine_service
-
+from app.services.sub_managers.factory_manager.factory_machine import (
+    create_machine as create_machine_service,
+    get_machine as get_machine_service,
+    get_machines as get_machines_service,
+    update_machine as update_machine_service,
+    delete_machine as delete_machine_service,
+)
 
 
 
