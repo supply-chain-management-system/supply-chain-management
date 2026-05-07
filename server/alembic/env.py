@@ -9,12 +9,10 @@ from app.models.company.company import Company
 from app.models.company_auth.managers import InviteToken
 
 
-from app.models.factory_manager.production import Factory,Production
-from app.models.factory_manager.teams import Worker,Productionteam
+from app.models.sub_managers.factory_manager.production import Factory,Production
+from app.models.sub_managers.factory_manager.teams import Worker,Productionteam
 
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 
 import os
 from dotenv import load_dotenv

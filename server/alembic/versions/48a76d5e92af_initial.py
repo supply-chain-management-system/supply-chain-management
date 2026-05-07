@@ -26,7 +26,11 @@ def upgrade() -> None:
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('industry', sa.String(), nullable=True),
     sa.Column('company_size', sa.String(), nullable=True),
-    sa.Column('mode', sa.Enum('personal', 'team', 'enterprise', name='companymode'), nullable=False),
+    sa.Column(
+    'mode',
+    sa.Enum('personal', 'team', 'enterprise', name='companymode', create_type=False),
+    nullable=False
+),
     sa.Column('registration_number', sa.String(), nullable=True),
     sa.Column('website', sa.String(), nullable=True),
     sa.Column('address', sa.String(), nullable=True),
