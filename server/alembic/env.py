@@ -14,8 +14,7 @@ from app.models.sub_managers.factory_manager.production import Factory, Producti
 from app.models.sub_managers.factory_manager.teams import Worker, Productionteam
 
 from app.models.business_manager.domain import Inventory, Approval, Supplier
-from app.models.business_manager.business_owners import Buseness_owners
-
+from app.models.business_manager.business_owners import BusinessOwners
 
 import os
 from dotenv import load_dotenv
