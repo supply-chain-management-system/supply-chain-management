@@ -36,6 +36,49 @@ function WarehouseDashboard() {
   const totalStock = inventory.reduce((sum, i) => sum + i.quantity, 0);
   const lowStockItems = inventory.filter((i) => i.quantity < 20);
 
+  const getProductName = (id) => {
+  const product = products.find((p) => p.id === id);
+  return product ? product.name : "Unknown";
+};
+
+const getRackName = (id) => {
+  const rack = racks.find((r) => r.id === id);
+  return rack ? rack.name : "Unknown";
+};
+
+const exportCSV = () => {
+
+  const headers = ["Product", "Rack", "Quantity"];
+
+  const rows = inventory.map((item) => [
+    getProductName(item.product_id),
+    getRackName(item.rack_id),
+    item.quantity,
+  ]);
+
+  const csvContent = [
+    headers.join(","),
+    ...rows.map((row) => row.join(",")),
+  ].join("\n");
+
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
+
+  const url = window.URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.setAttribute("download", "warehouse_inventory.csv");
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  document.body.removeChild(link);
+};
+
   return (
     <div className="bg-[#f8fafc] min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -50,7 +93,7 @@ function WarehouseDashboard() {
             </p>
           </div>
           <div className="flex gap-3">
-             <button className="bg-white border border-slate-200 px-4 py-2 rounded-md text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all">
+             <button  onClick={exportCSV} className="bg-white border border-slate-200 px-4 py-2 rounded-md text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all">
                Export CSV
              </button>
              <button className="bg-indigo-600 px-4 py-2 rounded-md text-sm font-semibold text-white hover:bg-indigo-700 transition-all shadow-sm">
