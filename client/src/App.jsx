@@ -29,6 +29,7 @@ import Factorydash from './features/factory_manager/pages/dashboard';
 import  ProductionManagement from './features/factory_manager/pages/production_page'
 import Team from './features/factory_manager/pages/factory_team'
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
+import BusinessCardPage from './features/admin_front/admin_pages/business_card';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -77,6 +78,7 @@ function App() {
           <Route  element={<A_Layout />}>
             <Route path="/admindashboard" element={<Admin_dashboard />} />
             <Route path="/managers" element={<ManagerGrid/>} />
+            <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
             <Route path="/addmanagers" element={<AddManager />} />
           </Route>
 

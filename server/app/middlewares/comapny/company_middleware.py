@@ -19,6 +19,8 @@ class TenantMiddleware(BaseHTTPMiddleware):
             "/api/v1/signup",
             "/api/v1/login",
             "/api/v1/company/setup",
+            "/api/v1/google",
+            "/api/v1/refresh",
         ]
 
         if request.url.path in public_paths:
