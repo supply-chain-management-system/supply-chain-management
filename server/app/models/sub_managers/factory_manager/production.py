@@ -15,7 +15,8 @@ class Factory(BaseTenant):
 
     id=Column(Integer,primary_key=True,index=True)
     name=Column(String,nullable=False)
-    company_id=Column(Integer,ForeignKey('companies.id'))
+    company_id = Column(Integer)
+    
 
     company=relationship('Company') 
     productions=relationship('Production',back_populates='factory')
@@ -40,7 +41,7 @@ class Production(BaseTenant):
     output_qty=Column(Integer,default=0)
     status=Column(Enum(Production_status),default=Production_status.PENDING)
     factory_id=Column(Integer,ForeignKey('factories.id'),nullable=False)
-    created_by=Column(Integer,ForeignKey('users.id'),nullable=False)
+    created_by=Column(Integer)
     created_at=Column(DateTime(timezone=True),server_default=func.now())
 
     factory=relationship('Factory',back_populates='productions')
