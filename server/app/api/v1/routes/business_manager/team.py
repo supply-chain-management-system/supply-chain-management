@@ -14,7 +14,7 @@ router = APIRouter(prefix="/business-manager/team", tags=["Business Manager Team
 class RefinedInviteSchema(BaseModel):
     email: EmailStr
     role: str # e.g., "Factory Manager"
-    business_name: str = "Korvex"
+    business_name: str = "NexusGrid"
     target_id: Optional[int] = None  # The specific Factory or Warehouse ID
 
 @router.post("/invite", status_code=status.HTTP_201_CREATED)

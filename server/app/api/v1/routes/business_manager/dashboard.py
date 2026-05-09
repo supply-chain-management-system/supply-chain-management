@@ -9,7 +9,7 @@ from datetime import datetime
 from app.db.deps import get_db
 from app.models.business_manager.domain import Approval, Inventory
 # Ensure this model is available in your warehouse domain
-from app.models.warehouse.domain import WarehouseRequest 
+from app.models.sub_managers.warehouse_manager.warehouse import Warehouse 
 
 router = APIRouter(prefix="/business-manager", tags=["Business Manager Dashboard"])
 
@@ -153,7 +153,7 @@ def process_request_action(request_id: int, payload: RequestActionPayload, db: S
             product_name = req.payload.get("product_name", "Unknown Product")
             
             # 3. Create and store a new formal request for the warehouse team
-            new_warehouse_task = WarehouseRequest(
+            new_warehouse_task = Warehouse(
                 product_name=product_name,
                 requested_qty=100,  # Standard replenishment batch
                 priority="HIGH",

@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Float, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -7,13 +8,18 @@ from app.db.database import Base
 from app.models.auth.user import User
 
 class Supplier(Base):
-    __tablename__ = "suppliers"
+    __tablename__ = 'suppliers'
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
+    category = Column(String, nullable=False) # e.g., Raw Materials, Electronics, Packaging
     contact_email = Column(String, nullable=False)
-    lead_time_days = Column(Integer, default=0)
-    rating = Column(Integer, default=0)  
+    phone = Column(String)
+    lead_time_days = Column(Integer, default=7)
+    rating = Column(Float, default=5.0) # 1.0 to 5.0 scale
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 
 
 class Inventory(Base):
@@ -24,7 +30,11 @@ class Inventory(Base):
     name = Column(String, nullable=False)
     qty = Column(Integer, default=0)
     threshold = Column(Integer, default=10)
+
     warehouse_id = Column(Integer, index=True)
+
+    warehouse_id = Column(Integer, index=True) 
+
 
 
 class Approval(Base):

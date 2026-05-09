@@ -1,18 +1,25 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+from sqlalchemy import text
+
 from app.models.company.company import Company
 from app.models.auth.user import User, RoleEnum
+
 from app.schemas.company.company import CompanySetupSchema
+
 from app.services.company.schema_service import (
     generate_unique_schema,
     generate_public_id,
 )
-from app.db.database import Base
-from sqlalchemy import text
+
 from app.db.database import BaseTenant
 
 
-def setup_company(db: Session, data: CompanySetupSchema, current_user: User) -> dict:
+def setup_company(
+    db: Session,
+    data: CompanySetupSchema,
+    current_user: User,
+) -> dict:
 
     if current_user.company_id:
         raise HTTPException(
@@ -21,7 +28,9 @@ def setup_company(db: Session, data: CompanySetupSchema, current_user: User) -> 
         )
 
     schema_name = generate_unique_schema(db, data.name)
+
     public_id = generate_public_id()
+
     company = Company(
         name=data.name,
         industry=data.industry,
@@ -33,26 +42,33 @@ def setup_company(db: Session, data: CompanySetupSchema, current_user: User) -> 
         is_active=True,
         is_verified=True,
     )
+
     db.add(company)
+
     db.flush()
+
     engine = db.get_bind()
 
     with engine.begin() as conn:
         conn.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"'))
-
-    BaseTenant.metadata.schema = schema_name
     from app.models.business_manager.business_owners import BusinessOwners
+    from app.models.owner_models.business_card import BusinessCard
+
+    for table in BaseTenant.metadata.tables.values():
+        table.schema = schema_name
 
     BaseTenant.metadata.create_all(bind=engine)
 
     with engine.begin() as conn:
-        conn.execute(text('SET search_path TO public'))
+        conn.execute(text("SET search_path TO public"))
+
     current_user.company_id = company.id
     current_user.role = RoleEnum.owner
     current_user.is_approved_company = True
+
     db.commit()
+
     db.refresh(company)
-    db.refresh(current_user)
 
     return {
         "message": "Company created successfully",
