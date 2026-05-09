@@ -8,11 +8,13 @@ class MaterialRequest(BaseTenant):
 
     product_id = Column(Integer, ForeignKey("products.id"))
 
-    warehouse_id = Column(Integer, ForeignKey("warehouses.id"))
+    sender_type = Column(String)
 
-    factory_id = Column(Integer, ForeignKey("factories.id"))
+    sender_id = Column(Integer)
 
-    requested_by = Column(Integer, ForeignKey("users.id"))
+    receiver_type = Column(String)
+
+    receiver_id = Column(Integer)
 
     quantity = Column(Integer)
 
