@@ -1,10 +1,11 @@
-from app.db.database import Base
+from app.db.database import BaseTenant
 from sqlalchemy import Integer,String,ForeignKey,Column,DateTime,event
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-class Machine(Base):
+class Machine(BaseTenant):
     __tablename__='machines'
+    __table_args__ = {"schema": None}
 
     id=Column(Integer,primary_key=True,index=True)
     machine_code = Column(String, unique=True, nullable=False)
@@ -16,6 +17,7 @@ class Machine(Base):
     next_maintanance_date=Column(DateTime)
 
 @event.listens_for(Machine,'after_insert')
+
 def generate_machinecode(mappe,connection,target):
     code=f"MC-{target.id:04d}"
     connection.execute(

@@ -1,6 +1,6 @@
 from sqlalchemy import Column,Integer,String,ForeignKey,Enum
 from sqlalchemy.orm import relationship
-from app.db.database import Base
+from app.db.database import BaseTenant
 import enum
 
 
@@ -16,8 +16,9 @@ class worker_status(str,enum.Enum):
     Active='active'
     Leave='leave'
 
-class Worker(Base):
+class Worker(BaseTenant):
     __tablename__='workers'
+    __table_args__ = {"schema": None}
 
     id=Column(Integer,primary_key=True,index=True)
     name=Column(String,nullable=False)
@@ -31,8 +32,9 @@ class Worker(Base):
 
 
 
-class Productionteam(Base):
+class Productionteam(BaseTenant):
     __tablename__='production_team'
+    __table_args__ = {"schema": None}
 
     id=Column(Integer,primary_key=True,index=True)
     team_name=Column(String,nullable=True)

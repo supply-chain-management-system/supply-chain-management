@@ -1,6 +1,7 @@
 from sqlalchemy import  Column,Integer,String,Enum,ForeignKey,DateTime
 
-from app.db.database import Base
+from app.db.database import BaseTenant
+
 from sqlalchemy.sql import  func  
 import enum
 from sqlalchemy.orm import relationship
@@ -8,8 +9,9 @@ from sqlalchemy.orm import relationship
 
 
 
-class Factory(Base):
-    __tablename__='factories'    
+class Factory(BaseTenant):
+    __tablename__='factories'   
+    __table_args__ = {"schema": None} 
 
     id=Column(Integer,primary_key=True,index=True)
     name=Column(String,nullable=False)
@@ -27,7 +29,7 @@ class Production_status(str,enum.Enum):
 
 
 
-class Production(Base):
+class Production(BaseTenant):
     
     __tablename__='production'
 
