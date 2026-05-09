@@ -91,9 +91,7 @@ function App() {
             <Route path="/admindashboard" element={<Admin_dashboard />} />
             <Route path="/managers" element={<ManagerGrid/>} />
             <Route path="/addmanagers" element={<AddManager />} />
-<<<<<<< HEAD
-           
-=======
+
             <Route path="/createwarehouse" element={<CreateWarehouse/>} />
           </Route>
 
@@ -104,7 +102,7 @@ function App() {
             <Route path="/Racks" element={<RackPage/>} />
             <Route path="/stockupdate" element={<StockUpdatePage/>} />
 
->>>>>>> f0937d249745fbc7a3543eb0fdd20a04c9ae0fca
+
           </Route>
 
 

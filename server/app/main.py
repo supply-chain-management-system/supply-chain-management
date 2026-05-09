@@ -55,20 +55,19 @@ app.include_router(admin_featuers.router, prefix="/api/v1")
 app.include_router(bm_team.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1/company")
 
-<<<<<<< HEAD
-app.include_router(production.router,prefix='/api/v1/production')
-app.include_router(team.router,prefix='/api/v1/factory_team')
+
+
 app.include_router(factory_machine.router,prefix='/api/v1/factory_machine')
 
 
-=======
+
 app.include_router(api_warehouse.router,prefix='/api/v1')
 
 
 
 app.include_router(production.router, prefix='/api/v1/production')
 app.include_router(team.router, prefix='/api/v1/factory_team')
->>>>>>> f0937d249745fbc7a3543eb0fdd20a04c9ae0fca
+
 app.include_router(bm_ai.router, prefix="/api/v1")
 
 
