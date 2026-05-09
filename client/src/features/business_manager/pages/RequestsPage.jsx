@@ -27,36 +27,27 @@ const RequestsPage = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.get('/business-manager/requests');
-      
-      // Map exact backend schema to UI schema
-      const formattedData = response.data.map(req => {
-        // Normalize database status (e.g., PENDING_WHM_APPROVAL -> pending)
-        let normalizedStatus = 'pending';
-        if (req.status?.toLowerCase().includes('approve') && !req.status?.toLowerCase().includes('pending')) normalizedStatus = 'approved';
-        if (req.status?.toLowerCase().includes('reject')) normalizedStatus = 'rejected';
-
-        return {
-          id: req.id,
-          type: req.type || 'System Action',
-          submittedBy: req.requester_name || 'System',
-          role: req.role || 'Automated Agent',
-          description: req.description || 'System generated request',
-          amount: null, 
-          submittedAt: req.created_at ? new Date(req.created_at).toLocaleDateString() : 'Just now',
-          status: normalizedStatus,
-          priority: 'standard', // Defaulting to standard, can be mapped later if added to DB
-        };
-      });
-      
-      setRequests(formattedData);
+        const response = await apiClient.get('/business-manager/requests');
+        
+        const formattedData = response.data.map(req => ({
+            id: req.id,
+            type: req.type || 'System Action',
+            submittedBy: req.requester_name, // Matches backend "requester_name"
+            role: req.role,                 // Matches backend "role"
+            description: req.description,   // Matches backend "description"
+            submittedAt: req.created_at ? new Date(req.created_at).toLocaleString() : 'Just now',
+            status: req.status,             // Matches our new "ui_status" (pending/approved/rejected)
+            priority: 'standard', 
+        }));
+        
+        setRequests(formattedData);
     } catch (err) {
-      console.error("Requests Fetch Error:", err);
-      setRequests([]); // No dummy data, just an empty array on fail
+        console.error("Requests Fetch Error:", err);
+        showToast("Failed to fetch requests from server", "error");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   useEffect(() => {
     fetchRequests();

@@ -9,11 +9,11 @@ from app.models.company.company import Company
 from app.models.company_auth.managers import InviteToken
 
 
-from app.models.factory_manager.production import Factory,Production
-from app.models.factory_manager.teams import Worker,Productionteam
+from app.models.sub_managers.factory_manager.production import Factory,Production
+from app.models.sub_managers.factory_manager.teams import Worker,Productionteam
 
 from app.models.business_manager.domain import Inventory, Approval, Supplier
-from app.models.business_manager.business_owners import Buseness_owners
+from app.models.business_manager.business_owners import BusinessOwners
 
 
 # this is the Alembic Config object, which provides

@@ -13,7 +13,7 @@ class Supplier(Base):
     name = Column(String, nullable=False)
     contact_email = Column(String, nullable=False)
     lead_time_days = Column(Integer, default=0)
-    rating = Column(Integer, default=0)  # Or Float if you prefer 4.5 star ratings
+    rating = Column(Integer, default=0)  
 
 
 class Inventory(Base):
@@ -24,29 +24,30 @@ class Inventory(Base):
     name = Column(String, nullable=False)
     qty = Column(Integer, default=0)
     threshold = Column(Integer, default=10)
-    warehouse_id = Column(Integer, index=True) # Will link to a future Warehouse model
+    warehouse_id = Column(Integer, index=True)
 
 
 class Approval(Base):
+    """
+    This acts as the master 'System Requests' table.
+    It tracks all AI-drafted actions and human requests.
+    """
     __tablename__ = "approvals"
 
     id = Column(Integer, primary_key=True, index=True)
-    type = Column(String, nullable=False) # e.g., "Purchase Order", "Stock Adjustment"
+    type = Column(String, nullable=False) # e.g., "Restock Request", "Purchase Order"
     
-    # JSONB is perfect for storing varying request structures
+    # JSONB safely stores any dynamic data from the AI or frontend
     payload = Column(JSONB, nullable=False) 
     
-    # DRAFT, PENDING_APPROVAL, APPROVED, REJECTED
-    status = Column(String, default="PENDING_APPROVAL", index=True) 
-    
+    # Statuses: PENDING_WHM_APPROVAL, APPROVED, REJECTED
+    status = Column(String, default="PENDING_WHM_APPROVAL", index=True) 
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    # Links to the public users table 
-    requester_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # CRITICAL FIX: nullable=True allows the AI Agent to create tickets without a user account!
+    requester_id = Column(Integer, ForeignKey("users.id"), nullable=True) 
     reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
-    # Relationships
+    # Relationships (Make sure app.models.auth.user.User exists!)
     requester = relationship("User", foreign_keys=[requester_id])
     reviewer = relationship("User", foreign_keys=[reviewer_id])
-
-

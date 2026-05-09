@@ -1,170 +1,419 @@
-import { useState, useEffect } from 'react';
-import apiClient from '../../../api/api';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchFactoryManagers,
+  createFactoryManager,
+  fetchManagerAnalytics,
+  removeFactoryManager,
+  setView,
+  setSelectedManager,
+  setCurrentPage,
+  toggleForm,
+  updateForm,
+  clearToast,
+} from '../../../redux/factoryManagerSlice';
+
+const ITEMS_PER_PAGE = 9;
+
+// ==========================================
+// SUB-COMPONENTS
+// ==========================================
+
+const ShiftBadge = ({ shift }) => {
+  const styles = {
+    Day:   'bg-orange-100 text-orange-600',
+    Night: 'bg-indigo-100 text-indigo-600',
+    Swing: 'bg-purple-100 text-purple-600',
+  };
+  return (
+    <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase ${styles[shift] || 'bg-slate-100 text-slate-600'}`}>
+      {shift} Shift
+    </span>
+  );
+};
+
+const StatusDot = ({ isUsed }) => (
+  <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase ${isUsed ? 'text-emerald-600' : 'text-amber-500'}`}>
+    <span className={`h-1.5 w-1.5 rounded-full ${isUsed ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`} />
+    {isUsed ? 'Active' : 'Invite Sent'}
+  </span>
+);
+
+const SkeletonCard = () => (
+  <div className="bg-white p-6 rounded-3xl border-2 border-slate-100 animate-pulse space-y-4">
+    <div className="flex justify-between">
+      <div className="h-12 w-12 bg-slate-100 rounded-2xl" />
+      <div className="h-5 w-20 bg-slate-100 rounded-lg" />
+    </div>
+    <div className="h-4 bg-slate-100 rounded w-3/4" />
+    <div className="h-3 bg-slate-100 rounded w-1/2" />
+    <div className="h-px bg-slate-100" />
+    <div className="space-y-2">
+      <div className="h-3 bg-slate-100 rounded w-full" />
+      <div className="h-3 bg-slate-100 rounded w-2/3" />
+    </div>
+  </div>
+);
+
+// ==========================================
+// MAIN PAGE
+// ==========================================
 
 const FactoryPage = () => {
-  const [productionRuns, setProductionRuns] = useState([]);
-  const [factoryInfo, setFactoryInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const {
+    managers, total, currentPage,
+    form, isFormOpen,
+    selectedManager, analytics,
+    view, loading, inviteLoading, analyticsLoading,
+    toast,
+  } = useSelector(state => state.factoryManager);
 
-  // --- FETCH REAL-TIME FACTORY DATA ---
-  const fetchFactoryData = async () => {
-    setLoading(true);
-    try {
-      // Fetching production runs and factory details
-      // Assuming user_id 1 for the current session based on previous confirmed DB state
-      const [prodRes, factRes] = await Promise.all([
-        apiClient.get('/factory/production'),
-        apiClient.get('/factory/1') // Fetching details for Factory #1 confirmed in DB
-      ]);
-      setProductionRuns(prodRes.data);
-      setFactoryInfo(factRes.data);
-    } catch (err) {
-      console.error("Factory Page Fetch Error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
+  // ---- fetch on mount + page change ----
   useEffect(() => {
-    fetchFactoryData();
-  }, []);
+    dispatch(fetchFactoryManagers({ page: currentPage, size: ITEMS_PER_PAGE }));
+  }, [currentPage, dispatch]);
 
-  const factoryStats = [
-    { title: 'Active Batches', value: productionRuns.filter(p => p.status === 'PENDING' || p.status === 'PROGRESS').length, icon: '⚙️' },
-    { title: 'Total Output (Units)', value: productionRuns.reduce((acc, curr) => acc + (curr.output_qty || 0), 0), icon: '📊' },
-    { title: 'Target Fulfillment', value: '88%', icon: '🎯' },
-    { title: 'Factory Workers', value: '12', icon: '👷' },
-  ];
+  // ---- auto-clear toast ----
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => dispatch(clearToast()), 3500);
+    return () => clearTimeout(t);
+  }, [toast, dispatch]);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'COMPLETED': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'PROGRESS': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'PENDING': return 'bg-amber-100 text-amber-700 border-amber-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
+  // ---- handlers ----
+  const handleCardClick = (manager) => {
+    dispatch(setSelectedManager(manager));
+    dispatch(fetchManagerAnalytics(manager.id));
   };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    dispatch(createFactoryManager(form));
+  };
+
+  const handleRemove = (e, managerId) => {
+    e.stopPropagation();
+    if (!window.confirm('Remove this manager?')) return;
+    dispatch(removeFactoryManager(managerId));
+  };
+
+  const handlePageChange = (newPage) => {
+    dispatch(setCurrentPage(newPage));
+  };
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <div className="space-y-8">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+
+      {/* ── HEADER ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-            {factoryInfo ? factoryInfo.name : 'Factory Operations'}
+          <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+            Factory Control: Team & Performance
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            {factoryInfo ? `Location: ${factoryInfo.location || 'Kochi, India'}` : 'Loading factory details...'}
+          <p className="text-slate-400 text-sm">
+            {total} Factory Manager{total !== 1 ? 's' : ''}
           </p>
         </div>
-        <button 
-          onClick={fetchFactoryData}
-          className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
-        >
-          🔄 Refresh Schedules
-        </button>
-      </div>
 
-      {/* KPI Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {factoryStats.map((stat, i) => (
-          <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-            <div className="text-xl mb-2">{stat.icon}</div>
-            <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-            <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">{stat.title}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Main Production Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Production Schedule Table */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-            <h2 className="font-bold text-slate-800">Live Production Schedule</h2>
-            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase">Real-time Feed</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50/50 text-slate-400 uppercase text-[10px] font-bold tracking-widest">
-                <tr>
-                  <th className="px-6 py-4">Batch ID</th>
-                  <th className="px-6 py-4">Product Name</th>
-                  <th className="px-6 py-4">Target / Output</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Control</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {productionRuns.length > 0 ? productionRuns.map((run) => (
-                  <tr key={run.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-400">#PR-{run.id}</td>
-                    <td className="px-6 py-4 font-semibold text-slate-700">{run.product_name}</td>
-                    <td className="px-6 py-4 text-slate-600">
-                      <span className="font-bold">{run.output_qty || 0}</span>
-                      <span className="text-slate-300 mx-1">/</span>
-                      {run.target_qty}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-md text-[10px] font-bold border uppercase ${getStatusColor(run.status)}`}>
-                        {run.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-xs font-bold text-slate-400 hover:text-blue-600">EDIT</button>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-10 text-center text-slate-400 italic">No active production runs assigned to this factory.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        {/* view toggle */}
+        <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200">
+          <button
+            onClick={() => dispatch(setView('roster'))}
+            className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
+              view === 'roster' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            TEAM ROSTER
+          </button>
+          <button
+            onClick={() => { if (selectedManager) dispatch(setView('analytics')); }}
+            disabled={!selectedManager}
+            className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
+              view === 'analytics' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500'
+            } ${!selectedManager ? 'opacity-40 cursor-not-allowed' : ''}`}
+          >
+            ANALYTICS
+          </button>
         </div>
+      </div>
 
-        {/* Batch Progress Tracker */}
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <h2 className="font-bold text-slate-800 mb-6">Batch Completion</h2>
-          <div className="space-y-6">
-            {productionRuns.filter(p => p.status === 'PROGRESS').slice(0, 3).map(run => {
-              const percentage = Math.round(((run.output_qty || 0) / run.target_qty) * 100);
-              return (
-                <div key={run.id} className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-semibold text-slate-600">{run.product_name}</span>
-                    <span className="text-slate-400">{percentage}%</span>
+      {/* ══════════════════════════════
+           ROSTER VIEW
+         ══════════════════════════════ */}
+      {view === 'roster' && (
+        <div className="space-y-6">
+
+          {/* action bar */}
+          <div className="flex justify-between items-center">
+            <h2 className="font-bold text-slate-700 uppercase tracking-widest text-[10px]">
+              Manager Directory
+            </h2>
+            <button
+              onClick={() => dispatch(toggleForm())}
+              className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 transition-all"
+            >
+              {isFormOpen ? '✕ CLOSE' : '＋ ADD FACTORY MANAGER'}
+            </button>
+          </div>
+
+          {/* ── CREATE FORM ── */}
+          {isFormOpen && (
+            <div className="bg-blue-50 border-2 border-blue-100 rounded-3xl p-8">
+              <p className="text-xs font-bold text-blue-700 uppercase tracking-widest mb-6">
+                New Factory Manager — card is created instantly & invite email is sent
+              </p>
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                {/* col 1 */}
+                <div className="space-y-4">
+                  <input
+                    required type="text" placeholder="Full Name"
+                    className="w-full p-3 rounded-xl border border-blue-200 outline-none text-sm bg-white"
+                    value={form.name}
+                    onChange={e => dispatch(updateForm({ name: e.target.value }))}
+                  />
+                  <input
+                    required type="email" placeholder="Work Email"
+                    className="w-full p-3 rounded-xl border border-blue-200 outline-none text-sm bg-white"
+                    value={form.email}
+                    onChange={e => dispatch(updateForm({ email: e.target.value }))}
+                  />
+                </div>
+
+                {/* col 2 */}
+                <div className="space-y-4">
+                  <input
+                    type="text" placeholder="Phone Number"
+                    className="w-full p-3 rounded-xl border border-blue-200 outline-none text-sm bg-white"
+                    value={form.phone}
+                    onChange={e => dispatch(updateForm({ phone: e.target.value }))}
+                  />
+                  <select
+                    className="w-full p-3 rounded-xl border border-blue-200 outline-none text-sm bg-white"
+                    value={form.shift}
+                    onChange={e => dispatch(updateForm({ shift: e.target.value }))}
+                  >
+                    <option>Day</option>
+                    <option>Night</option>
+                    <option>Swing</option>
+                  </select>
+                </div>
+
+                {/* col 3 */}
+                <div className="flex flex-col justify-between gap-4">
+                  <select
+                    className="w-full p-3 rounded-xl border border-blue-200 outline-none text-sm bg-white"
+                    value={form.department}
+                    onChange={e => dispatch(updateForm({ department: e.target.value }))}
+                  >
+                    <option>Assembly</option>
+                    <option>Quality Control</option>
+                    <option>Logistics</option>
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={inviteLoading}
+                    className="bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 disabled:opacity-60 transition-all"
+                  >
+                    {inviteLoading ? 'CREATING...' : 'CREATE CARD & SEND INVITE'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ── 3×3 GRID ── */}
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          ) : managers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-slate-400 space-y-3">
+              <span className="text-4xl">👤</span>
+              <p className="font-semibold text-sm">No factory managers yet.</p>
+              <p className="text-xs">Click "Add Factory Manager" to create the first card.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {managers.map(fm => (
+                <div
+                  key={fm.id}
+                  onClick={() => handleCardClick(fm)}
+                  className={`group bg-white p-6 rounded-3xl border-2 transition-all cursor-pointer hover:shadow-xl hover:border-blue-400 ${
+                    selectedManager?.id === fm.id ? 'border-blue-500 bg-blue-50/30' : 'border-slate-100'
+                  }`}
+                >
+                  {/* card top */}
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="h-12 w-12 bg-slate-100 rounded-2xl flex items-center justify-center text-lg font-black text-slate-600 group-hover:bg-blue-100 transition-colors">
+                      {fm.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ShiftBadge shift={fm.shift} />
+                      <button
+                        onClick={(e) => handleRemove(e, fm.id)}
+                        className="text-slate-200 hover:text-red-400 font-bold text-sm transition-colors"
+                        title="Remove"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-500 rounded-full transition-all duration-500" 
-                      style={{ width: `${percentage}%` }}
-                    ></div>
+
+                  <h3 className="font-bold text-slate-800 text-lg leading-tight">{fm.name}</h3>
+                  <p className="text-slate-400 text-xs mt-0.5 mb-3">{fm.department} Department</p>
+                  <StatusDot isUsed={fm.is_used} />
+
+                  {/* contact */}
+                  <div className="space-y-1 border-t border-slate-50 pt-4 mt-4">
+                    <p className="text-[10px] text-slate-400 uppercase font-bold">Contact</p>
+                    <p className="text-xs text-slate-600 truncate">{fm.email}</p>
+                    <p className="text-xs text-slate-600">{fm.phone || '—'}</p>
                   </div>
                 </div>
-              );
-            })}
-            
-            {productionRuns.filter(p => p.status === 'PROGRESS').length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-xs text-slate-400">No batches currently in progress.</p>
-              </div>
-            )}
-          </div>
-          
-          <div className="mt-8 pt-6 border-t border-slate-50">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Factory Alerts</h4>
-            <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-3">
-              <span className="text-red-500">⚠️</span>
-              <p className="text-[11px] text-red-700 leading-tight">
-                Maintenance required for Line 4 (Hydraulic Pump Unit assembly) scheduled for tomorrow.
+              ))}
+            </div>
+          )}
+
+          {/* ── PAGINATION ── */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 pt-4">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+                className="p-2 rounded-lg border bg-white disabled:opacity-30 hover:border-blue-300 transition-colors"
+              >
+                ←
+              </button>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+                className="p-2 rounded-lg border bg-white disabled:opacity-30 hover:border-blue-300 transition-colors"
+              >
+                →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════
+           ANALYTICS VIEW
+         ══════════════════════════════ */}
+      {view === 'analytics' && selectedManager && (
+        <div className="space-y-6">
+
+          {/* back bar */}
+          <div className="flex items-center gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+            <button
+              onClick={() => dispatch(setView('roster'))}
+              className="text-slate-400 hover:text-slate-800 transition-colors text-sm font-semibold"
+            >
+              ← Back
+            </button>
+            <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center font-black text-blue-600">
+              {selectedManager.name.charAt(0)}
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-800">
+                Performance Report: {selectedManager.name}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {selectedManager.department} · {selectedManager.shift} Shift
               </p>
             </div>
           </div>
+
+          {analyticsLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-3xl border border-slate-100 h-44 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* KPI row */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { label: 'Efficiency',       value: `${analytics?.efficiency_score ?? '—'}%`, icon: '⚡' },
+                  { label: 'Batches Done',     value: analytics?.batches_completed ?? '—',      icon: '📦' },
+                  { label: 'Avg Cycle Time',   value: analytics?.avg_cycle_time ?? '—',         icon: '⏱️' },
+                  { label: 'On-Time Rate',     value: analytics?.on_time_rate ?? '—',           icon: '✅' },
+                ].map((kpi, i) => (
+                  <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+                    <span className="text-xl">{kpi.icon}</span>
+                    <p className="text-2xl font-black text-slate-800 mt-2">{kpi.value}</p>
+                    <p className="text-[10px] text-slate-400 uppercase font-bold mt-1">{kpi.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* main cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* efficiency gauge */}
+                <div className="bg-slate-900 rounded-3xl p-8 text-white">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
+                    Manager Efficiency
+                  </p>
+                  <h3 className="text-5xl font-black">
+                    {analytics?.efficiency_score ?? '—'}%
+                  </h3>
+                  <div className="mt-8 h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all duration-700"
+                      style={{ width: `${analytics?.efficiency_score ?? 0}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-4 uppercase font-bold tracking-widest">
+                    Reliability: {analytics?.reliability ?? '—'}
+                  </p>
+                </div>
+
+                {/* production feed placeholder */}
+                <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
+                  <h3 className="font-bold text-slate-800 mb-4">Production Feed</h3>
+                  <p className="text-slate-400 text-sm italic">
+                    Live production data for {selectedManager.name} will be connected
+                    once the Factory Manager module migration is complete.
+                  </p>
+                  <div className="mt-6 grid grid-cols-2 gap-4">
+                    <div className="bg-slate-50 rounded-2xl p-4">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">Safety Incidents</p>
+                      <p className="text-2xl font-black text-slate-800 mt-1">
+                        {analytics?.safety_incidents ?? '—'}
+                      </p>
+                    </div>
+                    <div className="bg-slate-50 rounded-2xl p-4">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">Status</p>
+                      <StatusDot isUsed={selectedManager.is_used} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* ── TOAST ── */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white transition-all ${
+          toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-500'
+        }`}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 };
