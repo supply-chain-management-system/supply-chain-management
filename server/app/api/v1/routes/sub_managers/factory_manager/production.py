@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Depends
-from app.schemas.sub_managers.factory_manager.production import (
-    production_create,
-    productget,
-)
+from fastapi import APIRouter,Depends
+from app.schemas.sub_managers.factory_manager.production import production_create,productget
 
-from sqlalchemy.orm import session
+from sqlalchemy.orm  import session
+
 from app.db.deps import get_db
 from app.models.sub_managers.factory_manager.production import Production
 from app.models.auth.user import User
@@ -18,7 +16,8 @@ def create_product(data: production_create, db: session = Depends(get_db)):
         product_name=data.product_name,
         target_qty=data.target_qty,
         factory_id=data.factory_id,
-        created_by=data.created_by,
+        created_by=data.created_by
+
     )
 
     db.add(new_product)

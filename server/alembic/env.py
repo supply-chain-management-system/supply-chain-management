@@ -16,8 +16,6 @@ from app.models.business_manager.domain import Inventory, Approval, Supplier
 from app.models.business_manager.business_owners import BusinessOwners
 from app.models.owner_models.business_card import BusinessCard
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 
 import os
 from dotenv import load_dotenv
