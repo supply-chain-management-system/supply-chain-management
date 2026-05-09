@@ -29,6 +29,10 @@ import Factorydash from './features/factory_manager/pages/dashboard';
 import  ProductionManagement from './features/factory_manager/pages/production_page'
 import Team from './features/factory_manager/pages/factory_team'
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
+
+import BusinessCardPage from './features/admin_front/admin_pages/business_card';
+
+
 import Ware_Layout from './features/warehouse_manager/ware_layout';
 import WarehouseDashboard from './features/warehouse_manager/WarehouseDashboard';
 import WareProduct from './features/warehouse_manager/Wareproducts';
@@ -36,6 +40,7 @@ import InventoryPage from './features/warehouse_manager/InventoryPage';
 import RackPage from './features/warehouse_manager/RackPage';
 import StockUpdatePage from './features/warehouse_manager/StockUpdatePage';
 import CreateWarehouse from './features/admin_front/admin_pages/CreateWarehouse';
+
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -83,6 +88,7 @@ function App() {
           <Route  element={<A_Layout />}>
             <Route path="/admindashboard" element={<Admin_dashboard />} />
             <Route path="/managers" element={<ManagerGrid/>} />
+            <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
             <Route path="/addmanagers" element={<AddManager />} />
             <Route path="/createwarehouse" element={<CreateWarehouse/>} />
           </Route>
