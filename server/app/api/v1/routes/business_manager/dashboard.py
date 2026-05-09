@@ -180,7 +180,6 @@ def process_request_action(
     request_id: int,
     payload: RequestActionPayload,
     db: Session = Depends(get_db),
-    # user=Depends(require_role(["Business Manager", "Warehouse Manager"])) # Turn this on later for security!
 ):
     """
     Called by the React frontend when a manager clicks Approve or Reject.
