@@ -1,8 +1,8 @@
-"""Fresh complete schema
+"""initial_setup
 
-Revision ID: 163dbaf49eca
+Revision ID: 82751c7e6d44
 Revises: 
-Create Date: 2026-05-05 14:37:49.670199
+Create Date: 2026-05-08 18:17:37.752494
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '163dbaf49eca'
+revision: str = '82751c7e6d44'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,6 +27,8 @@ def upgrade() -> None:
     sa.Column('industry', sa.String(), nullable=True),
     sa.Column('company_size', sa.String(), nullable=True),
     sa.Column('mode', sa.Enum('personal', 'team', 'enterprise', name='companymode'), nullable=False),
+    sa.Column('schema_name', sa.String(), nullable=False),
+    sa.Column('public_id', sa.String(length=10), nullable=False),
     sa.Column('registration_number', sa.String(), nullable=True),
     sa.Column('website', sa.String(), nullable=True),
     sa.Column('address', sa.String(), nullable=True),
@@ -41,7 +43,9 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_companies_id'), 'companies', ['id'], unique=False)
     op.create_index(op.f('ix_companies_name'), 'companies', ['name'], unique=False)
+    op.create_index(op.f('ix_companies_public_id'), 'companies', ['public_id'], unique=True)
     op.create_index(op.f('ix_companies_registration_number'), 'companies', ['registration_number'], unique=True)
+    op.create_index(op.f('ix_companies_schema_name'), 'companies', ['schema_name'], unique=True)
     op.create_table('inventory',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('sku_id', sa.String(), nullable=False),
@@ -76,17 +80,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_suppliers_id'), 'suppliers', ['id'], unique=False)
-    op.create_table('buseness_owners',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('name', sa.String(), nullable=True),
-    sa.Column('email', sa.String(), nullable=True),
-    sa.Column('password', sa.String(), nullable=True),
-    sa.Column('business_id', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['business_id'], ['companies.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_buseness_owners_email'), 'buseness_owners', ['email'], unique=True)
-    op.create_index(op.f('ix_buseness_owners_id'), 'buseness_owners', ['id'], unique=False)
     op.create_table('factories',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -183,9 +176,6 @@ def downgrade() -> None:
     op.drop_table('users')
     op.drop_index(op.f('ix_factories_id'), table_name='factories')
     op.drop_table('factories')
-    op.drop_index(op.f('ix_buseness_owners_id'), table_name='buseness_owners')
-    op.drop_index(op.f('ix_buseness_owners_email'), table_name='buseness_owners')
-    op.drop_table('buseness_owners')
     op.drop_index(op.f('ix_suppliers_id'), table_name='suppliers')
     op.drop_table('suppliers')
     op.drop_index(op.f('ix_invite_tokens_token'), table_name='invite_tokens')
@@ -196,7 +186,9 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_inventory_sku_id'), table_name='inventory')
     op.drop_index(op.f('ix_inventory_id'), table_name='inventory')
     op.drop_table('inventory')
+    op.drop_index(op.f('ix_companies_schema_name'), table_name='companies')
     op.drop_index(op.f('ix_companies_registration_number'), table_name='companies')
+    op.drop_index(op.f('ix_companies_public_id'), table_name='companies')
     op.drop_index(op.f('ix_companies_name'), table_name='companies')
     op.drop_index(op.f('ix_companies_id'), table_name='companies')
     op.drop_table('companies')
