@@ -117,7 +117,6 @@ function App() {
 
 
 
-          <Route path="/addmanagers" element={<AddManager />} />
 
 
           <Route path="/" element={<LayoutFactory />}>

@@ -35,7 +35,7 @@ class Product(BaseTenant):
 
 
 
-class Inventory(BaseTenant):
+class Inventory_ware(BaseTenant):
     __tablename__ = "inventory_ware"
 
     id = Column(Integer, primary_key=True, index=True)

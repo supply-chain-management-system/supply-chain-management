@@ -61,10 +61,13 @@ def setup_company(
 
     with engine.begin() as conn:
         conn.execute(text("SET search_path TO public"))
+    print(current_user.company_id)
 
-    current_user.company_id = company.id
-    current_user.role = RoleEnum.owner
-    current_user.is_approved_company = True
+    db_user = db.query(User).filter(User.id == current_user.id).first()
+    print(db_user.email)
+    db_user.company_id = company.id
+    db_user.role = RoleEnum.owner
+    db_user.is_approved_company = True
 
     db.commit()
 
