@@ -1,8 +1,8 @@
-"""update material request structure
+"""initial_setup
 
-Revision ID: 0e28fc5659d1
-Revises: 6193ea499caa
-Create Date: 2026-05-09 12:10:12.723710
+Revision ID: 2ba99672a54c
+Revises: 
+Create Date: 2026-05-09 15:51:13.745383
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0e28fc5659d1'
-down_revision: Union[str, Sequence[str], None] = '6193ea499caa'
+revision: str = '2ba99672a54c'
+down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

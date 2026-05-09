@@ -96,7 +96,6 @@ function WarehouseDashboard() {
     document.body.removeChild(link);
   };
 
-  // SEND REQUEST
   const sendRequest = async () => {
     try {
       await api.post("/request", {
