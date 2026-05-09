@@ -25,6 +25,8 @@ from app.middlewares.comapny.company_middleware import TenantMiddleware
 
 
 from app.api.v1.routes.sub_managers.warehouse_manager import api_warehouse
+from app.api.v1.routes.sub_managers import request
+
 
 
 from app.api.v1.routes.sub_managers.factory_manager import production, team,factory_machine
@@ -64,6 +66,7 @@ app.include_router(factory_machine.router,prefix='/api/v1/factory_machine')
 
 app.include_router(api_warehouse.router,prefix='/api/v1')
 
+app.include_router(request.router,prefix='/api/v1')
 
 
 app.include_router(production.router, prefix='/api/v1/production')
