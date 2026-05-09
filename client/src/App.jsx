@@ -16,9 +16,11 @@ import FaceVerification from './features/auth/pages/face-verification';
 import A_Layout from './features/admin_front/admin_layout/A_Layout';
 import Admin_dashboard from './features/admin_front/admin_pages/Admin_dashboard';
 import ManagerGrid from './features/admin_front/admin_pages/Managers';
+import RequestsPage from './features/business_manager/pages/RequestsPage';
 import OTPVerification from './features/auth/pages/verify-email';
 import ForgotPassword from './features/auth/pages/forgot-password';
 import ResetPassword from './features/auth/pages/reset-password';
+
 
 
 
@@ -28,8 +30,18 @@ import  ProductionManagement from './features/factory_manager/pages/production_p
 import Team from './features/factory_manager/pages/factory_team'
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 
+
 import { Ribbon } from 'lucide-react';
 import Machine from './features/factory_manager/pages/factory_machine';
+
+
+import Ware_Layout from './features/warehouse_manager/ware_layout';
+import WarehouseDashboard from './features/warehouse_manager/WarehouseDashboard';
+import WareProduct from './features/warehouse_manager/Wareproducts';
+import InventoryPage from './features/warehouse_manager/InventoryPage';
+import RackPage from './features/warehouse_manager/RackPage';
+import StockUpdatePage from './features/warehouse_manager/StockUpdatePage';
+import CreateWarehouse from './features/admin_front/admin_pages/CreateWarehouse';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -72,13 +84,25 @@ function App() {
             <Route path="warehouse" element={<WarehousePage />} />
             <Route path="logistics" element={<LogisticsPage />} />
             <Route path="suppliers" element={<SuppliersPage />} />
+            <Route path="requests" element={<RequestsPage />} />
           </Route>
              
           <Route  element={<A_Layout />}>
             <Route path="/admindashboard" element={<Admin_dashboard />} />
             <Route path="/managers" element={<ManagerGrid/>} />
             <Route path="/addmanagers" element={<AddManager />} />
-           
+
+            <Route path="/createwarehouse" element={<CreateWarehouse/>} />
+          </Route>
+
+           <Route  element={<Ware_Layout/>}>
+            <Route path="/ware_dashboard" element={<WarehouseDashboard/>} />
+            <Route path="/ware_products" element={<WareProduct/>} />
+            <Route path="/Inventory" element={<InventoryPage/>} />
+            <Route path="/Racks" element={<RackPage/>} />
+            <Route path="/stockupdate" element={<StockUpdatePage/>} />
+
+
           </Route>
 
 

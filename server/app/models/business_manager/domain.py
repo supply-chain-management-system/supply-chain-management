@@ -13,8 +13,7 @@ class Supplier(Base):
     name = Column(String, nullable=False)
     contact_email = Column(String, nullable=False)
     lead_time_days = Column(Integer, default=0)
-    rating = Column(Integer, default=0)  # Or Float if you prefer 4.5 star ratings
-
+    rating = Column(Integer, default=0)  
 
 class Inventory(Base):
     __tablename__ = "inventory"
@@ -24,7 +23,7 @@ class Inventory(Base):
     name = Column(String, nullable=False)
     qty = Column(Integer, default=0)
     threshold = Column(Integer, default=10)
-    warehouse_id = Column(Integer, index=True) # Will link to a future Warehouse model
+    warehouse_id = Column(Integer, index=True) 
 
 
 class Approval(Base):

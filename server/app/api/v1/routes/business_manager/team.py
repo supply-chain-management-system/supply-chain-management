@@ -1,39 +1,65 @@
-from fastapi import APIRouter, BackgroundTasks
-from app.schemas.business_manager.team import InviteRequestSchema, InviteResponseSchema
+from fastapi import APIRouter, HTTPException, Depends, status
+import httpx
+import uuid
+from sqlalchemy.orm import Session
 
-# Import your new shared email service
-from app.services.email_service import send_role_invitation_email
+# Import your database session
+from app.db.deps import get_db
 
-router = APIRouter(
-    prefix="/business-manager/team",
-    tags=["Business Manager Team"]
+# Import your schemas and models
+from app.schemas.business_manager.team import InviteRequestSchema
+
+# IMPORTANT: Verify this import path matches where your teammate created the model!
+from app.models.company_auth.managers import InviteToken
+
+router = APIRouter(prefix="/business-manager/team", tags=["Business Manager Team"])
+
+
+@router.post(
+    "/invite", status_code=status.HTTP_201_CREATED, description="invite new manager"
 )
+async def create_invite(data: InviteRequestSchema, db: Session = Depends(get_db)):
+    """
+    Generates a secure UUID token, saves it to the DB, and dispatches the email via n8n.
+    """
 
-@router.post("/invite", response_model=InviteResponseSchema)
-async def invite_team_member(invite_data: InviteRequestSchema, background_tasks: BackgroundTasks):
-    """
-    Generate a role-scoped invite link and dispatch an email.
-    Token generation is mocked pending the Auth team's completion.
-    """
-    
-    # 1. TODO: Wait for teammate's token generation logic
-    # For now, we mock the token and the frontend setup link
-    mock_token = "abc-123-secure-token"
-    invite_link = f"http://localhost:5173/setup-account?token={mock_token}&email={invite_data.email}"
-    
-    # 2. Add the email sending task to the background queue
-    background_tasks.add_task(
-        send_role_invitation_email,
-        email_to=invite_data.email,
-        role=invite_data.role,
-        business_name=invite_data.business_name,
-        invite_link=invite_link
-    )
-    
-    # 3. Return the response immediately to the frontend
-    return InviteResponseSchema(
-        status="success",
-        message=f"Invitation generated and email dispatched to {invite_data.email}.",
-        invite_email=invite_data.email,
-        assigned_role=invite_data.role
-    )
+    # 1. Teammate's Logic: Generate secure token & save to Database
+    token = str(uuid.uuid4())
+
+    invite = InviteToken(email=data.email, role=data.role, token=token)
+    db.add(invite)
+    db.commit()
+
+    # 2. Generate the real frontend setup link using the secure token
+    invite_link = f"http://localhost:5173/register?token={token}&email={data.email}"
+
+    # 3. Your Logic: Dispatch to n8n Automation Engine
+    # Make sure this is your active ngrok URL!
+    n8n_url = "https://shady-detonator-daylong.ngrok-free.dev/webhook-test/invite-user"
+
+    payload = {
+        "email": data.email,
+        "role": data.role,
+        "business_name": (
+            data.business_name if hasattr(data, 'business_name') else "NexusGrid"
+        ),
+        "invite_link": invite_link,
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(n8n_url, json=payload)
+            response.raise_for_status()
+        except Exception as e:
+            # If n8n fails, we alert the frontend but the DB token is still safely saved
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database saved, but n8n email failed: {str(e)}",
+            )
+
+    # Return exactly what the React frontend expects
+    return {
+        "status": "success",
+        "message": "Invite created securely and dispatched via n8n",
+        "invite_link": invite_link,
+    }

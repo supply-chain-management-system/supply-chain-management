@@ -26,16 +26,29 @@ supply-chain-management
 │  │  │     └─ add.jsx
 │  │  ├─ features
 │  │  │  ├─ admin_front
-│  │  │  │  └─ AddManager.jsx
+│  │  │  │  ├─ admin_layout
+│  │  │  │  │  └─ A_Layout.jsx
+│  │  │  │  └─ admin_pages
+│  │  │  │     ├─ AddManager.css
+│  │  │  │     ├─ AddManager.jsx
+│  │  │  │     ├─ Admin_dashboard.jsx
+│  │  │  │     ├─ Admin_managers.jsx
+│  │  │  │     ├─ Admin_Navbar.jsx
+│  │  │  │     └─ Managers.jsx
 │  │  │  ├─ auth
 │  │  │  │  ├─ componets
 │  │  │  │  │  └─ comp.jsx
 │  │  │  │  ├─ layouts
 │  │  │  │  │  └─ companyonboard.jsx
 │  │  │  │  └─ pages
+│  │  │  │     ├─ face-verification.jsx
 │  │  │  │     ├─ login.jsx
+│  │  │  │     ├─ register-face.jsx
 │  │  │  │     └─ signup.jsx
 │  │  │  ├─ business_manager
+│  │  │  │  ├─ components
+│  │  │  │  │  ├─ CopilotWidget.jsx
+│  │  │  │  │  └─ ProductionDrafts.jsx
 │  │  │  │  ├─ layouts
 │  │  │  │  │  └─ BusinessManagerLayout.jsx
 │  │  │  │  └─ pages
@@ -45,6 +58,19 @@ supply-chain-management
 │  │  │  │     ├─ RequestsPage.jsx
 │  │  │  │     ├─ SuppliersPage.jsx
 │  │  │  │     └─ WarehousePage.jsx
+│  │  │  ├─ factory_manager
+│  │  │  │  ├─ component
+│  │  │  │  │  ├─ alert.jsx
+│  │  │  │  │  ├─ navbar.jsx
+│  │  │  │  │  └─ sidebar.jsx
+│  │  │  │  ├─ layout
+│  │  │  │  │  └─ dashboarslayout.jsx
+│  │  │  │  └─ pages
+│  │  │  │     ├─ dashboard.jsx
+│  │  │  │     ├─ factory_machine.jsx
+│  │  │  │     ├─ factory_material.jsx
+│  │  │  │     ├─ factory_team.jsx
+│  │  │  │     └─ production_page.jsx
 │  │  │  └─ users
 │  │  │     └─ user.jsx
 │  │  ├─ index.css
@@ -61,11 +87,7 @@ supply-chain-management
    │  ├─ README
    │  ├─ script.py.mako
    │  └─ versions
-   │     ├─ 1821065707ca_initial.py
-   │     ├─ 4b1e939bf196_initial.py
-   │     ├─ 83669dc32955_initial.py
-   │     ├─ ad03d2863a7c_initial.py
-   │     └─ bb3151fb6fbc_initial.py
+   │     └─ 163dbaf49eca_fresh_complete_schema.py
    ├─ alembic.ini
    ├─ app
    │  ├─ api
@@ -73,15 +95,22 @@ supply-chain-management
    │  │  ├─ v1
    │  │  │  ├─ routes
    │  │  │  │  ├─ admin
-   │  │  │  │  │  └─ admin_pages.py
+   │  │  │  │  │  ├─ admin_pages.py
+   │  │  │  │  │  ├─ config.py
+   │  │  │  │  │  └─ emailsend.py
    │  │  │  │  ├─ auth
-   │  │  │  │  │  └─ authentication.py
+   │  │  │  │  │  ├─ authentication.py
+   │  │  │  │  │  └─ otp.py
    │  │  │  │  ├─ business_manager
+   │  │  │  │  │  ├─ ai_agent.py
    │  │  │  │  │  ├─ dashboard.py
    │  │  │  │  │  ├─ team.py
    │  │  │  │  │  └─ __init__.py
-   │  │  │  │  └─ company
-   │  │  │  │     └─ company.py
+   │  │  │  │  ├─ company
+   │  │  │  │  │  └─ company.py
+   │  │  │  │  └─ factory_manager
+   │  │  │  │     ├─ production.py
+   │  │  │  │     └─ team.py
    │  │  │  └─ __init__.py
    │  │  └─ __init__.py
    │  ├─ core
@@ -104,8 +133,14 @@ supply-chain-management
    │  │  │  └─ __init__.py
    │  │  ├─ company_auth
    │  │  │  └─ managers.py
+   │  │  ├─ factory_manager
+   │  │  │  ├─ production.py
+   │  │  │  ├─ teams.py
+   │  │  │  └─ __init__.py
    │  │  └─ __init__.py
    │  ├─ schemas
+   │  │  ├─ admin_schemas
+   │  │  │  └─ admin_s.py
    │  │  ├─ auth
    │  │  │  ├─ company.py
    │  │  │  └─ user.py
@@ -115,14 +150,23 @@ supply-chain-management
    │  │  │  └─ __init__.py
    │  │  ├─ company
    │  │  │  └─ company.py
+   │  │  ├─ factory_manager
+   │  │  │  ├─ factory_team.py
+   │  │  │  └─ production.py
    │  │  └─ __init__.py
    │  ├─ services
    │  │  ├─ auth
    │  │  │  ├─ dependancy.py
+   │  │  │  ├─ google_auth.py
    │  │  │  ├─ jwt_services.py
    │  │  │  ├─ user_crud.py
    │  │  │  └─ __init__.py
    │  │  ├─ business_manager
+   │  │  │  ├─ agent
+   │  │  │  │  ├─ graph.py
+   │  │  │  │  ├─ state.py
+   │  │  │  │  ├─ tools.py
+   │  │  │  │  └─ __init__.py
    │  │  │  └─ __init__.py
    │  │  ├─ company
    │  │  │  └─ company_service.py

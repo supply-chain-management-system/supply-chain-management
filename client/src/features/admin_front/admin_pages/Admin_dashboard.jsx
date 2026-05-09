@@ -5,10 +5,12 @@ import {
   AlertTriangle, 
   BarChart3, 
   MapPin, 
-  Clock 
+  Clock, 
+  Import
 } from 'lucide-react';
-
+import { useNavigate } from 'react-router-dom';
 function Admin_dashboard() {
+let navigater =useNavigate()
   const stats = [
     { title: 'Active Shipments', value: '1,284', icon: <Truck className="text-blue-600" />, trend: '+12%' },
     { title: 'In Inventory', value: '45,020', icon: <Package className="text-orange-600" />, trend: '+5%' },
@@ -85,9 +87,12 @@ function Admin_dashboard() {
                 ))}
               </tbody>
             </table>
+
           </div>
         </div>
       </main>
+                           <button onClick={()=>navigater("/createwarehouse")}>addwarehouse</button>
+
     </div>
   );
 }
