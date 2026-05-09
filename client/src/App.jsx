@@ -31,8 +31,13 @@ import Team from './features/factory_manager/pages/factory_team'
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 
 
+
 import { Ribbon } from 'lucide-react';
 import Machine from './features/factory_manager/pages/factory_machine';
+
+
+import BusinessCardPage from './features/admin_front/admin_pages/business_card';
+
 
 
 import Ware_Layout from './features/warehouse_manager/ware_layout';
@@ -90,6 +95,7 @@ function App() {
           <Route  element={<A_Layout />}>
             <Route path="/admindashboard" element={<Admin_dashboard />} />
             <Route path="/managers" element={<ManagerGrid/>} />
+            <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
             <Route path="/addmanagers" element={<AddManager />} />
 
             <Route path="/createwarehouse" element={<CreateWarehouse/>} />

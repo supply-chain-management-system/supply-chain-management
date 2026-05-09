@@ -26,3 +26,10 @@ class RoleResponse(RoleBase):
 
     class Config:
         from_attributes = True
+
+
+class InviteRequest(BaseModel):
+    business_id: str
+    role: str
+    email: str
+    created_by: str
