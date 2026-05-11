@@ -29,7 +29,6 @@ class RoleResponse(RoleBase):
 
 
 class InviteRequest(BaseModel):
-    business_id: str
+    business_id: int
     role: str
     email: str
-    created_by: str

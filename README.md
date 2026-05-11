@@ -1,6 +1,24 @@
 
 ```
 supply-chain-management
+├─ ai_services
+│  ├─ app
+│  │  ├─ agents
+│  │  ├─ api
+│  │  │  └─ v1
+│  │  │     └─ routes
+│  │  ├─ core
+│  │  ├─ databases
+│  │  ├─ main.py
+│  │  ├─ prompts
+│  │  ├─ schemas
+│  │  ├─ services
+│  │  ├─ tests
+│  │  ├─ tools
+│  │  ├─ utils
+│  │  ├─ workers
+│  │  └─ workflows
+│  └─ requirements.txt
 ├─ client
 │  ├─ eslint.config.js
 │  ├─ index.html
@@ -34,6 +52,9 @@ supply-chain-management
 │  │  │  │     ├─ Admin_dashboard.jsx
 │  │  │  │     ├─ Admin_managers.jsx
 │  │  │  │     ├─ Admin_Navbar.jsx
+│  │  │  │     ├─ business_card.jsx
+│  │  │  │     ├─ container-model.jsx
+│  │  │  │     ├─ CreateWarehouse.jsx
 │  │  │  │     └─ Managers.jsx
 │  │  │  ├─ auth
 │  │  │  │  ├─ componets
@@ -42,9 +63,12 @@ supply-chain-management
 │  │  │  │  │  └─ companyonboard.jsx
 │  │  │  │  └─ pages
 │  │  │  │     ├─ face-verification.jsx
+│  │  │  │     ├─ forgot-password.jsx
 │  │  │  │     ├─ login.jsx
 │  │  │  │     ├─ register-face.jsx
-│  │  │  │     └─ signup.jsx
+│  │  │  │     ├─ reset-password.jsx
+│  │  │  │     ├─ signup.jsx
+│  │  │  │     └─ verify-email.jsx
 │  │  │  ├─ business_manager
 │  │  │  │  ├─ components
 │  │  │  │  │  ├─ CopilotWidget.jsx
@@ -71,27 +95,44 @@ supply-chain-management
 │  │  │  │     ├─ factory_material.jsx
 │  │  │  │     ├─ factory_team.jsx
 │  │  │  │     └─ production_page.jsx
-│  │  │  └─ users
-│  │  │     └─ user.jsx
+│  │  │  ├─ users
+│  │  │  │  └─ user.jsx
+│  │  │  └─ warehouse_manager
+│  │  │     ├─ InventoryPage.jsx
+│  │  │     ├─ RackPage.jsx
+│  │  │     ├─ StockUpdatePage.jsx
+│  │  │     ├─ WarehouseDashboard.jsx
+│  │  │     ├─ Wareproducts.jsx
+│  │  │     ├─ ware_layout.jsx
+│  │  │     └─ ware_navbar.jsx
 │  │  ├─ index.css
 │  │  ├─ main.jsx
 │  │  └─ redux
 │  │     ├─ authslice.jsx
+│  │     ├─ factoryManagerSlice.js
+│  │     ├─ logisticsManagerSlice.js
 │  │     ├─ requestsSlice.js
-│  │     └─ store.js
+│  │     ├─ store.js
+│  │     ├─ supplierSlice.js
+│  │     └─ warehouseManagerSlice.js
 │  └─ vite.config.js
+├─ docker-compose.yml
 ├─ package-lock.json
 └─ server
+   ├─ .dockerignore
    ├─ alembic
    │  ├─ env.py
    │  ├─ README
    │  ├─ script.py.mako
    │  └─ versions
-   │     └─ 163dbaf49eca_fresh_complete_schema.py
+   │     ├─ 1ac1d076691d_add_extra_data_to_invite_tokens.py
+   │     ├─ 1c49f364548a_add_cars.py
+   │     ├─ 2878f7568a39_.py
+   │     ├─ 8c3ac4d3f816_update_models_multitenant_and_ai_.py
+   │     └─ dd00d51dfd77_add_notification.py
    ├─ alembic.ini
    ├─ app
    │  ├─ api
-   │  │  ├─ deps.py
    │  │  ├─ v1
    │  │  │  ├─ routes
    │  │  │  │  ├─ admin
@@ -100,17 +141,29 @@ supply-chain-management
    │  │  │  │  │  └─ emailsend.py
    │  │  │  │  ├─ auth
    │  │  │  │  │  ├─ authentication.py
+   │  │  │  │  │  ├─ company_auth.py
    │  │  │  │  │  └─ otp.py
    │  │  │  │  ├─ business_manager
    │  │  │  │  │  ├─ ai_agent.py
    │  │  │  │  │  ├─ dashboard.py
+   │  │  │  │  │  ├─ factory_manager.py
+   │  │  │  │  │  ├─ logistics_manager.py
+   │  │  │  │  │  ├─ suppliers.py
    │  │  │  │  │  ├─ team.py
+   │  │  │  │  │  ├─ warehouse_manager.py
    │  │  │  │  │  └─ __init__.py
    │  │  │  │  ├─ company
    │  │  │  │  │  └─ company.py
-   │  │  │  │  └─ factory_manager
-   │  │  │  │     ├─ production.py
-   │  │  │  │     └─ team.py
+   │  │  │  │  ├─ factory_manager
+   │  │  │  │  ├─ owner_routes
+   │  │  │  │  │  └─ business_card.py
+   │  │  │  │  └─ sub_managers
+   │  │  │  │     ├─ factory_manager
+   │  │  │  │     │  ├─ production.py
+   │  │  │  │     │  └─ team.py
+   │  │  │  │     ├─ request.py
+   │  │  │  │     └─ warehouse_manager
+   │  │  │  │        └─ api_warehouse.py
    │  │  │  └─ __init__.py
    │  │  └─ __init__.py
    │  ├─ core
@@ -118,8 +171,12 @@ supply-chain-management
    │  │  └─ security.py
    │  ├─ db
    │  │  ├─ database.py
+   │  │  ├─ deps.py
    │  │  └─ __init__.py
    │  ├─ main.py
+   │  ├─ middlewares
+   │  │  └─ comapny
+   │  │     └─ company_middleware.py
    │  ├─ models
    │  │  ├─ auth
    │  │  │  ├─ user.py
@@ -134,9 +191,17 @@ supply-chain-management
    │  │  ├─ company_auth
    │  │  │  └─ managers.py
    │  │  ├─ factory_manager
-   │  │  │  ├─ production.py
-   │  │  │  ├─ teams.py
-   │  │  │  └─ __init__.py
+   │  │  ├─ owner_models
+   │  │  │  └─ business_card.py
+   │  │  ├─ sub_managers
+   │  │  │  ├─ factory_manager
+   │  │  │  │  ├─ machinery.py
+   │  │  │  │  ├─ production.py
+   │  │  │  │  ├─ teams.py
+   │  │  │  │  └─ __init__.py
+   │  │  │  ├─ request.py
+   │  │  │  └─ warehouse_manager
+   │  │  │     └─ warehouse.py
    │  │  └─ __init__.py
    │  ├─ schemas
    │  │  ├─ admin_schemas
@@ -151,14 +216,23 @@ supply-chain-management
    │  │  ├─ company
    │  │  │  └─ company.py
    │  │  ├─ factory_manager
-   │  │  │  ├─ factory_team.py
-   │  │  │  └─ production.py
+   │  │  ├─ owner_schemas
+   │  │  │  └─ business_card.py
+   │  │  ├─ sub_managers
+   │  │  │  ├─ factory_manager
+   │  │  │  │  ├─ factory_team.py
+   │  │  │  │  └─ production.py
+   │  │  │  ├─ request.py
+   │  │  │  └─ warehouse_manager
+   │  │  │     └─ ware_schemas.py
    │  │  └─ __init__.py
    │  ├─ services
    │  │  ├─ auth
    │  │  │  ├─ dependancy.py
    │  │  │  ├─ google_auth.py
    │  │  │  ├─ jwt_services.py
+   │  │  │  ├─ mail_service.py
+   │  │  │  ├─ rolebased.py
    │  │  │  ├─ user_crud.py
    │  │  │  └─ __init__.py
    │  │  ├─ business_manager
@@ -169,12 +243,14 @@ supply-chain-management
    │  │  │  │  └─ __init__.py
    │  │  │  └─ __init__.py
    │  │  ├─ company
-   │  │  │  └─ company_service.py
+   │  │  │  ├─ company_service.py
+   │  │  │  └─ schema_service.py
    │  │  ├─ email_service.py
    │  │  └─ __init__.py
    │  ├─ tests
    │  │  └─ __init__.py
    │  └─ __init__.py
+   ├─ Dockerfile
    └─ requirements.txt
 
 ```

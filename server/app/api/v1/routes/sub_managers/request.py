@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.db.deps import get_db
+from app.db.deps import get_db,get_tenant_db
 from app.models.sub_managers.request import MaterialRequest
+from app.models.sub_managers.factory_manager.production import Factory
+
 from app.schemas.sub_managers.request import (
     MaterialRequestCreate,
     MaterialRequestOut,
+    
 )
 
 router = APIRouter()
@@ -36,3 +39,17 @@ def get_material_requests(
     db: Session = Depends(get_db)
 ):
     return db.query(MaterialRequest).all()
+
+@router.get("/Factory_deatils" )
+
+def get_comapny(db:Session=Depends(get_db)):
+    return db.query(Factory).all()
+
+
+
+
+
+
+
+
+
