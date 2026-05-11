@@ -21,7 +21,6 @@ from app.api.v1.routes.business_manager import team as bm_team
 from app.api.v1.routes.admin import admin_pages as admin_featuers
 from app.api.v1.routes.company import company
 from app.api.v1.routes.owner_routes import business_card
-from app.api.v1.routes.business_manager import ai_agent as bm_ai
 from app.api.v1.routes.business_manager import factory_manager as bm_factory
 from app.middlewares.comapny.company_middleware import TenantMiddleware
 from app.api.v1.routes.business_manager import logistics_manager
@@ -32,13 +31,13 @@ from app.api.v1.routes.business_manager import suppliers
 from app.api.v1.routes.sub_managers.factory_manager import production,team
 
 
-
 from app.api.v1.routes.sub_managers.warehouse_manager import api_warehouse
 from app.api.v1.routes.sub_managers import request
 
 
 
 from app.api.v1.routes.sub_managers.factory_manager import production, team
+from app.api.v1.routes.auth import company_auth
 
 app = FastAPI(
     title="FastAPI App",
@@ -65,10 +64,11 @@ app.include_router(bm_dashboard.router, prefix="/api/v1")
 app.include_router(admin_featuers.router, prefix="/api/v1")
 app.include_router(bm_team.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1/company")
+app.include_router(company_auth.router, prefix="/api/v1/company/auth")
+
 
 app.include_router(production.router,prefix='/api/v1/production')
 app.include_router(team.router,prefix='/api/v1/factory_team')
-app.include_router(bm_ai.router, prefix="/api/v1")
 app.include_router(bm_factory.router, prefix="/api/v1") 
 app.include_router(logistics_manager.router, prefix="/api/v1")
 app.include_router(warehouse_manager.router, prefix="/api/v1")
@@ -77,12 +77,14 @@ app.include_router(suppliers.router, prefix="/api/v1")
 
 app.include_router(api_warehouse.router,prefix='/api/v1')
 
-app.include_router(request.router,prefix='/api/v1')
 
+app.include_router(api_warehouse.router, prefix='/api/v1')
+
+
+app.include_router(request.router, prefix='/api/v1')
 
 app.include_router(production.router, prefix='/api/v1/production')
 app.include_router(team.router, prefix='/api/v1/factory_team')
-app.include_router(bm_ai.router, prefix="/api/v1")
 app.include_router(business_card.router, prefix="/api/v1")
 
 

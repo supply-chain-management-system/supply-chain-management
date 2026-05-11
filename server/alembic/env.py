@@ -4,7 +4,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
-from app.models.auth.user import User
+from app.models.auth.user import User, Invitation
 from app.models.company.company import Company
 from app.models.company_auth.managers import InviteToken
 
@@ -26,8 +26,6 @@ from app.models.owner_models.business_card import BusinessCard
 
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse,Product,Inventory_ware,Rack
 from app.models.sub_managers.request import  MaterialRequest
-
-
 
 import os
 from dotenv import load_dotenv
