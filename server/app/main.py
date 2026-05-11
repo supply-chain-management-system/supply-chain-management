@@ -59,6 +59,7 @@ app.include_router(api_warehouse.router,prefix='/api/v1')
 app.include_router(request.router,prefix='/api/v1')
 
 
+
 app.include_router(production.router, prefix='/api/v1/production')
 app.include_router(team.router, prefix='/api/v1/factory_team')
 app.include_router(bm_ai.router, prefix="/api/v1")
