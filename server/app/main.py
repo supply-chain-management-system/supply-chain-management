@@ -21,12 +21,12 @@ from app.api.v1.routes.business_manager import ai_agent as bm_ai
 from app.middlewares.comapny.company_middleware import TenantMiddleware
 
 
-
 from app.api.v1.routes.sub_managers.warehouse_manager import api_warehouse
 from app.api.v1.routes.sub_managers import request
 
 
 from app.api.v1.routes.sub_managers.factory_manager import production, team
+from app.api.v1.routes.auth import company_auth
 
 app = FastAPI(
     title="FastAPI App",
@@ -53,11 +53,13 @@ app.include_router(bm_dashboard.router, prefix="/api/v1")
 app.include_router(admin_featuers.router, prefix="/api/v1")
 app.include_router(bm_team.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1/company")
+app.include_router(company_auth.router, prefix="/api/v1/company/auth")
 
-app.include_router(api_warehouse.router,prefix='/api/v1')
 
-app.include_router(request.router,prefix='/api/v1')
+app.include_router(api_warehouse.router, prefix='/api/v1')
 
+
+app.include_router(request.router, prefix='/api/v1')
 
 app.include_router(production.router, prefix='/api/v1/production')
 app.include_router(team.router, prefix='/api/v1/factory_team')
