@@ -4,7 +4,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
-from app.db.database import Base
+from app.db.database import Base,BaseTenant
 from app.models.auth.user import User
 
 class Supplier(Base):
