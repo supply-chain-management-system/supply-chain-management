@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
-from app.db.database import BaseTenant
+from app.db.database import BaseTenant, Base
 
-class MaterialRequest(BaseTenant):
+class MaterialRequest(Base):
     __tablename__ = "material_requests"
 
     id = Column(Integer, primary_key=True)
@@ -19,3 +19,6 @@ class MaterialRequest(BaseTenant):
     quantity = Column(Integer)
 
     status = Column(String, default="pending")
+
+
+

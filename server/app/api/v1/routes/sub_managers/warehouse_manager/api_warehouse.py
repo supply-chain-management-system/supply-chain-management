@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Depends
 from sqlalchemy.orm  import session
-from app.db.deps import get_db
+from app.db.deps import get_db,get_tenant_db
 
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse,Rack,Product,Inventory_ware
 
@@ -95,6 +95,8 @@ def create_rack(data: RackCreate, db: session = Depends(get_db)):
 @router.get("/racks",response_model=List[RackOut])
 def get_racks(db: session = Depends(get_db)):
     return db.query(Rack).all()
+
+
 
 
 

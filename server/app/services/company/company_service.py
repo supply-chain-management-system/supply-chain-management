@@ -1,3 +1,4 @@
+from app.services.auth.dependancy import get_current_user
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from sqlalchemy import text
@@ -11,14 +12,14 @@ from app.services.company.schema_service import (
     generate_unique_schema,
     generate_public_id,
 )
-
+from fastapi import Depends
 from app.db.database import BaseTenant
 
 
 def setup_company(
     db: Session,
     data: CompanySetupSchema,
-    current_user: User,
+    current_user: User = Depends(get_current_user),
 ) -> dict:
 
     if current_user.company_id:
@@ -34,6 +35,7 @@ def setup_company(
     company = Company(
         name=data.name,
         industry=data.industry,
+        owner_email=current_user.email,
         mode=data.is_mode,
         address=data.address,
         registration_number=data.registration_number,

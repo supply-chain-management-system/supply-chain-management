@@ -37,10 +37,10 @@ tools = [
 # ==========================================
 primary_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
 
-# 2. FALLBACK 1: Groq (Llama 3 8B) -> Swapped from dead Mixtral to the active 8B model!
-fallback_groq = ChatGroq(model="llama3-8b-8192", temperature=0)
+# 2. FALLBACK 1: Groq (Llama 3.1 8B) 
+fallback_groq = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
 
-# 3. FALLBACK 2: Google (Gemini 1.5 Flash) -> Added "-latest" to fix the 404 routing error!
+# 3. FALLBACK 2: Google (Gemini) 
 fallback_google = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
 
 # 4. FALLBACK 3: Cohere (Command R)
@@ -60,24 +60,30 @@ def run_agent(state: AgentState):
     messages = state["messages"]
     
     # We define the order of the models we want to try
+    # Notice Gemini is now above the 8B model!
     models_to_try = [
-        ("GROQ (Llama 70B)", primary_with_tools),
-        ("GROQ (Mixtral)", groq_backup_with_tools),
-        ("GOOGLE (Gemini)", google_with_tools),
-        ("COHERE (Command R)", cohere_with_tools)
+        ("GOOGLE (Gemini)", google_with_tools), 
+        ("GROQ (Llama 70B)", primary_with_tools), 
+        ("GROQ (Llama 8B)", groq_backup_with_tools), 
+        ("COHERE (Command R)", cohere_with_tools)  
     ]
     
     # Loop through them one by one
     for name, model in models_to_try:
         try:
+            print(f"⏳ Attempting to run with {name}...")
             response = model.invoke(messages)
+            print(f"🚀 SUCCESS: Request handled by -> {name}")
             return {"messages": [response]}
             
         except Exception as e:
+            # THIS IS THE MOST IMPORTANT LINE: It prints the exact crash reason!
+            print(f"⚠️ {name} FAILED. Reason: {str(e)[:300]}...") 
             continue 
 
     # If the loop finishes and ALL models failed, we raise a final error to trigger the UI fallback
     raise Exception("All AI models in the fallback matrix failed. Complete API blackout.")
+
 
 def should_continue(state: AgentState):
     last_message = state["messages"][-1]
