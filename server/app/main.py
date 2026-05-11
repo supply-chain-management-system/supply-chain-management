@@ -67,6 +67,7 @@ app.include_router(company.router, prefix="/api/v1/company")
 app.include_router(company_auth.router, prefix="/api/v1/company/auth")
 
 
+
 app.include_router(production.router,prefix='/api/v1/production')
 app.include_router(team.router,prefix='/api/v1/factory_team')
 app.include_router(bm_factory.router, prefix="/api/v1") 
@@ -77,8 +78,8 @@ app.include_router(suppliers.router, prefix="/api/v1")
 
 app.include_router(api_warehouse.router,prefix='/api/v1')
 
-
 app.include_router(api_warehouse.router, prefix='/api/v1')
+
 
 
 app.include_router(request.router, prefix='/api/v1')
