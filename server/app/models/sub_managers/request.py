@@ -1,19 +1,24 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
-from app.db.database import BaseTenant
+from app.db.database import BaseTenant, Base
 
-class MaterialRequest(BaseTenant):
+class MaterialRequest(Base):
     __tablename__ = "material_requests"
 
     id = Column(Integer, primary_key=True)
 
     product_id = Column(Integer, ForeignKey("products.id"))
 
-    warehouse_id = Column(Integer, ForeignKey("warehouses.id"))
+    sender_type = Column(String)
 
-    factory_id = Column(Integer, ForeignKey("factories.id"))
+    sender_id = Column(Integer)
 
-    requested_by = Column(Integer, ForeignKey("users.id"))
+    receiver_type = Column(String)
+
+    receiver_id = Column(Integer)
 
     quantity = Column(Integer)
 
     status = Column(String, default="pending")
+
+
+
