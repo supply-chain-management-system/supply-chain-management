@@ -32,7 +32,7 @@ class Company(Base):
     address = Column(String, nullable=True)
     country = Column(String, nullable=True)
     phone = Column(String, nullable=True)
-
+    owner_email = Column(String, nullable=True, unique=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     is_profile_complete = Column(Boolean, default=False)
