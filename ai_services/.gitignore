@@ -1,0 +1,20 @@
+# ai_services/.gitignore
+
+# Environments
+env/
+venv/
+.env
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDEs
+.vscode/
+.idea/
+
+# LangGraph / SQLite (if caching locally later)
+*.sqlite3
+*.db

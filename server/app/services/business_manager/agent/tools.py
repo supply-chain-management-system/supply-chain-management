@@ -4,11 +4,15 @@ from langchain_core.tools import tool
 
 # Import your database session and models
 from app.db.database import SessionLocal
+
+from app.models.sub_managers.factory_manager.production import Production, Production_status, Factory
+
 from app.models.sub_managers.factory_manager.production import (
     Production,
     Production_status,
     Factory,
 )
+
 from app.models.business_manager.domain import Inventory, Approval, Supplier
 
 # ==========================================
@@ -180,7 +184,9 @@ def invite_team_member(name: str, email: str, role: str, business_name: str) -> 
     Use this when the user asks to invite, add, or onboard a new team member.
     """
     # 🚨 REPLACE WITH YOUR NGROK URL
-    n8n_url = "https://shady-detonator-daylong.ngrok-free.dev/webhook-test/invite-user"
+
+    n8n_url = n8n_url = "http://127.0.0.1:5678/webhook/low-stock-alert"
+
 
     mock_token = "abc-123-secure-token"
     invite_link = (
@@ -210,8 +216,10 @@ def dispatch_low_stock_alert(
     Use this tool ONLY when you detect that a product's inventory has fallen below its safety threshold.
     This dispatches an emergency alert to the Business Manager via the automation engine.
     """
-    # 🚨 REPLACE WITH YOUR NGROK URL
-    n8n_url = "https://shady-detonator-daylong.ngrok-free.dev/webhook/low-stock-alert"
+
+
+    n8n_url = "http://127.0.0.1:5678/webhook/low-stock-alert"
+    
 
     payload = {
         "product_name": product_name,
