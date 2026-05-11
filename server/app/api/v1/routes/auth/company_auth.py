@@ -190,10 +190,12 @@ async def invite_register(
         otp_expiry=otp_expiry,
         company_id=invitation.company_id,
         role=invitation.role,
+        business_id=invitation.category_id,
         is_active=True,
         is_verified=False,
         is_approved_company=False,
     )
+
     db.add(new_user)
 
     invitation.accepted = True

@@ -154,6 +154,7 @@ export default function InviteRegisterPage() {
         email: form.email,
         password: form.password,
       });
+      localStorage.setItem("email", form.email);
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.message || "Registration failed");
