@@ -1,6 +1,24 @@
 
 ```
 supply-chain-management
+├─ ai_services
+│  ├─ app
+│  │  ├─ agents
+│  │  ├─ api
+│  │  │  └─ v1
+│  │  │     └─ routes
+│  │  ├─ core
+│  │  ├─ databases
+│  │  ├─ main.py
+│  │  ├─ prompts
+│  │  ├─ schemas
+│  │  ├─ services
+│  │  ├─ tests
+│  │  ├─ tools
+│  │  ├─ utils
+│  │  ├─ workers
+│  │  └─ workflows
+│  └─ requirements.txt
 ├─ client
 │  ├─ eslint.config.js
 │  ├─ index.html
@@ -92,8 +110,11 @@ supply-chain-management
 │  │  └─ redux
 │  │     ├─ authslice.jsx
 │  │     ├─ factoryManagerSlice.js
+│  │     ├─ logisticsManagerSlice.js
 │  │     ├─ requestsSlice.js
-│  │     └─ store.js
+│  │     ├─ store.js
+│  │     ├─ supplierSlice.js
+│  │     └─ warehouseManagerSlice.js
 │  └─ vite.config.js
 ├─ docker-compose.yml
 ├─ package-lock.json
@@ -104,10 +125,11 @@ supply-chain-management
    │  ├─ README
    │  ├─ script.py.mako
    │  └─ versions
-   │     ├─ 0e28fc5659d1_update_material_request_structure.py
    │     ├─ 1ac1d076691d_add_extra_data_to_invite_tokens.py
+   │     ├─ 1c49f364548a_add_cars.py
    │     ├─ 2878f7568a39_.py
-   │     └─ 8c3ac4d3f816_update_models_multitenant_and_ai_.py
+   │     ├─ 8c3ac4d3f816_update_models_multitenant_and_ai_.py
+   │     └─ dd00d51dfd77_add_notification.py
    ├─ alembic.ini
    ├─ app
    │  ├─ api
@@ -125,7 +147,10 @@ supply-chain-management
    │  │  │  │  │  ├─ ai_agent.py
    │  │  │  │  │  ├─ dashboard.py
    │  │  │  │  │  ├─ factory_manager.py
+   │  │  │  │  │  ├─ logistics_manager.py
+   │  │  │  │  │  ├─ suppliers.py
    │  │  │  │  │  ├─ team.py
+   │  │  │  │  │  ├─ warehouse_manager.py
    │  │  │  │  │  └─ __init__.py
    │  │  │  │  ├─ company
    │  │  │  │  │  └─ company.py

@@ -159,4 +159,4 @@ def remove_teammember(mem_id: int, db: Session = Depends(get_db)):
         return {'message': 'worker remove succesfully'}
     except SQLAlchemyError as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="database error while delete ")
+        raise HTTPException(status_code=500, detail="database error while delete")

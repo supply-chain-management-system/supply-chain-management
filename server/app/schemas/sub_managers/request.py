@@ -21,3 +21,7 @@ class MaterialRequestOut(BaseModel):
     status: str
     class Config:
         orm_mode = True
+
+
+
+   
