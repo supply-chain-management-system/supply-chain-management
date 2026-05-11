@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.db.deps import get_db
+from app.db.deps import get_db,get_tenant_db
 
 from app.schemas.sub_managers.factory_manager.factory_team import (
     worker_create,
@@ -19,7 +19,7 @@ router = APIRouter(prefix='/factory', tags=['factory'])
 
 
 @router.post('/create_worker')
-def create_worker(data: worker_create, db: Session = Depends(get_db)):
+def create_worker(data: worker_create, db: Session = Depends(get_tenant_db)):
     work = Worker(name=data.name, role=data.role, factory_id=data.factory_id)
 
     db.add(work)
@@ -44,7 +44,7 @@ WHERE id NOT IN (
 
 
 @router.post("/assign_team")
-def assign_team(data: team_create, db: Session = Depends(get_db)):
+def assign_team(data: team_create, db: Session = Depends(get_tenant_db)):
 
     production = (
         db.query(Production).filter(Production.id == data.production_id).first()
@@ -90,7 +90,7 @@ def assign_team(data: team_create, db: Session = Depends(get_db)):
 
 
 @router.get("/all_team")
-def get_all_production_teams(db: Session = Depends(get_db)):
+def get_all_production_teams(db: Session = Depends(get_tenant_db)):
 
     query = """
         SELECT 
@@ -125,7 +125,7 @@ def get_all_production_teams(db: Session = Depends(get_db)):
 
 
 @router.get('/find_wroker')
-def worker_search(search: str = '', db: Session = Depends(get_db)):
+def worker_search(search: str = '', db: Session = Depends(get_tenant_db)):
     print('je', search)
     query = db.query(Worker)
     if search:
@@ -135,7 +135,7 @@ def worker_search(search: str = '', db: Session = Depends(get_db)):
 
 
 @router.delete('/removemember/{mem_id}')
-def remove_teammember(mem_id: int, db: Session = Depends(get_db)):
+def remove_teammember(mem_id: int, db: Session = Depends(get_tenant_db)):
     print('deleie id', mem_id)
     try:
         query = db.query(Productionteam).filter(Productionteam.id == mem_id)
