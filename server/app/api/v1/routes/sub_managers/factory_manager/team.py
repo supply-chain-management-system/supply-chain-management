@@ -19,8 +19,19 @@ router = APIRouter(prefix='/factory', tags=['factory'])
 
 
 @router.post('/create_worker')
+
+
+def create_worker(data:worker_create,db:Session=Depends(get_db)):
+    work=Worker(
+        name=data.name,
+        role=data.role,
+        factory_id=data.factory_id
+
+    )
+
 def create_worker(data: worker_create, db: Session = Depends(get_db)):
     work = Worker(name=data.name, role=data.role, factory_id=data.factory_id)
+
 
     db.add(work)
     db.commit()
