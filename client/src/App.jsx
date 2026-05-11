@@ -40,6 +40,7 @@ import InventoryPage from './features/warehouse_manager/InventoryPage';
 import RackPage from './features/warehouse_manager/RackPage';
 import StockUpdatePage from './features/warehouse_manager/StockUpdatePage';
 import CreateWarehouse from './features/admin_front/admin_pages/CreateWarehouse';
+import InviteAcceptPage from './features/auth/pages/invitation';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -71,6 +72,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/verify-email" element={<OTPVerification />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/invite/accept/:token" element={<InviteAcceptPage />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/face-verification" element={<FaceVerification />} />
             <Route path="/signup" element={<Signup />} />

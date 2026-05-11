@@ -9,7 +9,7 @@ from langgraph.prebuilt import ToolNode
 from app.services.business_manager.agent.state import AgentState
 
 # Import LangChain LLM Connectors
-from langchain_groq import ChatGroq 
+from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_cohere import ChatCohere
 
@@ -20,7 +20,7 @@ from app.services.business_manager.agent.tools import (
     bulk_approve_requests,
     invite_team_member,
     check_supplier_status,
-    dispatch_low_stock_alert  
+    dispatch_low_stock_alert,
 )
 
 tools = [
@@ -29,7 +29,7 @@ tools = [
     bulk_approve_requests,
     invite_team_member,
     check_supplier_status,
-    dispatch_low_stock_alert  
+    dispatch_low_stock_alert,
 ]
 
 # ==========================================
@@ -37,10 +37,10 @@ tools = [
 # ==========================================
 primary_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
 
-# 2. FALLBACK 1: Groq (Llama 3.1 8B) 
+# 2. FALLBACK 1: Groq (Llama 3.1 8B)
 fallback_groq = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
 
-# 3. FALLBACK 2: Google (Gemini) 
+# 3. FALLBACK 2: Google (Gemini)
 fallback_google = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
 
 # 4. FALLBACK 3: Cohere (Command R)
@@ -56,18 +56,19 @@ cohere_with_tools = fallback_cohere.bind_tools(tools)
 # MANUAL ENTERPRISE FALLBACK LOOP
 # ==========================================
 
+
 def run_agent(state: AgentState):
     messages = state["messages"]
-    
+
     # We define the order of the models we want to try
     # Notice Gemini is now above the 8B model!
     models_to_try = [
-        ("GOOGLE (Gemini)", google_with_tools), 
-        ("GROQ (Llama 70B)", primary_with_tools), 
-        ("GROQ (Llama 8B)", groq_backup_with_tools), 
-        ("COHERE (Command R)", cohere_with_tools)  
+        ("GOOGLE (Gemini)", google_with_tools),
+        ("GROQ (Llama 70B)", primary_with_tools),
+        ("GROQ (Llama 8B)", groq_backup_with_tools),
+        ("COHERE (Command R)", cohere_with_tools),
     ]
-    
+
     # Loop through them one by one
     for name, model in models_to_try:
         try:
@@ -75,14 +76,16 @@ def run_agent(state: AgentState):
             response = model.invoke(messages)
             print(f"🚀 SUCCESS: Request handled by -> {name}")
             return {"messages": [response]}
-            
+
         except Exception as e:
             # THIS IS THE MOST IMPORTANT LINE: It prints the exact crash reason!
-            print(f"⚠️ {name} FAILED. Reason: {str(e)[:300]}...") 
-            continue 
+            print(f"⚠️ {name} FAILED. Reason: {str(e)[:300]}...")
+            continue
 
     # If the loop finishes and ALL models failed, we raise a final error to trigger the UI fallback
-    raise Exception("All AI models in the fallback matrix failed. Complete API blackout.")
+    raise Exception(
+        "All AI models in the fallback matrix failed. Complete API blackout."
+    )
 
 
 def should_continue(state: AgentState):
@@ -90,6 +93,7 @@ def should_continue(state: AgentState):
     if last_message.tool_calls:
         return "tools"
     return "__end__"
+
 
 workflow = StateGraph(AgentState)
 workflow.add_node("agent", run_agent)
