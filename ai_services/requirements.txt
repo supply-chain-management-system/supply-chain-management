@@ -1,3 +1,5 @@
+# ai_services/requirements.txt
+
 # Web Framework
 fastapi
 uvicorn
@@ -14,9 +16,17 @@ langchain-groq
 langchain-google-genai
 langchain-cohere
 
+<<<<<<< HEAD
 # Database
 sqlalchemy
 psycopg2-binary
 
 # Extra
 numpy
+=======
+# Database Access
+sqlalchemy
+psycopg2-binary
+
+motor
+>>>>>>> development

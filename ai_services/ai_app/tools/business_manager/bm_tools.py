@@ -1,3 +1,4 @@
+import os
 import httpx
 import sys
 import os
@@ -6,96 +7,167 @@ BASE_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "../../../../")
 )
 
+<<<<<<< HEAD
 sys.path.append(BASE_DIR)
 # Note: Requires PYTHONPATH to point to the 'server' directory when running
 from server.app.db.database import SessionLocal
 from server.app.models.sub_managers.factory_manager.production import Production, Production_status, Factory
 from server.app.models.business_manager.domain import Inventory, Approval, Supplier
+=======
+# ==========================================
+# MICROSERVICE CONFIGURATION
+# ==========================================
+# Assuming main server routes are prefixed with /api/v1
+MAIN_SERVER_URL = os.getenv("MAIN_SERVER_URL", "http://fastapi-server:8000/api/v1")
+N8N_URL = os.getenv("N8N_URL", "http://n8n:5678/webhook")
+HTTP_TIMEOUT = 10.0
+>>>>>>> development
 
+
+# ==========================================
+# BUSINESS DATA TOOLS (Calling Main Server)
+# ==========================================
 @tool
-def create_factory_production_draft(product_name: str, target_qty: int, factory_id: int, user_id: int, company_id: int) -> str:
-    """Drafts a new production request."""
-    db = SessionLocal()
+def create_factory_production_draft(product_name: str, target_qty: int, factory_id: int, user_id: int) -> str:
+    """Drafts a new production request by calling the main server factory API."""
     try:
-        factory = db.query(Factory).filter(Factory.id == factory_id, Factory.company_id == company_id).first()
-        if not factory: return f"Access Denied: Factory {factory_id} does not belong to your company."
+        # Mapped to teammate's production_create schema
+        payload = {
+            "product_name": product_name,
+            "target_qty": target_qty,
+            "factory_id": factory_id,
+            "created_by": user_id
+        }
         
-        new_production = Production(product_name=product_name, target_qty=target_qty, factory_id=factory_id, created_by=user_id, status=Production_status.PENDING)
-        db.add(new_production)
-        db.commit()
-        return f"Successfully drafted production request for {target_qty} {product_name} at {factory.name}."
-    except Exception as e:
-        db.rollback()
-        return f"Error: {str(e)}"
-    finally: db.close()
+        # Hitting the real POST /factory/product_create endpoint
+        response = httpx.post(f"{MAIN_SERVER_URL}/factory/product_create", json=payload, timeout=HTTP_TIMEOUT)
+        
+        if response.status_code in [200, 201]:
+            return f"Successfully drafted production request for {target_qty} {product_name}."
+        else:
+            return f"Failed to create draft. Main Server responded: {response.text}"
+            
+    except httpx.RequestError as e:
+        return f"Microservice Communication Error: Could not reach main server. Details: {str(e)}"
 
 @tool
 def check_inventory_and_draft_orders(user_id: int) -> str:
-    """Scans inventory for low stock and drafts Purchase Orders."""
-    db = SessionLocal()
+    """Scans inventory for low stock via API and drafts Purchase Orders."""
     try:
-        low_stock_items = db.query(Inventory).filter(Inventory.qty < Inventory.threshold).all()
-        if not low_stock_items: return "All inventory levels are above thresholds. No orders drafted."
+        # Hitting the real GET /inventory endpoint
+        response = httpx.get(f"{MAIN_SERVER_URL}/inventory", timeout=HTTP_TIMEOUT)
+        response.raise_for_status()
+        inventory_items = response.json()
+        
+        # Filter low stock items (Assuming a default threshold of 50 if 'threshold' isn't in the new DB model)
+        low_stock_items = [
+            item for item in inventory_items 
+            if item.get("quantity", 0) < item.get("threshold", 50) 
+        ]
+        
+        if not low_stock_items: 
+            return "All inventory levels are above thresholds. No orders drafted."
 
         drafted_orders = []
         for item in low_stock_items:
-            payload = {"sku": item.sku_id, "item_name": item.name, "current_qty": item.qty, "reorder_amount": item.threshold * 2}
-            db.add(Approval(type="Purchase Order", payload=payload, status="PENDING_APPROVAL", requester_id=user_id))
-            drafted_orders.append(item.name)
+            payload = {
+                "type": "Purchase Order",
+                "payload": {
+                    "product_id": item.get("product_id"), 
+                    "rack_id": item.get("rack_id"),
+                    "current_qty": item.get("quantity"), 
+                    "reorder_amount": 100 # Default reorder batch
+                },
+                "status": "PENDING_APPROVAL",
+                "requester_id": user_id
+            }
+            # Push the draft back to the main server approvals route
+            httpx.post(f"{MAIN_SERVER_URL}/business-manager/approvals", json=payload, timeout=HTTP_TIMEOUT)
+            drafted_orders.append(f"Product ID {item.get('product_id')}")
 
-        db.commit()
         return f"Found low stock items. Automatically drafted Purchase Orders for: {', '.join(drafted_orders)}."
+        
     except Exception as e:
-        db.rollback()
-        return f"Database error: {str(e)}"
-    finally: db.close()
+        return f"Microservice Communication Error: {str(e)}"
 
 @tool
 def bulk_approve_requests(filter_type: str, filter_value: str, user_id: int) -> str:
-    """Approves multiple pending requests."""
-    db = SessionLocal()
+    """Approves multiple pending requests via the main server API."""
     try:
-        query = db.query(Approval).filter(Approval.status == "PENDING_APPROVAL")
-        if filter_type == "type": query = query.filter(Approval.type == filter_value)
+        payload = {
+            "filter_type": filter_type,
+            "filter_value": filter_value,
+            "reviewer_id": user_id
+        }
         
-        requests_to_approve = query.all()
-        if not requests_to_approve: return "No pending requests found."
-
-        for req in requests_to_approve:
-            req.status = "APPROVED"
-            req.reviewer_id = user_id
-        db.commit()
-        return f"Successfully processed bulk approval. {len(requests_to_approve)} requests are now APPROVED."
+        # Note: Your teammate still needs to build this approval endpoint if they haven't yet!
+        response = httpx.post(f"{MAIN_SERVER_URL}/business-manager/approvals/bulk-approve", json=payload, timeout=HTTP_TIMEOUT)
+        
+        if response.status_code == 200:
+            result_data = response.json()
+            approved_count = result_data.get("approved_count", 0)
+            return f"Successfully processed bulk approval. {approved_count} requests are now APPROVED."
+        else:
+            return f"Failed bulk approval. Main Server responded: {response.text}"
+            
     except Exception as e:
-        db.rollback()
-        return f"Database error: {str(e)}"
-    finally: db.close()
+        return f"Microservice Communication Error: {str(e)}"
 
 @tool
 def check_supplier_status(max_rating: float, min_lead_time_days: int) -> str:
-    """Queries for underperforming suppliers."""
-    db = SessionLocal()
+    """Queries for underperforming suppliers via API."""
     try:
-        suppliers = db.query(Supplier).filter(Supplier.rating <= max_rating, Supplier.lead_time_days >= min_lead_time_days).all()
-        if not suppliers: return f"No suppliers found matching criteria."
-        return "Matching suppliers found:\n" + "\n".join([f"- {s.name} (Rating: {s.rating}, Lead: {s.lead_time_days}d)" for s in suppliers])
-    except Exception as e: return f"Database error: {str(e)}"
-    finally: db.close()
+        # Note: Your teammate still needs to build this supplier endpoint!
+        response = httpx.get(f"{MAIN_SERVER_URL}/business-manager/suppliers", timeout=HTTP_TIMEOUT)
+        response.raise_for_status()
+        
+        all_suppliers = response.json()
+        
+        bad_suppliers = [
+            s for s in all_suppliers 
+            if s.get("rating", 5.0) <= max_rating and s.get("lead_time_days", 0) >= min_lead_time_days
+        ]
+        
+        if not bad_suppliers: 
+            return f"No suppliers found matching criteria."
+            
+        return "Matching suppliers found:\n" + "\n".join(
+            [f"- {s.get('name')} (Rating: {s.get('rating')}, Lead: {s.get('lead_time_days')}d)" for s in bad_suppliers]
+        )
+        
+    except Exception as e: 
+        return f"Microservice Communication Error: {str(e)}"
 
+
+# ==========================================
+# AUTOMATION TOOLS (Calling n8n)
+# ==========================================
 @tool
 def invite_team_member(name: str, email: str, role: str, business_name: str) -> str:
     """Triggers n8n to dispatch an invitation email."""
     try:
-        payload = {"email": email, "role": role, "business_name": business_name, "invite_link": f"http://localhost:5173/setup-account?token=abc-123&email={email}"}
-        httpx.post("http://127.0.0.1:5678/webhook/invite-user", json=payload).raise_for_status()
+        payload = {
+            "email": email, 
+            "role": role, 
+            "business_name": business_name, 
+            "invite_link": f"http://localhost:5173/setup-account?token=abc-123&email={email}"
+        }
+        httpx.post(f"{N8N_URL}/invite-user", json=payload, timeout=HTTP_TIMEOUT).raise_for_status()
         return f"Successfully dispatched an invitation email to {name} ({email}) for the role of {role}."
-    except Exception as e: return f"Failed to dispatch invitation: {str(e)}"
+    except Exception as e: 
+        return f"Failed to dispatch invitation via n8n: {str(e)}"
 
 @tool
 def dispatch_low_stock_alert(product_name: str, current_qty: int, threshold: int) -> str:
     """Dispatches emergency low stock alert via n8n."""
     try:
-        payload = {"product_name": product_name, "current_qty": current_qty, "threshold": threshold, "message": f"⚠️ CRITICAL: {product_name} stock is at {current_qty}"}
-        httpx.post("http://127.0.0.1:5678/webhook/low-stock-alert", json=payload).raise_for_status()
+        payload = {
+            "product_name": product_name, 
+            "current_qty": current_qty, 
+            "threshold": threshold, 
+            "message": f"⚠️ CRITICAL: {product_name} stock is at {current_qty}"
+        }
+        httpx.post(f"{N8N_URL}/low-stock-alert", json=payload, timeout=HTTP_TIMEOUT).raise_for_status()
         return f"Emergency alert for {product_name} successfully dispatched."
-    except Exception as e: return f"Failed to dispatch alert: {str(e)}"
+    except Exception as e: 
+        return f"Failed to dispatch alert via n8n: {str(e)}"
