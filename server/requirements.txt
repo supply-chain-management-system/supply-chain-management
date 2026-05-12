@@ -42,3 +42,6 @@ orjson
 
 typer
 rich
+
+fastapi
+uvicorn
