@@ -4,6 +4,7 @@ from urllib import response
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Response
 from app.schemas.auth import user
+from app.services.auth.dependancy import get_current_user
 from sqlalchemy.orm import Session
 from app.schemas.auth.user import (
     OTPVerifySchema,
@@ -319,3 +320,24 @@ def reset_password(
     db.commit()
 
     return {"message": "Password reset successful"}
+
+
+@router.get("/me")
+def get_me(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+
+    return {
+        "user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "email": current_user.email,
+            "role": current_user.role.value if current_user.role else None,
+            "company_id": current_user.company_id,
+            "company_verified": current_user.is_approved_company,
+            "is_verified": current_user.is_verified,
+            "is_active": current_user.is_active,
+            "business_id": current_user.business_id,
+        }
+    }
