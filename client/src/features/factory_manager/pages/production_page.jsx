@@ -10,7 +10,7 @@ const ProductionManagement = () => {
     product_name: "",
     target_qty: "",
     factory_id: "",
-    created_by: "",
+    // created_by: "",
   });
   const [product, setproduct] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -58,7 +58,7 @@ useEffect(() => {
         ...form,
         target_qty: Number(form.target_qty) || 0,
         factory_id: Number(form.factory_id),
-        created_by: Number(form.created_by),
+        // created_by: Number(form.created_by),
       });
 
       setMessage("✅ Production job created successfully");
@@ -66,7 +66,7 @@ useEffect(() => {
         product_name: "",
         target_qty: "",
         factory_id: "",
-        created_by: "",
+        // created_by: "",
       });
 
     
@@ -75,8 +75,16 @@ useEffect(() => {
         setMessage("");
       }, 2000);
     } catch (err) {
-      setMessage(err.response?.data?.detail || "❌ Error creating product");
-    }
+  console.log(err.response?.data);
+
+  const errorDetail = err.response?.data?.detail;
+
+  if (Array.isArray(errorDetail)) {
+    setMessage(errorDetail[0]?.msg || "❌ Validation Error");
+  } else {
+    setMessage(errorDetail || "❌ Error creating product");
+  }
+}
 
     setLoading(false);
   };
@@ -337,6 +345,7 @@ const activeJobsCount = product.filter(
               </div>
 
               {/* Assigned User */}
+              {/* 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Assign To</label>
                 <select
@@ -354,6 +363,7 @@ const activeJobsCount = product.filter(
                   ))}
                 </select>
               </div>
+              */}
 
               {/* Message */}
               {message && (

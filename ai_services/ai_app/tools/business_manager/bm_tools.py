@@ -1,10 +1,12 @@
 import httpx
 from langchain_core.tools import tool
 
-# Note: Requires PYTHONPATH to point to the 'server' directory when running
+# Note: Requires PYTHONPATH to point to the 'serv   er' directory when running
 from app.db.database import SessionLocal
+
 from app.models.sub_managers.factory_manager.production import Production, Production_status, Factory
 from app.models.business_manager.domain import Inventory, Approval, Supplier
+
 
 @tool
 def create_factory_production_draft(product_name: str, target_qty: int, factory_id: int, user_id: int, company_id: int) -> str:
