@@ -26,3 +26,10 @@ numpy
 
 
 motor
+
+# Database Access
+sqlalchemy
+psycopg2-binary
+
+motor
+
