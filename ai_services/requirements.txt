@@ -16,8 +16,10 @@ langchain-groq
 langchain-google-genai
 langchain-cohere
 
+
 # Database Access
 sqlalchemy
 psycopg2-binary
 
 motor
+

@@ -30,6 +30,7 @@ class User(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     company = relationship("Company", back_populates="users")
     role = Column(Enum(RoleEnum))
+    business_id = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     is_approved_company = Column(Boolean, default=False)
