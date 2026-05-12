@@ -28,6 +28,7 @@ from app.api.v1.routes.business_manager import warehouse_manager
 from app.api.v1.routes.business_manager import suppliers
 
 
+
 from app.api.v1.routes.sub_managers.factory_manager import production,team
 
 
@@ -79,6 +80,7 @@ app.include_router(suppliers.router, prefix="/api/v1")
 app.include_router(api_warehouse.router,prefix='/api/v1')
 
 app.include_router(api_warehouse.router, prefix='/api/v1')
+
 
 
 

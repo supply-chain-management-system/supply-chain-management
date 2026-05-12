@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel, EmailStr
@@ -7,7 +7,8 @@ import uuid
 import httpx
 
 from app.db.deps import get_db
-from app.models.company_auth.managers import InviteToken
+# 🚀 Replaced InviteToken with TeamManager
+from app.models.business_manager.team import TeamManager
 from app.models.auth.user import User, RoleEnum
 
 router = APIRouter(
@@ -26,6 +27,7 @@ class LMCreateSchema(BaseModel):
     shift: str        # Day | Night | Swing
     route_region: str # e.g., North Region, International, Local Delivery
     hub_id: Optional[int] = 1 # Similar to factory_id/warehouse_id
+    business_id: Optional[int] = 1 # 🚀 Added business_id for multi-tenant scaling
 
 class LMCardResponse(BaseModel):
     id: int
@@ -34,10 +36,22 @@ class LMCardResponse(BaseModel):
     phone: Optional[str]
     shift: str
     department: str   # We map 'route_region' to 'department'
+    role: str
     is_used: bool     # Controls the "Active / Invite Sent" pulsing dot
 
     class Config:
         from_attributes = True
+
+
+# ==========================================
+# HELPER: n8n Webhook Dispatch
+# ==========================================
+async def dispatch_n8n_invite(payload: dict):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post("http://127.0.0.1:5678/webhook/invite-user", json=payload)
+    except Exception as e:
+        print(f"⚠️ n8n LM dispatch failed: {e}")
 
 
 # ==========================================
@@ -52,32 +66,15 @@ def get_logistics_managers(
     db: Session = Depends(get_db)
 ):
     skip = (page - 1) * size
-    query = db.query(InviteToken).filter(
-        InviteToken.role == "logistics_manager"
-    )
-    if hub_id:
-        query = query.filter(InviteToken.factory_id == hub_id) # Using factory_id as generic location ID
-
-    managers = query.order_by(InviteToken.created_at.desc()).offset(skip).limit(size).all()
     
-    # Check which managers have actually registered (is_used)
-    registered_emails = {
-        u.email for u in db.query(User.email).filter(User.role == RoleEnum.logistics_manager).all()
-    }
+    # Filter exclusively for logistics managers
+    query = db.query(TeamManager).filter(TeamManager.role == "logistics_manager")
+    
+    if hub_id:
+        query = query.filter(TeamManager.entity_id == hub_id)
 
-    results = []
-    for m in managers:
-        results.append({
-            "id": m.id,
-            "name": m.name,
-            "email": m.email,
-            "phone": m.phone,
-            "shift": m.shift,
-            "department": getattr(m, 'department', 'General Transit'),
-            "is_used": m.email in registered_emails
-        })
-
-    return results
+    managers = query.order_by(TeamManager.id.desc()).offset(skip).limit(size).all()
+    return managers
 
 
 # ==========================================
@@ -89,9 +86,9 @@ def get_logistics_manager_count(
     hub_id: Optional[int] = Query(None),
     db: Session = Depends(get_db)
 ):
-    query = db.query(InviteToken).filter(InviteToken.role == "logistics_manager")
+    query = db.query(TeamManager).filter(TeamManager.role == "logistics_manager")
     if hub_id:
-        query = query.filter(InviteToken.factory_id == hub_id)
+        query = query.filter(TeamManager.entity_id == hub_id)
     return {"total": query.count()}
 
 
@@ -100,26 +97,25 @@ def get_logistics_manager_count(
 # ==========================================
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=LMCardResponse)
-async def create_logistics_manager(data: LMCreateSchema, db: Session = Depends(get_db)):
-    existing = db.query(InviteToken).filter(InviteToken.email == data.email).first()
+async def create_logistics_manager(data: LMCreateSchema, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    existing = db.query(TeamManager).filter(TeamManager.email == data.email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Manager with email {data.email} already exists."
         )
 
-    token = str(uuid.uuid4())
-
-    new_lm = InviteToken(
-        token=token,
-        email=data.email,
-        role="logistics_manager",
+    # Map the incoming 'route_region' to the generic 'department' column, and hub_id to entity_id
+    new_lm = TeamManager(
         name=data.name,
+        email=data.email,
         phone=data.phone,
         shift=data.shift,
-        department=data.route_region,  # Map the incoming 'route_region' to 'department' in DB
-        factory_id=data.hub_id, 
-        extra_data={"type": "logistics_specific"}, 
+        department=data.route_region,  
+        entity_id=data.hub_id, 
+        business_id=data.business_id,
+        role="logistics_manager",
+        is_used=False
     )
 
     try:
@@ -130,35 +126,25 @@ async def create_logistics_manager(data: LMCreateSchema, db: Session = Depends(g
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
+    token = str(uuid.uuid4())
     invite_link = (
         f"http://localhost:5173/register"
-        f"?token={token}&role=logistics_manager&tid={data.hub_id or 1}"
+        f"?token={token}&role=logistics_manager&tid={data.hub_id or 1}&bid={data.business_id or 1}"
     )
 
-    # Fire n8n (Non-blocking)
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post(
-                "http://127.0.0.1:5678/webhook/invite-user",
-                json={
-                    **data.dict(),
-                    "role": "Logistics Manager",
-                    "token": token,
-                    "invite_link": invite_link,
-                }
-            )
-    except Exception as e:
-        print(f"⚠️ n8n LM dispatch skipped: {e}")
-
-    return {
-        "id": new_lm.id,
-        "name": new_lm.name,
-        "email": new_lm.email,
-        "phone": new_lm.phone,
-        "shift": new_lm.shift,
-        "department": new_lm.department,
-        "is_used": False
+    webhook_payload = {
+        "name": data.name,
+        "email": data.email,
+        "role": "logistics_manager",
+        "business_id": data.business_id,
+        "token": token,
+        "invite_link": invite_link,
     }
+
+    # Pass the HTTP call to a background task so the React UI returns instantly
+    background_tasks.add_task(dispatch_n8n_invite, webhook_payload)
+
+    return new_lm
 
 
 # ==========================================
@@ -171,9 +157,9 @@ def get_logistics_manager_analytics(manager_id: int, db: Session = Depends(get_d
     Analytics for the Logistics Control Tower. 
     Ready to hook into 'Shipment' or 'Fleet' tables when teammates build them.
     """
-    card = db.query(InviteToken).filter(
-        InviteToken.id == manager_id,
-        InviteToken.role == "logistics_manager"
+    card = db.query(TeamManager).filter(
+        TeamManager.id == manager_id,
+        TeamManager.role == "logistics_manager"
     ).first()
     
     if not card:
@@ -190,6 +176,11 @@ def get_logistics_manager_analytics(manager_id: int, db: Session = Depends(get_d
     reliability = "Pending Setup"
 
     if user:
+        # Update is_used status automatically if they have registered
+        if not card.is_used:
+            card.is_used = True
+            db.commit()
+
         # User is registered! 
         # (Replace these mocks with real db.query(Shipment) logic later)
         active_shipments = 24
@@ -201,7 +192,7 @@ def get_logistics_manager_analytics(manager_id: int, db: Session = Depends(get_d
     return {
         "manager_id": card.id,
         "name": card.name,
-        "route_region": card.department,
+        "route_region": card.department, # Map back to route_region for the frontend
         "is_registered": bool(user),
         "active_shipments": active_shipments,
         "on_time_delivery": on_time_delivery,
@@ -217,9 +208,9 @@ def get_logistics_manager_analytics(manager_id: int, db: Session = Depends(get_d
 
 @router.delete("/{manager_id}", status_code=status.HTTP_200_OK)
 def remove_logistics_manager(manager_id: int, db: Session = Depends(get_db)):
-    manager = db.query(InviteToken).filter(
-        InviteToken.id == manager_id,
-        InviteToken.role == "logistics_manager"
+    manager = db.query(TeamManager).filter(
+        TeamManager.id == manager_id,
+        TeamManager.role == "logistics_manager"
     ).first()
 
     if not manager:
