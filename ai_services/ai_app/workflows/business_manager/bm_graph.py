@@ -8,24 +8,24 @@ from langgraph.prebuilt import ToolNode
 
 from ai_app.schemas.business_manager.bm_schemas import AgentState
 
-# from ai_app.tools.business_manager.bm_tools import (
-#     create_factory_production_draft, check_inventory_and_draft_orders,
-#     bulk_approve_requests, invite_team_member,
-#     check_supplier_status, dispatch_low_stock_alert
-# )
+from ai_app.tools.business_manager.bm_tools import (
+    create_factory_production_draft, check_inventory_and_draft_orders,
+    bulk_approve_requests, invite_team_member,
+    check_supplier_status, dispatch_low_stock_alert
+)
 
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_cohere import ChatCohere
 
-# tools = [
-#     create_factory_production_draft,
-#     check_inventory_and_draft_orders,
-#     bulk_approve_requests,
-#     invite_team_member,
-#     check_supplier_status,
-#     dispatch_low_stock_alert,
-# ]
+tools = [
+    create_factory_production_draft,
+    check_inventory_and_draft_orders,
+    bulk_approve_requests,
+    invite_team_member,
+    check_supplier_status,
+    dispatch_low_stock_alert,
+]
 
 primary_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
 fallback_groq = ChatGroq(model="llama-3.1-8b-instant", temperature=0)

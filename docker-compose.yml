@@ -3,7 +3,7 @@ version: "3.9"
 services:
 
   postgres:
-    image: postgres:15
+    image: postgres:latest
     container_name: postgres
     restart: always
     env_file:
@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -34,25 +34,28 @@ services:
       - ./server:/app
 
   ai_service:
-    build:
-      context: ./ai_services
-    container_name: ai-microservice
-    restart: always
-    depends_on:
-      - postgres
-    env_file:
-      - ./ai_services/.env
-    environment:
-      - PYTHONPATH=/server_code
-    volumes:
-      - ./ai_services:/app
-      - ./server:/server_code
+  build:
+    context: ./ai_services
+  container_name: ai-microservice
+  restart: always
+  depends_on:
+    - postgres
+  env_file:
+    - ./ai_services/.env
+  environment:
+    - PYTHONPATH=/server_code
+  volumes:
+    - ./ai_services:/app
+    - ./server:/server_code
+  ports:
+    - "8001:8001"
+  command: uvicorn ai_app.main:app --host 0.0.0.0 --port 8001 --reload
   nginx:
     image: nginx:latest
     container_name: api-gateway
     restart: always
     ports:
-      - "8080:80"  # 🚀 CHANGED THIS LINE!
+      - "8080:80"  
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:

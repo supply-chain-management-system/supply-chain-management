@@ -8,13 +8,7 @@ BASE_DIR = os.path.abspath(
 )
 
 sys.path.append(BASE_DIR)
-# Note: Requires PYTHONPATH to point to the 'server' directory when running
-from server.app.db.database import SessionLocal
-from server.app.models.sub_managers.factory_manager.production import Production, Production_status, Factory
-from server.app.models.business_manager.domain import Inventory, Approval, Supplier
-# ==========================================
-# MICROSERVICE CONFIGURATION
-# ==========================================
+
 # Assuming main server routes are prefixed with /api/v1
 MAIN_SERVER_URL = os.getenv("MAIN_SERVER_URL", "http://fastapi-server:8000/api/v1")
 N8N_URL = os.getenv("N8N_URL", "http://n8n:5678/webhook")

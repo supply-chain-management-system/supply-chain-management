@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ai_app.workflows.warehouse_manager import agent
+from ai_app.workflows.warehouse_manager.agent import agent
 
 router = APIRouter()
 
