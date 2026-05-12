@@ -35,13 +35,13 @@ export const loginUser = createAsyncThunk(
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null,
-    token:
-      localStorage.getItem("token") || sessionStorage.getItem("token") || null,
-    isAuthenticated: false,
-    loading: false,
-    error: null,
-  },
+  user: null,
+  role: null,
+  isAuthenticated: false,
+  loading: false,
+  error: null,
+},
+
   reducers: {
     logout: (state) => {
       state.user = null;
@@ -50,6 +50,7 @@ const authSlice = createSlice({
       localStorage.removeItem("token");
       sessionStorage.removeItem("token");
     },
+    
     clearError: (state) => {
       state.error = null;
     },
