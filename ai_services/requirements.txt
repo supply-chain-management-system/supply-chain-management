@@ -1,3 +1,5 @@
+# ai_services/requirements.txt
+
 # Web Framework
 fastapi
 uvicorn
@@ -11,9 +13,12 @@ python-dotenv
 langgraph
 langchain-core
 langchain-groq
-langchain-google
+
+langchain-google-genai
 langchain-cohere
 
-# Database Access (For the Tools)
+# Database Access
 sqlalchemy
 psycopg2-binary
+
+motor
