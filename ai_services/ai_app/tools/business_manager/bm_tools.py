@@ -1,10 +1,16 @@
 import httpx
+import sys
+import os
 from langchain_core.tools import tool
+BASE_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../../../../")
+)
 
+sys.path.append(BASE_DIR)
 # Note: Requires PYTHONPATH to point to the 'server' directory when running
-from app.db.database import SessionLocal
-from app.models.sub_managers.factory_manager.production import Production, Production_status, Factory
-from app.models.business_manager.domain import Inventory, Approval, Supplier
+from server.app.db.database import SessionLocal
+from server.app.models.sub_managers.factory_manager.production import Production, Production_status, Factory
+from server.app.models.business_manager.domain import Inventory, Approval, Supplier
 
 @tool
 def create_factory_production_draft(product_name: str, target_qty: int, factory_id: int, user_id: int, company_id: int) -> str:
