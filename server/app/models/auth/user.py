@@ -16,6 +16,7 @@ class RoleEnum(str, enum.Enum):
     factory_manager = "factory_manager"
     logistics_manager = "logistics_manager"
     co_manager = "co_manager"
+    supply_manager = "supply_manager"
 
 
 class User(Base):

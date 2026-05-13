@@ -6,7 +6,7 @@ from typing import List, Optional
 from datetime import datetime
 
 # Internal Imports
-from app.db.deps import get_db
+from app.db.deps import get_db ,get_tenant_db
 from app.models.business_manager.domain import Approval, Inventory
 # Ensure this model is available in your warehouse domain
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse 
@@ -46,7 +46,7 @@ def get_dashboard_status():
     }
 
 @router.get("/analytics", response_model=AnalyticsResponse)
-def get_control_tower_analytics(db: Session = Depends(get_db)):
+def get_control_tower_analytics(db: Session = Depends(get_tenant_db)):
     """Calculates real-time KPIs for the main dashboard cards."""
     try:
         # 1. Calculate Real Inventory Value (Mocking $50/unit unit price logic)
@@ -78,7 +78,7 @@ def get_control_tower_analytics(db: Session = Depends(get_db)):
 # ==========================================
 
 @router.get("/inventory")
-def get_inventory(db: Session = Depends(get_db)):
+def get_inventory(db: Session = Depends(get_tenant_db)):
     """Fetches real inventory stock levels."""
     db_items = db.query(Inventory).all()
     if not db_items:
@@ -101,7 +101,7 @@ def get_suppliers():
 # ==========================================
 
 @router.get("/requests")
-def get_requests(db: Session = Depends(get_db)):
+def get_requests(db: Session = Depends(get_tenant_db)):
     """Fetches full history of requests mapped to UI-friendly statuses."""
     try:
         all_requests = db.query(Approval).order_by(Approval.created_at.desc()).all()
@@ -131,7 +131,7 @@ def get_requests(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/requests/{request_id}/action")
-def process_request_action(request_id: int, payload: RequestActionPayload, db: Session = Depends(get_db)):
+def process_request_action(request_id: int, payload: RequestActionPayload, db: Session = Depends(get_tenant_db)):
     """
     Workflow: 
     - APPROVE: Create a formal Warehouse Request, store in DB, and mark alert as Approved.
@@ -184,7 +184,7 @@ def process_request_action(request_id: int, payload: RequestActionPayload, db: S
 # ==========================================
 
 @router.post("/webhook/create-restock-request")
-async def create_restock_request_from_n8n(data: N8nRestockPayload, db: Session = Depends(get_db)):
+async def create_restock_request_from_n8n(data: N8nRestockPayload, db: Session = Depends(get_tenant_db)):
     """Automation endpoint for n8n to inject alerts into the Control Tower."""
     try:
         new_request = Approval(

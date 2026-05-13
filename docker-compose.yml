@@ -47,6 +47,7 @@ services:
     volumes:
       - ./ai_services:/app
       - ./server:/server_code
+      
   nginx:
     image: nginx:latest
     container_name: api-gateway
