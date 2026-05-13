@@ -45,3 +45,8 @@ rich
 
 fastapi
 uvicorn
+
+celery
+redis
+
+httpx

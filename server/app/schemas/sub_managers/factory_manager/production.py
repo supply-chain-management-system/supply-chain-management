@@ -8,7 +8,7 @@ class production_create(BaseModel):
     product_name:str
     target_qty:int
     factory_id:int
-    created_by: Optional[int] = None
+    # created_by: Optional[int] = None
 
 
 class productget(BaseModel):
@@ -22,5 +22,15 @@ class productget(BaseModel):
     class config:
         from_attributes=True
 
+
+
+from typing import Optional
+
+
+class production_update(BaseModel):
+    product_name: Optional[str] = None
+    target_qty: Optional[int] = None
+    factory_id: Optional[int] = None
+    created_by: Optional[str] = None
 
 

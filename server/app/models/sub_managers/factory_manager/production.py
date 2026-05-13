@@ -1,5 +1,4 @@
-from sqlalchemy import  Column,Integer,String,Enum,ForeignKey,DateTime
-
+from sqlalchemy import  Column,Integer,String,Enum,ForeignKey,DateTime,Text
 from app.db.database import BaseTenant
 
 from sqlalchemy.sql import  func  
@@ -18,7 +17,8 @@ class Factory(BaseTenant):
     company_id = Column(Integer)
     
 
-    company=relationship('Company') 
+    # company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+
     productions=relationship('Production',back_populates='factory')
 
 
@@ -45,6 +45,15 @@ class Production(BaseTenant):
     created_at=Column(DateTime(timezone=True),server_default=func.now())
 
     factory=relationship('Factory',back_populates='productions')
-    creator = relationship("User")
+    
+
+    doc=Column(Text,nullable=True)
 
 
+
+
+# class producion_documentation(BaseTenant):
+#     __tablename__='production_documentation'
+#     id=Column(Integer,primary_key=True,index=True)
+#     production_id=Column(Integer,ForeignKey('production.id'),nullable=False)
+#     document_url=Column(String,nullable=False)

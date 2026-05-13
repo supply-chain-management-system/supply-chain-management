@@ -30,8 +30,12 @@ services:
       - postgres
     env_file:
       - ./server/.env
+    environment:
+      - PYTHONPATH=/app
     volumes:
       - ./server:/app
+      
+    
 
   ai_service:
     build:
@@ -43,10 +47,11 @@ services:
     env_file:
       - ./ai_services/.env
     environment:
-      - PYTHONPATH=/server_code
+      - PYTHONPATH=/app
     volumes:
       - ./ai_services:/app
-      - ./server:/server_code
+    
+      
   nginx:
     image: nginx:latest
     container_name: api-gateway
@@ -72,6 +77,29 @@ services:
 
     volumes:
       - n8n_data:/home/node/.n8n
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+  celery_worker:
+    build:
+      context: ./server
+    container_name: celery-worker
+    restart: always
+    depends_on:
+      - redis
+      - postgres
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./server:/app
+      
+    environment:
+      - PYTHONPATH=/app:/app/ai_services
+    command: >
+      celery -A app.core.celery.celery_app worker --loglevel=info
 
 volumes:
   postgres_data:

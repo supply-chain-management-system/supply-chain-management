@@ -10,6 +10,7 @@ if not os.getenv("DATABASE_URL"):
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from ai_app.api.v1.routes.business_manager import bm_routes
+from ai_app.api.v1.routes.factory_manager import factory_routes 
 
 # ==========================================
 # SWAGGER DOCUMENTATION METADATA
@@ -49,6 +50,7 @@ app.add_middleware(
 # ROUTES
 # ==========================================
 app.include_router(bm_routes.router, prefix="/api/v1")
+app.include_router(factory_routes.router, prefix="/api/v1")
 
 @app.get("/health", tags=["System"])
 def health_check():
