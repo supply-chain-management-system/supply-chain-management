@@ -39,6 +39,7 @@ import InviteAcceptPage from './features/auth/pages/invitation';
 
 import ProtectedRoute from './protectedroutes/authenticate_protector';
 import PublicRoute from './protectedroutes/block_public_pages';
+import KorvexLanding from './components/layout/landing_page';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -67,11 +68,11 @@ function App() {
 
         <Routes>
 
-          <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
+          <Route path="/" element={<KorvexLanding />} />
 
           {/* PUBLIC ROUTES */}
           <Route element={<PublicRoute />}>
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<Login />} /> 
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
