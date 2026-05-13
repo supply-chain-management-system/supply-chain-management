@@ -15,6 +15,7 @@ import FaceVerification from './features/auth/pages/face-verification';
 import A_Layout from './features/admin_front/admin_layout/A_Layout';
 import Admin_dashboard from './features/admin_front/admin_pages/Admin_dashboard';
 import ManagerGrid from './features/admin_front/admin_pages/Managers';
+import BusinessManagerDetails from './features/admin_front/admin_pages/BusinessManagerDetails';
 import RequestsPage from './features/business_manager/pages/RequestsPage';
 import OTPVerification from './features/auth/pages/verify-email';
 import ForgotPassword from './features/auth/pages/forgot-password';
@@ -71,7 +72,7 @@ function App() {
           <Route path="/" element={<KorvexLanding />} />
 
           {/* PUBLIC ROUTES */}
-          <Route element={<PublicRoute />}>
+          <Route >
             <Route path="/login" element={<Login />} /> 
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -81,6 +82,8 @@ function App() {
        
           <Route path="/verify-email" element={<OTPVerification />} />
           <Route path="/invite/accept/:token" element={<InviteAcceptPage />} />
+          <Route path="/invite/register/:token" element={<InviteAcceptPage />} />
+          <Route path="/invite/:token" element={<InviteAcceptPage />} />
           <Route path="/face-verification" element={<FaceVerification />} />
           <Route path="/company-onboarding" element={<CompanyOnboarding />} />
 
@@ -112,6 +115,7 @@ function App() {
             <Route element={<A_Layout />}>
               <Route path="/admindashboard" element={<Admin_dashboard />} />
               <Route path="/managers" element={<ManagerGrid />} />
+              <Route path="/managers/:cardId" element={<BusinessManagerDetails />} />
               <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
               <Route path="/addmanagers" element={<AddManager />} />
               <Route path="/createwarehouse" element={<CreateWarehouse />} />
