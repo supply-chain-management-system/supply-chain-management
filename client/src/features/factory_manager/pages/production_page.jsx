@@ -11,6 +11,7 @@ const ProductionManagement = () => {
     product_name: "",
     target_qty: "",
     factory_id: "",
+    status: "pending", 
   });
   
   const [products, setProducts] = useState([]);
@@ -43,12 +44,16 @@ const ProductionManagement = () => {
   };
 
   // Filter products based on active tab
-  const filteredProducts = products.filter((item) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "inprogress") return item.status?.toLowerCase() === "in progress";
-    if (activeTab === "pending") return item.status?.toLowerCase() === "pending";
-    return true;
-  });
+const filteredProducts = products.filter((item) => {
+  const status = item.status?.toLowerCase();
+
+  if (activeTab === "all") return true;
+  if (activeTab === "inprogress") return status === "progress";   
+  if (activeTab === "pending") return status === "pending";
+  if (activeTab === "completed") return status === "completed";  
+
+  return true;
+});
 
   const handleUpdate = async (id, updatedData) => {
     try {
@@ -85,6 +90,7 @@ const ProductionManagement = () => {
         product_name: form.product_name,
         target_qty: Number(form.target_qty),
         factory_id: Number(form.factory_id),
+        status: form.status, // ✅ ADD
       };
 
       if (editId) {
@@ -139,16 +145,17 @@ const ProductionManagement = () => {
   const getStatusColor = (status) => {
     const s = status?.toLowerCase();
     if (s === "completed") return "bg-green-100 text-green-700";
-    if (s === "in progress") return "bg-blue-100 text-blue-700";
+    if (s === "progress") return "bg-blue-100 text-blue-700";
     return "bg-yellow-100 text-yellow-700";
   };
 
   const openEditModal = (job) => {
     setEditId(job.id);
     setForm({
-      product_name: job.name,
+      product_name: job.product_name,
       target_qty: job.target_qty || "",
       factory_id: job.factory_id || "",
+       status: job.status || "pending",
     });
     setShowModal(true);
   };
@@ -207,7 +214,8 @@ const ProductionManagement = () => {
               {[
                 { key: "all", label: "All Jobs" },
                 { key: "inprogress", label: "In Progress" },
-                { key: "pending", label: "Pending" }
+                { key: "pending", label: "Pending" },
+                 { key: "completed", label: "Completed" }
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -312,6 +320,7 @@ const ProductionManagement = () => {
                             name: item.product_name,
                             target_qty: item.target_qty,
                             factory_id: item.factory_id,
+                            status: item.status
                           })}
                           className="text-blue-600 hover:text-blue-700 text-xs font-medium transition-colors"
                           title="Edit Job"
@@ -424,6 +433,22 @@ const ProductionManagement = () => {
                   />
                 )}
               </div>
+              {/* Status */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Status
+  </label>
+  <select
+    name="status"
+    value={form.status}
+    onChange={handleChange}
+    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+  >
+    <option value="pending">Pending</option>
+    <option value="progress">In Progress</option>
+    <option value="completed">Completed</option>
+  </select>
+</div>
 
               {/* Status Message */}
               {message && (

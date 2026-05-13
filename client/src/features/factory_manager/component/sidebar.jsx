@@ -18,7 +18,7 @@ const menuItems = [
   { icon: Settings2, label: 'Machines',path:'/factory_machine', active: false },
   { icon: Package, label: 'Materials', active: false },
   { icon: ClipboardList, label: 'Requests', active: false },
-  { icon: FileOutput, label: 'Output Logs', active: false },
+  { icon: FileOutput, label: 'Output Logs',path:'/outputlogs', active: false },
   { icon: Settings, label: 'Settings', active: false },
 ];
 

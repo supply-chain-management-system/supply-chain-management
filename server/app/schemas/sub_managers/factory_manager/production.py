@@ -8,7 +8,8 @@ class production_create(BaseModel):
     product_name:str
     target_qty:int
     factory_id:int
-    # created_by: Optional[int] = None
+    created_by: Optional[int] = None
+    status: str = "pending"
 
 
 class productget(BaseModel):
@@ -32,5 +33,6 @@ class production_update(BaseModel):
     target_qty: Optional[int] = None
     factory_id: Optional[int] = None
     created_by: Optional[str] = None
+    status: str = "pending"
 
 

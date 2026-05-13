@@ -17,6 +17,8 @@ router = APIRouter(prefix='/factory', tags=['factory'])
 
 @router.post('/product_create')
 def create_product(data: production_create, db: session = Depends(get_tenant_db)):
+
+    print('hai aim ansil cre')
     new_product = Production(
         product_name=data.product_name,
         target_qty=data.target_qty,
@@ -45,20 +47,18 @@ def get_user(db: session = Depends(get_tenant_db)):
 
 
 
-
 @router.put('/products/{product_id}')
-def update_product(product_id: int,data: production_create,db: session = Depends(get_tenant_db)):
-    product = db.query(Production).filter(
-        Production.id == product_id
-    ).first()
+def update_product(product_id: int, data: production_update, db: session = Depends(get_tenant_db)):
+    print('hai yu updare')
+    product = db.query(Production).filter(Production.id == product_id).first()
 
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    product.product_name = data.product_name
-    product.target_qty = data.target_qty
-    product.factory_id = data.factory_id
-    product.created_by = data.created_by
+
+    update_data = data.model_dump(exclude_unset=True) 
+    for key, value in update_data.items():
+        setattr(product, key, value)
 
     db.commit()
     db.refresh(product)
@@ -67,7 +67,6 @@ def update_product(product_id: int,data: production_create,db: session = Depends
         "message": "Product updated successfully",
         "data": product
     }
-
 
 @router.patch('/products/{product_id}/complete')
 def complete_product(product_id: int,request: Request,db: session = Depends(get_tenant_db)):
@@ -94,3 +93,8 @@ def complete_product(product_id: int,request: Request,db: session = Depends(get_
         "message": "Production completed successfully",
         "data": product
     }
+
+@router.get('/productall/doc')
+def get_product_doc(db: session = Depends(get_tenant_db)):
+    produdt=db.query(Production).filter(Production.doc != None).all()
+    return produdt      

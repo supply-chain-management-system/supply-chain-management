@@ -30,6 +30,8 @@ import  ProductionManagement from './features/factory_manager/pages/production_p
 import Team from './features/factory_manager/pages/factory_team'
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 
+import ProductionOutputHistory from './features/factory_manager/pages/outputlogs';
+
 
 
 import { Ribbon } from 'lucide-react';
@@ -47,6 +49,7 @@ import InventoryPage from './features/warehouse_manager/InventoryPage';
 import RackPage from './features/warehouse_manager/RackPage';
 import StockUpdatePage from './features/warehouse_manager/StockUpdatePage';
 import CreateWarehouse from './features/admin_front/admin_pages/CreateWarehouse';
+
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -124,6 +127,7 @@ function App() {
           <Route path='factorydash' element={<Factorydash/>}/>
           <Route path='factoryteam' element={<Team/>}/>
            <Route path='/factory_machine' element={<Machine/>}/>
+            <Route path='/outputlogs' element={<ProductionOutputHistory/>}/>
           </Route>
 
 
