@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 import httpx
 
-from app.db.deps import get_db
+from app.db.deps import get_db ,get_tenant_db
 from app.models.business_manager.domain import Supplier
 from app.models.business_manager.domain import Inventory 
 
@@ -68,7 +68,7 @@ def get_suppliers(
     category: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=50),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_tenant_db)
 ):
     skip = (page - 1) * size
     query = db.query(Supplier).filter(Supplier.business_id == business_id)
@@ -89,7 +89,7 @@ def get_suppliers(
 def get_supplier_count(
     business_id: Optional[int] = Query(1),
     category: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_tenant_db)
 ):
     query = db.query(Supplier).filter(Supplier.business_id == business_id)
     if category:
@@ -105,7 +105,7 @@ def get_supplier_count(
 def create_supplier(
     data: SupplierCreate, 
     background_tasks: BackgroundTasks, 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_tenant_db)
 ):
     # Check for duplicate names within the same business
     existing = db.query(Supplier).filter(
@@ -153,7 +153,7 @@ def create_supplier(
 # ==========================================
 
 @router.get("/{supplier_id}/analytics")
-def get_supplier_analytics(supplier_id: int, db: Session = Depends(get_db)):
+def get_supplier_analytics(supplier_id: int, db: Session = Depends(get_tenant_db)):
     """
     Analytics for Vendor Performance.
     Calculates dynamic metrics based on lead times and reliability.
@@ -187,7 +187,7 @@ def get_supplier_analytics(supplier_id: int, db: Session = Depends(get_db)):
 # ==========================================
 
 @router.delete("/{supplier_id}", status_code=status.HTTP_200_OK)
-def remove_supplier(supplier_id: int, db: Session = Depends(get_db)):
+def remove_supplier(supplier_id: int, db: Session = Depends(get_tenant_db)):
     supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
 
     if not supplier:

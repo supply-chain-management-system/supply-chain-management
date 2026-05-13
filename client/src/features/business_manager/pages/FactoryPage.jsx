@@ -1,79 +1,56 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Users, Mail, Phone, Trash2, Plus, X, ArrowRight,
-  Loader2, ChevronLeft, ChevronRight, Zap, Package,
-  Timer, CheckCircle2, ShieldAlert, RefreshCw, AlertCircle,
+  Users, Mail, Trash2, Plus, X, Loader2,
+  ChevronLeft, ChevronRight, RefreshCw, AlertCircle,
+  CheckCircle2, Send, UserPlus, Building2, Moon, Sun,
+  Shuffle, ChevronDown, ChevronUp,
 } from 'lucide-react';
 
-// ✅ Your existing axios instance — handles auth, refresh tokens, credentials
 import api from '../../../api/api';
+import FMAnalyticsPage from './FMAnalyticsPage';
 
-// ─── API calls (thin wrappers — axios returns { data } automatically) ─────
-const FM = '/business-manager/factory-managers/';
+// ─── API ──────────────────────────────────────────────────────────────────
+const FM = '/business-manager/factory-managers';
 
-const fetchList      = (page, size) => api.get(FM, { params: { page, size } });
-const fetchCount     = ()           => api.get(`${FM}/count`);
-const postCreate     = (payload)    => api.post(FM, payload);
-const deleteOne      = (id)         => api.delete(`${FM}/${id}`);
-const getAnalytics   = (id)         => api.get(`${FM}/${id}/analytics`);
+const fetchGroups   = (page, size) => api.get(`${FM}/`, { params: { page, size } });
+const fetchCount    = ()           => api.get(`${FM}/count`);
+const postGroup     = (payload)    => api.post(`${FM}/`, payload);
+const deleteGroup   = (id)         => api.delete(`${FM}/${id}`);
+const sendInvite    = (business_id, email)  => api.post(`/company/auth/invite/send`, { business_id: Number(business_id) || 1, role: 'factory_manager', email });
+const fetchMembers  = (id)         => api.get(`${FM}/${id}/members`);
 
 // ─── Constants ────────────────────────────────────────────────────────────
-const ITEMS_PER_PAGE = 9;
+const ITEMS_PER_PAGE = 6;
 
-const SHIFT_COLOR = {
-  Day:   { banner: '#C2581A', badge: 'bg-orange-50 text-orange-600 border-orange-200' },
-  Night: { banner: '#3B4FA8', badge: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
-  Swing: { banner: '#6D3FAB', badge: 'bg-purple-50 text-purple-600 border-purple-200' },
+const SHIFT_META = {
+  Day:   { banner: 'from-amber-500 via-orange-400 to-yellow-300',      badge: 'bg-orange-50 text-orange-600 border-orange-200',   icon: <Sun size={11} />,     label: 'Day Shift'   },
+  Night: { banner: 'from-indigo-600 via-blue-500 to-cyan-400',         badge: 'bg-indigo-50 text-indigo-600 border-indigo-200',   icon: <Moon size={11} />,    label: 'Night Shift' },
+  Swing: { banner: 'from-violet-600 via-purple-500 to-fuchsia-400',    badge: 'bg-purple-50 text-purple-600 border-purple-200',   icon: <Shuffle size={11} />, label: 'Swing Shift' },
 };
 
 const DEPT_COLOR = {
   Assembly:          'bg-blue-50   text-blue-700   border-blue-200',
-  'Quality Control': 'bg-green-50  text-green-700  border-green-200',
+  'Quality Control': 'bg-emerald-50 text-emerald-700 border-emerald-200',
   Logistics:         'bg-amber-50  text-amber-700  border-amber-200',
 };
 
 const EMPTY_FORM = {
-  name: '', email: '', phone: '',
-  shift: 'Day', department: 'Assembly',
+  name: '', shift: 'Day', department: 'Assembly',
   factory_id: 1, business_id: 1,
 };
 
-// ─── Error extractor — works for both axios and network errors ─────────────
-const errMsg = (err) =>
-  err.response?.data?.detail || err.message || 'Something went wrong.';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────
-const MetaChip = ({ icon, label, value }) => (
-  <div className="flex items-start gap-2 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100">
-    <span className="text-gray-400 mt-0.5 flex-shrink-0">{icon}</span>
-    <div className="min-w-0">
-      <p className="text-[9px] font-bold uppercase tracking-widest text-gray-300">{label}</p>
-      <p className="text-xs font-semibold text-gray-700 truncate mt-0.5">{value || '—'}</p>
-    </div>
-  </div>
-);
+const errMsg = (err) => {
+  const detail = err.response?.data?.detail;
+  // If it's a FastAPI validation array, turn it into a string
+  if (Array.isArray(detail)) {
+    return detail.map(e => `${e.loc[e.loc.length - 1]}: ${e.msg}`).join(', ');
+  }
+  return detail || err.message || 'Something went wrong.';
+};
 
-const StatusDot = ({ isUsed }) => (
-  <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold uppercase ${isUsed ? 'text-emerald-600' : 'text-amber-500'}`}>
-    <span className={`h-1.5 w-1.5 rounded-full ${isUsed ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`} />
-    {isUsed ? 'Active' : 'Invite Sent'}
-  </span>
-);
 
-const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm animate-pulse">
-    <div className="h-32 bg-slate-200" />
-    <div className="p-5 space-y-3">
-      <div className="h-3 bg-slate-100 rounded w-2/3" />
-      <div className="grid grid-cols-2 gap-2">
-        <div className="h-10 bg-slate-100 rounded-xl" />
-        <div className="h-10 bg-slate-100 rounded-xl" />
-      </div>
-    </div>
-  </div>
-);
-
-// Self-clearing toast
+// ─── Toast ────────────────────────────────────────────────────────────────
 const Toast = ({ toast, onClose }) => {
   useEffect(() => {
     if (!toast) return;
@@ -83,8 +60,8 @@ const Toast = ({ toast, onClose }) => {
 
   if (!toast) return null;
   return (
-    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold text-white transition-all ${
-      toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-500'
+    <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl shadow-black/10 backdrop-blur-md text-sm font-semibold text-white transition-all ${
+      toast.type === 'success' ? 'bg-emerald-600/95' : 'bg-red-500/95'
     }`}>
       {toast.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
       {toast.msg}
@@ -92,304 +69,357 @@ const Toast = ({ toast, onClose }) => {
   );
 };
 
-// ─── Manager Card ─────────────────────────────────────────────────────────
-const ManagerCard = ({ fm, isSelected, onCardClick, onRemove, removing }) => {
-  const shift     = fm.shift || 'Day';
-  const shiftMeta = SHIFT_COLOR[shift] ?? SHIFT_COLOR.Day;
-  const deptCls   = DEPT_COLOR[fm.department] ?? 'bg-gray-50 text-gray-600 border-gray-200';
+// ─── Skeleton ─────────────────────────────────────────────────────────────
+const SkeletonGroupCard = () => (
+  <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200/60 overflow-hidden shadow-sm animate-pulse">
+    <div className="h-28 bg-gradient-to-br from-slate-200/80 to-slate-100/80" />
+    <div className="p-5 space-y-3">
+      <div className="h-3 bg-slate-100 rounded-lg w-1/2" />
+      <div className="space-y-2">
+        {[1, 2].map(i => (
+          <div key={i} className="h-12 bg-slate-50/80 rounded-xl" />
+        ))}
+      </div>
+      <div className="h-9 bg-slate-100/80 rounded-xl mt-2" />
+    </div>
+  </div>
+);
+
+// ─── Member Sub-Card ──────────────────────────────────────────────────────
+const MemberCard = ({ member, onClick }) => (
+  <button
+    onClick={() => onClick(member)}
+    className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50/80 hover:bg-blue-50/80 border border-slate-100 hover:border-blue-200 transition-all duration-200 text-left group hover:shadow-sm"
+  >
+    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-700 to-slate-500 flex items-center justify-center text-white font-black text-xs flex-shrink-0 group-hover:from-blue-600 group-hover:to-blue-400 transition-all duration-300 ring-2 ring-white shadow-sm">
+      {member.name?.charAt(0)?.toUpperCase() ?? '?'}
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-xs font-bold text-slate-800 truncate">{member.name}</p>
+      <p className="text-[10px] text-slate-400 truncate">{member.email}</p>
+    </div>
+    <div className="flex-shrink-0 flex items-center gap-1.5">
+      <span className={`h-2 w-2 rounded-full ring-2 ${member.is_used ? 'bg-emerald-400 ring-emerald-400/30' : 'bg-amber-400 ring-amber-400/30 animate-pulse'}`} />
+      <span className={`text-[9px] font-bold uppercase tracking-wider ${member.is_used ? 'text-emerald-600' : 'text-amber-500'}`}>
+        {member.is_used ? 'Active' : 'Pending'}
+      </span>
+    </div>
+  </button>
+);
+
+// ─── Invite Input ─────────────────────────────────────────────────────────
+const InviteInput = ({ businessId, onSuccess, onError }) => {
+  const [email, setEmail]     = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async () => {
+    if (!email.trim()) return;
+    setLoading(true);
+    try {
+      await sendInvite(businessId, email.trim());
+      onSuccess(`Invite sent to ${email.trim()}`);
+      setEmail('');
+    } catch (err) {
+      onError(errMsg(err));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div
-      onClick={() => onCardClick(fm)}
-      className={`bg-white border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer
-        ${isSelected ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100'}
-        ${removing  ? 'opacity-40 pointer-events-none scale-95' : ''}`}
-    >
-      {/* coloured banner */}
-      <div
-        className="relative h-32 flex flex-col justify-end px-5 pb-4 flex-shrink-0"
-        style={{ background: shiftMeta.banner }}
+    <div className="flex gap-2 pt-3 border-t border-slate-100">
+      <div className="flex-1 relative">
+        <Mail size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSend()}
+          placeholder="Invite by email…"
+          className="w-full h-9 pl-8 pr-3 text-xs rounded-xl border border-slate-200/60 bg-slate-50/80 text-slate-800 placeholder-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100/80 transition-all duration-200"
+        />
+      </div>
+      <button
+        onClick={handleSend}
+        disabled={loading || !email.trim()}
+        className="h-9 px-3.5 flex items-center gap-1.5 bg-slate-800 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all duration-200 active:scale-95 shadow-sm"
       >
-        <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute top-3 right-12 w-12 h-12 rounded-full bg-white/10 pointer-events-none" />
+        {loading ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+        <span className="hidden sm:inline">{loading ? 'Sending…' : 'Invite'}</span>
+      </button>
+    </div>
+  );
+};
+
+// ─── Group Card ───────────────────────────────────────────────────────────
+const GroupCard = ({ group, onDelete, deleting, onMemberClick, showToast }) => {
+  const shift      = group.shift || 'Day';
+  const shiftMeta  = SHIFT_META[shift] ?? SHIFT_META.Day;
+  const deptCls    = DEPT_COLOR[group.department] ?? 'bg-gray-50 text-gray-600 border-gray-200';
+
+  const [members, setMembers]           = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [expanded, setExpanded]         = useState(true);
+
+  // Load members when card mounts
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setMembersLoading(true);
+      try {
+        const { data } = await fetchMembers(group.id);
+        if (!cancelled) setMembers(Array.isArray(data) ? data : data.members ?? []);
+      } catch {
+        // silently fail — members section just stays empty
+      } finally {
+        if (!cancelled) setMembersLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [group.id]);
+
+  const handleInviteSuccess = (msg) => showToast(msg, 'success');
+  const handleInviteError   = (msg) => showToast(msg, 'error');
+
+  return (
+    <div className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 flex flex-col group/card">
+      {/* Banner */}
+      <div className={`relative h-28 bg-gradient-to-br ${shiftMeta.banner} flex flex-col justify-end px-5 pb-4 flex-shrink-0`}>
+        {/* decorative circles */}
+        <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/[0.08] pointer-events-none" />
+        <div className="absolute top-3 right-14 w-12 h-12 rounded-full bg-white/[0.06] pointer-events-none" />
         <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
 
+        {/* delete btn */}
         <button
-          onClick={(e) => onRemove(e, fm.id)}
-          className="absolute top-3 right-3 text-white/40 hover:text-red-300 transition-colors z-10"
-          title="Remove manager"
+          onClick={(e) => { e.stopPropagation(); onDelete(group.id); }}
+          disabled={deleting}
+          className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-red-500/80 text-white/60 hover:text-white backdrop-blur-sm transition-all duration-200 z-10"
+          title="Remove group"
         >
-          {removing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+          {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
         </button>
 
-        <div className="absolute top-3 left-5 w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center text-white font-black text-sm">
-          {fm.name.charAt(0).toUpperCase()}
+        {/* initial avatar */}
+        <div className="absolute top-3 left-5 w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center text-white font-black text-sm backdrop-blur-sm ring-1 ring-white/20">
+          {group.name?.charAt(0)?.toUpperCase() ?? '?'}
         </div>
 
-        <div className="flex items-center gap-1.5 mb-2">
-          <span className={`text-[10px] font-bold uppercase tracking-widest border rounded-full px-2.5 py-0.5 bg-white/90 ${shiftMeta.badge}`}>
-            {shift} Shift
+        {/* badges */}
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest border rounded-full px-2 py-0.5 bg-white/95 shadow-sm ${shiftMeta.badge}`}>
+            {shiftMeta.icon} {shift}
           </span>
-          <span className={`text-[10px] font-bold uppercase tracking-widest border rounded-full px-2.5 py-0.5 bg-white/90 ${deptCls}`}>
-            {fm.department}
+          <span className={`text-[9px] font-bold uppercase tracking-widest border rounded-full px-2 py-0.5 bg-white/95 shadow-sm ${deptCls}`}>
+            {group.department}
           </span>
         </div>
-        <h2 className="text-white font-bold text-lg leading-tight drop-shadow">{fm.name}</h2>
+
+        <h2 className="text-white font-black text-base leading-tight drop-shadow-md">{group.name}</h2>
       </div>
 
-      {/* body */}
-      <div className="flex flex-col gap-3 p-5 flex-1">
-        <div className="pb-3 border-b border-gray-100 flex items-center justify-between">
-          <StatusDot isUsed={fm.is_used} />
-          {fm.role && (
-            <span className="text-[9px] font-bold uppercase tracking-widest text-gray-300 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
-              {fm.role.replace('_', ' ')}
+      {/* Body */}
+      <div className="flex flex-col gap-0 p-5 flex-1">
+        {/* members header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Users size={11} className="text-slate-400" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+              Team Members
             </span>
+            {members.length > 0 && (
+              <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-100">
+                {members.length}
+              </span>
+            )}
+          </div>
+          {members.length > 0 && (
+            <button
+              onClick={() => setExpanded(v => !v)}
+              className="text-gray-300 hover:text-gray-600 transition-colors"
+            >
+              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <MetaChip icon={<Mail size={12} />}  label="Email" value={fm.email} />
-          <MetaChip icon={<Phone size={12} />} label="Phone" value={fm.phone} />
-        </div>
-        {fm.business_id && (
-          <div className="text-[9px] font-bold uppercase tracking-widest text-gray-300 flex items-center gap-1.5">
-            <span className="w-1 h-1 rounded-full bg-gray-200" />
-            Business #{fm.business_id}
+
+        {/* member list */}
+        {membersLoading ? (
+          <div className="space-y-2">
+            {[1, 2].map(i => (
+              <div key={i} className="h-11 bg-slate-50 rounded-xl animate-pulse" />
+            ))}
           </div>
+        ) : members.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-5 gap-2 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <UserPlus size={18} className="text-slate-300" />
+            <p className="text-[10px] text-slate-400 font-semibold text-center">
+              No members yet<br />
+              <span className="font-normal">Send an invite below</span>
+            </p>
+          </div>
+        ) : expanded ? (
+          <div className="space-y-1.5 max-h-52 overflow-y-auto pr-0.5">
+            {members.map(member => (
+              <MemberCard
+                key={member.id}
+                member={member}
+                onClick={onMemberClick}
+              />
+            ))}
+          </div>
+        ) : (
+          <button
+            onClick={() => setExpanded(true)}
+            className="w-full py-2 text-[10px] font-bold text-blue-500 hover:text-blue-700 uppercase tracking-widest transition-colors"
+          >
+            Show {members.length} member{members.length !== 1 ? 's' : ''}
+          </button>
         )}
+
+        {/* invite input — always visible at bottom */}
+        <div className="mt-3">
+          <InviteInput
+            businessId={group.business_id}
+            onSuccess={handleInviteSuccess}
+            onError={handleInviteError}
+          />
+        </div>
+
+        {/* footer meta */}
+        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-3 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-300">
+          <span className="flex items-center gap-1">
+            <Building2 size={9} /> Factory #{group.factory_id}
+          </span>
+          <span className="text-slate-200">·</span>
+          <span>Biz #{group.business_id}</span>
+        </div>
       </div>
     </div>
   );
 };
 
-// ─── Create Form ──────────────────────────────────────────────────────────
-const CreateForm = ({ form, setForm, loading, onSubmit, onClose }) => {
-  const shiftMeta = SHIFT_COLOR[form.shift] ?? SHIFT_COLOR.Day;
-  const deptCls   = DEPT_COLOR[form.department] ?? 'bg-gray-50 text-gray-600 border-gray-200';
+// ─── Create Form (inline slide-down) ─────────────────────────────────────
+const CreateGroupForm = ({ onSubmit, onClose, loading }) => {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const shift = SHIFT_META[form.shift] ?? SHIFT_META.Day;
+  const deptCls = DEPT_COLOR[form.department] ?? 'bg-gray-50 text-gray-600 border-gray-200';
 
-  const field = (key) => ({
+  const field = key => ({
     value: form[key] ?? '',
-    onChange: (e) => setForm(f => ({ ...f, [key]: e.target.value })),
+    onChange: e => setForm(f => ({ ...f, [key]: e.target.value })),
   });
 
-  const inputCls  = "w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-800 placeholder-gray-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition";
-  const selectCls = "w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50 text-gray-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition cursor-pointer";
-  const labelCls  = "block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1";
+  const inputCls  = 'w-full h-9 px-3 text-sm rounded-xl border border-slate-200/60 bg-slate-50/80 text-slate-800 placeholder-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100/80 transition-all duration-200';
+  const selectCls = 'w-full h-9 px-3 text-sm rounded-xl border border-slate-200/60 bg-slate-50/80 text-slate-800 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100/80 transition-all duration-200 cursor-pointer';
+  const labelCls  = 'block text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 mb-1.5';
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-lg">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+    <div className="bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-2xl overflow-hidden shadow-lg shadow-slate-200/50">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
         <div>
-          <p className="text-sm font-bold text-gray-800">New Factory Manager</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">
-            Card saved to backend · invite email dispatched via n8n
+          <p className="text-sm font-black text-slate-800 tracking-tight">Create Factory Group Card</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Once created, use the card's invite field to add managers
           </p>
         </div>
-        <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition">
+        <button
+          onClick={onClose}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-200"
+        >
           <X size={15} />
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        {/* left: fields */}
-        <div className="p-6 border-r border-gray-100">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">Fill in details</p>
-          <form id="create-fm-form" onSubmit={onSubmit} className="space-y-3">
+        {/* Left: form fields */}
+        <div className="p-6 border-r border-slate-100 space-y-4">
+          <div>
+            <label className={labelCls}>Group Name <span className="text-red-400">*</span></label>
+            <input
+              required type="text" placeholder="e.g. Night Assembly Team A"
+              className={inputCls} {...field('name')}
+            />
+          </div>
 
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Full Name <span className="text-red-400">*</span></label>
-              <input required type="text" placeholder="e.g. Sarah Chen" className={inputCls} {...field('name')} />
+              <label className={labelCls}>Shift</label>
+              <select className={selectCls} {...field('shift')}>
+                <option>Day</option>
+                <option>Night</option>
+                <option>Swing</option>
+              </select>
             </div>
-
             <div>
-              <label className={labelCls}>Work Email <span className="text-red-400">*</span></label>
-              <input required type="email" placeholder="sarah@factory.com" className={inputCls} {...field('email')} />
+              <label className={labelCls}>Department</label>
+              <select className={selectCls} {...field('department')}>
+                <option>Assembly</option>
+                <option>Quality Control</option>
+                <option>Logistics</option>
+              </select>
             </div>
+          </div>
 
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Phone Number</label>
-              <input type="text" placeholder="+1 555 000 0000" className={inputCls} {...field('phone')} />
+              <label className={labelCls}>Factory ID</label>
+              <input type="number" min="1" className={inputCls} {...field('factory_id')} />
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Shift</label>
-                <select className={selectCls} {...field('shift')}>
-                  <option>Day</option><option>Night</option><option>Swing</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Department</label>
-                <select className={selectCls} {...field('department')}>
-                  <option>Assembly</option><option>Quality Control</option><option>Logistics</option>
-                </select>
-              </div>
+            <div>
+              <label className={labelCls}>Business ID</label>
+              <input type="number" min="1" className={inputCls} {...field('business_id')} />
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Factory ID</label>
-                <input type="number" min="1" className={inputCls} {...field('factory_id')} />
-              </div>
-              <div>
-                <label className={labelCls}>Business ID</label>
-                <input type="number" min="1" className={inputCls} {...field('business_id')} />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || !form.name?.trim() || !form.email?.trim()}
-              className="w-full h-10 mt-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-all active:scale-95"
-            >
-              {loading
-                ? <><Loader2 size={13} className="animate-spin" /> Creating…</>
-                : <><ArrowRight size={13} /> Create Card & Send Invite</>}
-            </button>
-          </form>
+          <button
+            type="button"
+            onClick={() => onSubmit(form)}
+            disabled={loading || !form.name?.trim()}
+            className="w-full h-10 flex items-center justify-center gap-2 bg-slate-800 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all duration-200 active:scale-95 shadow-sm"
+          >
+            {loading
+              ? <><Loader2 size={13} className="animate-spin" /> Creating…</>
+              : <><Plus size={13} /> Create Group Card</>}
+          </button>
         </div>
 
-        {/* right: live preview */}
-        <div className="p-6 bg-gray-50/60 flex flex-col gap-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Live preview</p>
-          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
-            <div className="relative h-28 flex flex-col justify-end px-4 pb-3" style={{ background: shiftMeta.banner }}>
-              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
-              <div className="absolute top-2 right-10 w-8 h-8 rounded-full bg-white/10 pointer-events-none" />
-              <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
-              <div className="absolute top-3 left-4 w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center text-white font-black text-sm">
+        {/* Right: live card preview */}
+        <div className="p-6 bg-slate-50/60 flex flex-col gap-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Card preview</p>
+          <div className="bg-white/90 border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm">
+            <div className={`relative h-24 bg-gradient-to-br ${shift.banner} flex flex-col justify-end px-4 pb-3`}>
+              <div className="absolute -top-5 -right-5 w-20 h-20 rounded-full bg-white/[0.08] pointer-events-none" />
+              <div className="absolute top-2 left-4 w-7 h-7 bg-white/20 rounded-xl flex items-center justify-center text-white font-black text-xs ring-1 ring-white/20">
                 {form.name?.charAt(0)?.toUpperCase() || '?'}
               </div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <span className={`text-[9px] font-bold uppercase tracking-widest border rounded-full px-2 py-0.5 bg-white/90 ${shiftMeta.badge}`}>
-                  {form.shift} Shift
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest border rounded-full px-2 py-0.5 bg-white/95 shadow-sm ${shift.badge}`}>
+                  {shift.icon} {form.shift}
                 </span>
-                <span className={`text-[9px] font-bold uppercase tracking-widest border rounded-full px-2 py-0.5 bg-white/90 ${deptCls}`}>
+                <span className={`text-[9px] font-bold uppercase tracking-widest border rounded-full px-2 py-0.5 bg-white/95 shadow-sm ${deptCls}`}>
                   {form.department}
                 </span>
               </div>
-              <h2 className="text-white font-bold text-base leading-tight drop-shadow">
-                {form.name?.trim() || <span className="opacity-40 font-normal italic">Manager name</span>}
+              <h2 className="text-white font-black text-sm leading-tight drop-shadow-md">
+                {form.name?.trim() || <span className="opacity-40 font-normal italic text-xs">Group name</span>}
               </h2>
             </div>
-            <div className="p-4 space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <MetaChip icon={<Mail size={11} />}  label="Email" value={form.email || '—'} />
-                <MetaChip icon={<Phone size={11} />} label="Phone" value={form.phone || '—'} />
+            <div className="p-4">
+              <div className="flex flex-col items-center justify-center py-4 gap-2 bg-slate-50/80 rounded-xl border border-dashed border-slate-200">
+                <UserPlus size={16} className="text-slate-300" />
+                <p className="text-[10px] text-slate-400">No members yet</p>
               </div>
-              <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase text-amber-500">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  Invite Sent
-                </span>
-                {form.business_id && (
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-gray-300">
-                    Biz #{form.business_id}
-                  </span>
-                )}
+              <div className="mt-3 flex gap-2">
+                <div className="flex-1 h-7 bg-slate-100/80 rounded-lg" />
+                <div className="w-16 h-7 bg-slate-200/80 rounded-lg" />
               </div>
             </div>
           </div>
-          <p className="text-[10px] text-gray-400 text-center">Preview updates as you type</p>
+          <p className="text-[10px] text-slate-400 text-center">After creating, invite managers via email</p>
         </div>
       </div>
-    </div>
-  );
-};
-
-// ─── Analytics Panel ──────────────────────────────────────────────────────
-const AnalyticsView = ({ manager, analytics, loading, onBack }) => {
-  const KPIs = [
-    { label: 'Efficiency',     value: analytics?.efficiency_score != null ? `${analytics.efficiency_score}%` : '—', icon: <Zap size={18} />,         color: 'text-yellow-500' },
-    { label: 'Batches Done',   value: analytics?.batches_completed ?? '—',                                          icon: <Package size={18} />,      color: 'text-blue-500'   },
-    { label: 'Avg Cycle Time', value: analytics?.avg_cycle_time ?? '—',                                            icon: <Timer size={18} />,        color: 'text-purple-500' },
-    { label: 'Reliability',    value: analytics?.reliability ?? '—',                                               icon: <CheckCircle2 size={18} />, color: 'text-emerald-500'},
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-        <button onClick={onBack} className="text-slate-400 hover:text-slate-800 transition-colors text-sm font-semibold flex items-center gap-1">
-          <ChevronLeft size={16} /> Back
-        </button>
-        <div
-          className="h-10 w-10 rounded-xl flex items-center justify-center font-black text-white text-sm flex-shrink-0"
-          style={{ background: SHIFT_COLOR[manager.shift]?.banner ?? '#185FA5' }}
-        >
-          {manager.name.charAt(0)}
-        </div>
-        <div className="min-w-0">
-          <h2 className="font-bold text-slate-800 truncate">Performance: {manager.name}</h2>
-          <p className="text-xs text-slate-400">{manager.department} · {manager.shift} Shift · {manager.email}</p>
-        </div>
-        <div className="ml-auto flex-shrink-0"><StatusDot isUsed={manager.is_used} /></div>
-      </div>
-
-      {loading ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl border border-slate-100 h-44 animate-pulse" />)}
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {KPIs.map((kpi, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                <span className={kpi.color}>{kpi.icon}</span>
-                <p className="text-2xl font-black text-slate-800 mt-2">{kpi.value}</p>
-                <p className="text-[10px] text-slate-400 uppercase font-bold mt-1">{kpi.label}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="bg-slate-900 rounded-2xl p-8 text-white">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Manager Efficiency</p>
-              <h3 className="text-5xl font-black">{analytics?.efficiency_score ?? '—'}%</h3>
-              <div className="mt-8 h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 rounded-full transition-all duration-700"
-                  style={{ width: `${Math.min(analytics?.efficiency_score ?? 0, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-slate-500 mt-4 uppercase font-bold tracking-widest">
-                Reliability: {analytics?.reliability ?? '—'}
-              </p>
-              <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">
-                Registered: {analytics?.is_registered ? 'Yes' : 'No'}
-              </p>
-            </div>
-
-            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
-              <h3 className="font-bold text-slate-800 mb-4">Production Feed</h3>
-              <p className="text-slate-400 text-sm italic">
-                Live production data for {manager.name} will populate once they register and begin logging batches.
-              </p>
-              <div className="mt-6 grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1">
-                    <Package size={11} /> Total Batches
-                  </p>
-                  <p className="text-2xl font-black text-slate-800 mt-1">{analytics?.total_batches ?? '—'}</p>
-                </div>
-                <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold mb-2 flex items-center gap-1">
-                    <ShieldAlert size={11} /> Status
-                  </p>
-                  <StatusDot isUsed={manager.is_used} />
-                </div>
-                <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold">Role</p>
-                  <p className="text-sm font-bold text-slate-800 mt-1 capitalize">{manager.role?.replace('_', ' ')}</p>
-                </div>
-                <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                  <p className="text-[10px] text-slate-400 uppercase font-bold">Business ID</p>
-                  <p className="text-2xl font-black text-slate-800 mt-1">#{manager.business_id ?? '—'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 };
@@ -398,37 +428,34 @@ const AnalyticsView = ({ manager, analytics, loading, onBack }) => {
 //  MAIN PAGE
 // ══════════════════════════════════════════════════════════════
 const FactoryPage = () => {
-  const [managers, setManagers]       = useState([]);
-  const [total, setTotal]             = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [loading, setLoading]         = useState(false);
-  const [listError, setListError]     = useState(null);
+  const [groups, setGroups]         = useState([]);
+  const [total, setTotal]           = useState(0);
+  const [currentPage, setPage]      = useState(1);
+  const [loading, setLoading]       = useState(false);
+  const [listError, setListError]   = useState(null);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [form, setForm]             = useState(EMPTY_FORM);
   const [creating, setCreating]     = useState(false);
 
-  const [selectedManager, setSelectedManager]   = useState(null);
-  const [analytics, setAnalytics]               = useState(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [view, setView]                         = useState('roster');
-
-  const [removingIds, setRemovingIds] = useState(new Set());
+  const [deletingIds, setDeletingIds] = useState(new Set());
   const [toast, setToast]             = useState(null);
+
+  // Analytics navigation
+  const [analyticsTarget, setAnalyticsTarget] = useState(null); // { member, groupId }
 
   const showToast = (msg, type = 'success') => setToast({ msg, type });
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   // ── FETCH ─────────────────────────────────────────────────
-  const loadManagers = useCallback(async (page = 1) => {
+  const loadGroups = useCallback(async (page = 1) => {
     setLoading(true);
     setListError(null);
     try {
       const [listRes, countRes] = await Promise.all([
-        fetchList(page, ITEMS_PER_PAGE),
+        fetchGroups(page, ITEMS_PER_PAGE),
         fetchCount(),
       ]);
-      setManagers(listRes.data);           // axios unwraps .data for you
+      setGroups(listRes.data);
       setTotal(countRes.data.total ?? 0);
     } catch (err) {
       const msg = errMsg(err);
@@ -439,29 +466,24 @@ const FactoryPage = () => {
     }
   }, []);
 
-  useEffect(() => {
-    loadManagers(currentPage);
-  }, [currentPage, loadManagers]);
+  useEffect(() => { loadGroups(currentPage); }, [currentPage, loadGroups]);
 
-  // ── CREATE ────────────────────────────────────────────────
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ── CREATE GROUP ──────────────────────────────────────────
+  const handleCreate = async (form) => {
     setCreating(true);
     try {
-      const { data: created } = await postCreate({
+      const { data: created } = await postGroup({
         name:        form.name.trim(),
-        email:       form.email.trim(),
-        phone:       form.phone.trim() || null,
         shift:       form.shift,
         department:  form.department,
         factory_id:  Number(form.factory_id),
         business_id: Number(form.business_id),
-      });
-      setManagers(prev => [created, ...prev]);
+        email:       "group@placeholder.com" // Dummy email for the group card
+    });
+      setGroups(prev => [created, ...prev]);
       setTotal(prev => prev + 1);
-      setForm(EMPTY_FORM);
       setIsFormOpen(false);
-      showToast(`${created.name} added — invite sent to ${created.email}!`);
+      showToast(`"${created.name}" group created!`);
     } catch (err) {
       showToast(errMsg(err), 'error');
     } finally {
@@ -469,189 +491,149 @@ const FactoryPage = () => {
     }
   };
 
-  // ── DELETE ────────────────────────────────────────────────
-  const handleRemove = async (e, managerId) => {
-    e.stopPropagation();
-    if (!window.confirm('Remove this manager? This cannot be undone.')) return;
-
-    setRemovingIds(prev => new Set(prev).add(managerId));
+  // ── DELETE GROUP ──────────────────────────────────────────
+  const handleDelete = async (groupId) => {
+    if (!window.confirm('Remove this group card? This cannot be undone.')) return;
+    setDeletingIds(prev => new Set(prev).add(groupId));
     try {
-      await deleteOne(managerId);
-      setManagers(prev => prev.filter(m => m.id !== managerId));
+      await deleteGroup(groupId);
+      setGroups(prev => prev.filter(g => g.id !== groupId));
       setTotal(prev => prev - 1);
-      if (selectedManager?.id === managerId) {
-        setSelectedManager(null);
-        setView('roster');
-      }
-      showToast('Manager removed successfully.');
+      showToast('Group removed.');
     } catch (err) {
       showToast(errMsg(err), 'error');
     } finally {
-      setRemovingIds(prev => {
+      setDeletingIds(prev => {
         const next = new Set(prev);
-        next.delete(managerId);
+        next.delete(groupId);
         return next;
       });
     }
   };
 
-  // ── ANALYTICS ─────────────────────────────────────────────
-  const handleCardClick = async (manager) => {
-    setSelectedManager(manager);
-    setView('analytics');
-    setAnalyticsLoading(true);
-    setAnalytics(null);
-    try {
-      const { data } = await getAnalytics(manager.id);
-      setAnalytics(data);
-    } catch (err) {
-      showToast(errMsg(err), 'error');
-    } finally {
-      setAnalyticsLoading(false);
-    }
+  // ── MEMBER CLICK → ANALYTICS ──────────────────────────────
+  const handleMemberClick = (member, groupId) => {
+    setAnalyticsTarget({ member, groupId });
   };
 
-  // ── RENDER ────────────────────────────────────────────────
+  // ── ANALYTICS VIEW ────────────────────────────────────────
+  if (analyticsTarget) {
+    return (
+      <FMAnalyticsPage
+        member={analyticsTarget.member}
+        groupId={analyticsTarget.groupId}
+        onBack={() => setAnalyticsTarget(null)}
+      />
+    );
+  }
+
+  // ── MAIN RENDER ───────────────────────────────────────────
   return (
     <div className="space-y-8">
-
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">
-            Factory Control: Team & Performance
+            Factory Control: Groups & Team
           </h1>
           <p className="text-slate-400 text-sm mt-0.5">
-            {total} Factory Manager{total !== 1 ? 's' : ''}
-            {listError && <span className="ml-2 text-red-400 text-xs font-semibold">· {listError}</span>}
+            {total} Group{total !== 1 ? 's' : ''}
+            {listError && (
+              <span className="ml-2 text-red-400 text-xs font-semibold">· {listError}</span>
+            )}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => loadManagers(currentPage)}
+            onClick={() => loadGroups(currentPage)}
             disabled={loading}
-            className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:border-slate-300 transition disabled:opacity-40"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200/60 bg-white/80 backdrop-blur-sm text-slate-400 hover:text-slate-700 hover:border-slate-300 hover:shadow-sm transition-all duration-200 disabled:opacity-40"
             title="Refresh"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
 
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
-            <button
-              onClick={() => setView('roster')}
-              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
-                view === 'roster' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              TEAM ROSTER
-            </button>
-            <button
-              onClick={() => { if (selectedManager) setView('analytics'); }}
-              disabled={!selectedManager}
-              className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
-                view === 'analytics' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500'
-              } ${!selectedManager ? 'opacity-40 cursor-not-allowed' : ''}`}
-            >
-              ANALYTICS
-            </button>
-          </div>
+          <button
+            onClick={() => { setIsFormOpen(v => !v); }}
+            className="group flex items-center gap-2 bg-slate-800 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold uppercase tracking-wide px-4 py-2.5 rounded-xl transition-all duration-200 shadow-sm"
+          >
+            <span className="w-5 h-5 bg-white/15 rounded-md flex items-center justify-center group-hover:rotate-90 transition-transform duration-200">
+              {isFormOpen ? <X size={12} /> : <Plus size={12} />}
+            </span>
+            {isFormOpen ? 'Close' : 'Add Factory Manager'}
+          </button>
         </div>
       </div>
 
-      {/* ROSTER */}
-      {view === 'roster' && (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="font-bold text-slate-700 uppercase tracking-widest text-[10px]">Manager Directory</h2>
-            <button
-              onClick={() => { setIsFormOpen(v => !v); setForm(EMPTY_FORM); }}
-              className="group flex items-center gap-2 bg-slate-900 hover:bg-blue-600 active:scale-95 text-white text-xs font-bold uppercase tracking-wide px-4 py-2.5 rounded-xl transition-all duration-150"
-            >
-              <span className="w-5 h-5 bg-white/15 rounded-md flex items-center justify-center group-hover:rotate-90 transition-transform duration-200">
-                {isFormOpen ? <X size={12} /> : <Plus size={12} />}
-              </span>
-              {isFormOpen ? 'Close' : 'Add Factory Manager'}
-            </button>
+      {/* CREATE FORM */}
+      {isFormOpen && (
+        <CreateGroupForm
+          onSubmit={handleCreate}
+          onClose={() => setIsFormOpen(false)}
+          loading={creating}
+        />
+      )}
+
+      {/* GROUP GRID */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonGroupCard key={i} />)}
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-5">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center ring-4 ring-blue-50/50">
+            <Building2 size={28} className="text-blue-400" />
           </div>
-
-          {isFormOpen && (
-            <CreateForm
-              form={form}
-              setForm={setForm}
-              loading={creating}
-              onSubmit={handleSubmit}
-              onClose={() => { setIsFormOpen(false); setForm(EMPTY_FORM); }}
+          <div className="text-center">
+            <p className="text-sm font-bold text-slate-700">No factory groups yet</p>
+            <p className="text-xs text-slate-400 mt-1.5">
+              Create a group card first, then invite managers by email
+            </p>
+          </div>
+          <button
+            onClick={() => setIsFormOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-all duration-200 active:scale-95 shadow-sm"
+          >
+            <Plus size={14} /> Create First Group
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {groups.map(group => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              onDelete={handleDelete}
+              deleting={deletingIds.has(group.id)}
+              onMemberClick={(member) => handleMemberClick(member, group.id)}
+              showToast={showToast}
             />
-          )}
-
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} />)}
-            </div>
-          ) : managers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
-                <Users size={28} className="text-blue-400" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-semibold text-gray-700">No factory managers yet</p>
-                <p className="text-xs text-gray-400 mt-1">Click "Add Factory Manager" to create the first card</p>
-              </div>
-              <button
-                onClick={() => setIsFormOpen(true)}
-                className="flex items-center gap-2 bg-blue-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition"
-              >
-                <Plus size={14} /> Add Factory Manager
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {managers.map(fm => (
-                <ManagerCard
-                  key={fm.id}
-                  fm={fm}
-                  isSelected={selectedManager?.id === fm.id}
-                  onCardClick={handleCardClick}
-                  onRemove={handleRemove}
-                  removing={removingIds.has(fm.id)}
-                />
-              ))}
-            </div>
-          )}
-
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-4 pt-4">
-              <button
-                disabled={currentPage === 1 || loading}
-                onClick={() => setCurrentPage(p => p - 1)}
-                className="p-2 rounded-lg border bg-white disabled:opacity-30 hover:border-blue-300 transition-colors"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                disabled={currentPage === totalPages || loading}
-                onClick={() => setCurrentPage(p => p + 1)}
-                className="p-2 rounded-lg border bg-white disabled:opacity-30 hover:border-blue-300 transition-colors"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
+          ))}
         </div>
       )}
 
-      {/* ANALYTICS */}
-      {view === 'analytics' && selectedManager && (
-        <AnalyticsView
-          manager={selectedManager}
-          analytics={analytics}
-          loading={analyticsLoading}
-          onBack={() => setView('roster')}
-        />
+      {/* PAGINATION */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-4 pt-6">
+          <button
+            disabled={currentPage === 1 || loading}
+            onClick={() => setPage(p => p - 1)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200/60 bg-white/80 backdrop-blur-sm text-slate-500 disabled:opacity-30 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all duration-200"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-[0.12em]">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            disabled={currentPage === totalPages || loading}
+            onClick={() => setPage(p => p + 1)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200/60 bg-white/80 backdrop-blur-sm text-slate-500 disabled:opacity-30 hover:border-blue-300 hover:text-blue-600 hover:shadow-sm transition-all duration-200"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
       )}
 
       <Toast toast={toast} onClose={() => setToast(null)} />

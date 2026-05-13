@@ -2,22 +2,32 @@
 ```
 supply-chain-management
 ├─ ai_services
-│  ├─ app
+│  ├─ ai_app
 │  │  ├─ agents
 │  │  ├─ api
 │  │  │  └─ v1
 │  │  │     └─ routes
+│  │  │        └─ business_manager
+│  │  │           └─ bm_routes.py
 │  │  ├─ core
 │  │  ├─ databases
+│  │  │  └─ database.py
 │  │  ├─ main.py
 │  │  ├─ prompts
 │  │  ├─ schemas
+│  │  │  └─ business_manager
+│  │  │     └─ bm_schemas.py
 │  │  ├─ services
 │  │  ├─ tests
 │  │  ├─ tools
+│  │  │  └─ business_manager
+│  │  │     └─ bm_tools.py
 │  │  ├─ utils
 │  │  ├─ workers
 │  │  └─ workflows
+│  │     └─ business_manager
+│  │        └─ bm_graph.py
+│  ├─ Dockerfile
 │  └─ requirements.txt
 ├─ client
 │  ├─ eslint.config.js
@@ -64,6 +74,7 @@ supply-chain-management
 │  │  │  │  └─ pages
 │  │  │  │     ├─ face-verification.jsx
 │  │  │  │     ├─ forgot-password.jsx
+│  │  │  │     ├─ invitation.jsx
 │  │  │  │     ├─ login.jsx
 │  │  │  │     ├─ register-face.jsx
 │  │  │  │     ├─ reset-password.jsx
@@ -78,6 +89,7 @@ supply-chain-management
 │  │  │  │  └─ pages
 │  │  │  │     ├─ DashboardPage.jsx
 │  │  │  │     ├─ FactoryPage.jsx
+│  │  │  │     ├─ FMAnalyticsPage.jsx
 │  │  │  │     ├─ LogisticsPage.jsx
 │  │  │  │     ├─ RequestsPage.jsx
 │  │  │  │     ├─ SuppliersPage.jsx
@@ -107,7 +119,11 @@ supply-chain-management
 │  │  │     └─ ware_navbar.jsx
 │  │  ├─ index.css
 │  │  ├─ main.jsx
+│  │  ├─ protectedroutes
+│  │  │  ├─ authenticate_protector.jsx
+│  │  │  └─ block_public_pages.jsx
 │  │  └─ redux
+│  │     ├─ authprovider.jsx
 │  │     ├─ authslice.jsx
 │  │     ├─ factoryManagerSlice.js
 │  │     ├─ logisticsManagerSlice.js
@@ -117,6 +133,8 @@ supply-chain-management
 │  │     └─ warehouseManagerSlice.js
 │  └─ vite.config.js
 ├─ docker-compose.yml
+├─ nginx
+│  └─ nginx.conf
 ├─ package-lock.json
 └─ server
    ├─ .dockerignore
@@ -125,11 +143,7 @@ supply-chain-management
    │  ├─ README
    │  ├─ script.py.mako
    │  └─ versions
-   │     ├─ 1ac1d076691d_add_extra_data_to_invite_tokens.py
-   │     ├─ 1c49f364548a_add_cars.py
-   │     ├─ 2878f7568a39_.py
-   │     ├─ 8c3ac4d3f816_update_models_multitenant_and_ai_.py
-   │     └─ dd00d51dfd77_add_notification.py
+   │     └─ 3d3c75a0010b_add_business_id_to_users.py
    ├─ alembic.ini
    ├─ app
    │  ├─ api
@@ -144,7 +158,6 @@ supply-chain-management
    │  │  │  │  │  ├─ company_auth.py
    │  │  │  │  │  └─ otp.py
    │  │  │  │  ├─ business_manager
-   │  │  │  │  │  ├─ ai_agent.py
    │  │  │  │  │  ├─ dashboard.py
    │  │  │  │  │  ├─ factory_manager.py
    │  │  │  │  │  ├─ logistics_manager.py
@@ -184,6 +197,7 @@ supply-chain-management
    │  │  ├─ business_manager
    │  │  │  ├─ business_owners.py
    │  │  │  ├─ domain.py
+   │  │  │  ├─ team.py
    │  │  │  └─ __init__.py
    │  │  ├─ company
    │  │  │  ├─ company.py
@@ -212,6 +226,7 @@ supply-chain-management
    │  │  ├─ business_manager
    │  │  │  ├─ business_onwers.py
    │  │  │  ├─ team.py
+   │  │  │  ├─ team_schemas.py
    │  │  │  └─ __init__.py
    │  │  ├─ company
    │  │  │  └─ company.py
@@ -238,9 +253,7 @@ supply-chain-management
    │  │  ├─ business_manager
    │  │  │  ├─ agent
    │  │  │  │  ├─ graph.py
-   │  │  │  │  ├─ state.py
-   │  │  │  │  ├─ tools.py
-   │  │  │  │  └─ __init__.py
+   │  │  │  │  └─ tools.py
    │  │  │  └─ __init__.py
    │  │  ├─ company
    │  │  │  ├─ company_service.py

@@ -5,11 +5,12 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 import uuid
 import httpx
+import os
 
-from app.db.deps import get_db
-# 🚀 Replaced InviteToken with your new TeamManager model
-from app.models.business_manager.team import TeamManager
-from app.models.auth.user import User  # Hook to check registration
+from app.db.deps import get_db, get_tenant_db
+from app.models.business_manager.team import FactoryManager
+from app.models.auth.user import User, RoleEnum
+from app.services.auth.dependancy import get_current_user
 from app.models.sub_managers.factory_manager.production import Production, Production_status
 
 router = APIRouter(
@@ -28,7 +29,14 @@ class FMCreateSchema(BaseModel):
     shift: str        # Day | Night | Swing
     department: str   # Assembly | Quality Control | Logistics
     factory_id: Optional[int] = 1
-    business_id: Optional[int] = 1 # 🚀 Added business_id handling
+    business_id: Optional[int] = 1
+    business_card_id: Optional[int] = None
+    
+    # Card Fields
+    size: Optional[str] = "Standard"
+    tagline: Optional[str] = None
+    description: Optional[str] = None
+    color: Optional[str] = "#185FA5"
 
 class FMCardResponse(BaseModel):
     id: int
@@ -39,10 +47,19 @@ class FMCardResponse(BaseModel):
     department: str
     role: str
     is_used: bool     # False = invite pending, True = FM registered
+    business_id: Optional[int] = 1
+    
+    business_card_id: Optional[int]
+    size: Optional[str]
+    tagline: Optional[str]
+    description: Optional[str]
+    color: Optional[str]
 
     class Config:
         from_attributes = True
 
+class InviteRequest(BaseModel):
+    email: EmailStr
 
 # ==========================================
 # HELPER: n8n Webhook Dispatch
@@ -50,79 +67,71 @@ class FMCardResponse(BaseModel):
 async def dispatch_n8n_invite(payload: dict):
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post("http://127.0.0.1:5678/webhook/invite-user", json=payload)
+            await client.post(N8N_WEBHOOK_URL, json=payload)
     except Exception as e:
         print(f"⚠️ n8n dispatch failed: {e}")
-
 
 # ==========================================
 # GET — All FM cards (Paginated Grid)
 # ==========================================
-
 @router.get("/", response_model=List[FMCardResponse])
 def get_factory_managers(
     factory_id: Optional[int] = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(9, ge=1, le=50),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_tenant_db)
 ):
-    """
-    Fetches the manager cards stored in TeamManager.
-    """
     skip = (page - 1) * size
-    
-    # Filter by the specific role so WHM/Logistics don't show up here!
-    query = db.query(TeamManager).filter(TeamManager.role == "factory_manager")
+    query = db.query(FactoryManager).filter(FactoryManager.role == "factory_manager")
     
     if factory_id:
-        query = query.filter(TeamManager.entity_id == factory_id)
+        query = query.filter(FactoryManager.factory_id == factory_id)
 
-    # Order by newest first
-    managers = query.order_by(TeamManager.id.desc()).offset(skip).limit(size).all()
+    managers = query.order_by(FactoryManager.id.desc()).offset(skip).limit(size).all()
     return managers
-
 
 # ==========================================
 # GET — Total count for pagination
 # ==========================================
-
 @router.get("/count")
 def get_factory_manager_count(
     factory_id: Optional[int] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_tenant_db)
 ):
-    query = db.query(TeamManager).filter(TeamManager.role == "factory_manager")
+    query = db.query(FactoryManager).filter(FactoryManager.role == "factory_manager")
     if factory_id:
-        query = query.filter(TeamManager.entity_id == factory_id)
+        query = query.filter(FactoryManager.factory_id == factory_id)
     return {"total": query.count()}
-
 
 # ==========================================
 # POST — Create card + send invite email
 # ==========================================
-
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=FMCardResponse)
-async def create_factory_manager(data: FMCreateSchema, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    """
-    Saves TeamManager record and dispatches n8n webhook in background.
-    """
-    # 1. Check for duplicates
-    existing = db.query(TeamManager).filter(TeamManager.email == data.email).first()
+async def create_factory_manager(
+    data: FMCreateSchema, 
+    db: Session = Depends(get_tenant_db),
+    current_user: User = Depends(get_current_user)
+):
+    existing = db.query(FactoryManager).filter(FactoryManager.email == data.email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"A manager with email {data.email} already exists."
         )
 
-    # 2. Save the new card to the TeamManager table
-    new_fm = TeamManager(
+    new_fm = FactoryManager(
         name=data.name,
         email=data.email,
         phone=data.phone,
         shift=data.shift,
         department=data.department,
-        entity_id=data.factory_id,
+        factory_id=data.factory_id,
         business_id=data.business_id,
+        business_card_id=data.business_card_id,
+        size=data.size,
+        tagline=data.tagline,
+        description=data.description,
+        color=data.color,
         role="factory_manager", 
         is_used=False
     )
@@ -135,40 +144,45 @@ async def create_factory_manager(data: FMCreateSchema, background_tasks: Backgro
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-    # 3. Generate invite link and dispatch n8n webhook
-    token = str(uuid.uuid4())
-    invite_link = (
-        f"http://localhost:5173/register"
-        f"?token={token}&role=factory_manager&tid={data.factory_id or 1}&bid={data.business_id or 1}"
-    )
-
-    webhook_payload = {
-        "name": data.name,
-        "email": data.email,
-        "role": "factory_manager",
-        "business_id": data.business_id,
-        "token": token,
-        "invite_link": invite_link,
-    }
-
-    # Pass the HTTP call to a background task so the React UI returns instantly
-    background_tasks.add_task(dispatch_n8n_invite, webhook_payload)
 
     return new_fm
 
+# ==========================================
+# DELETE — Remove a manager card
+# ==========================================
+@router.delete("/{manager_id}", status_code=status.HTTP_200_OK)
+def remove_factory_manager(manager_id: int, db: Session = Depends(get_tenant_db)):
+    # 1. Find the parent "Group Card"
+    group_card = db.query(FactoryManager).filter(
+        FactoryManager.id == manager_id,
+        FactoryManager.role == "factory_manager"
+    ).first()
 
+    if not group_card:
+        raise HTTPException(status_code=404, detail="Group card not found.")
+
+    try:
+        db.query(FactoryManager).filter(
+            FactoryManager.factory_id == manager_id,
+            FactoryManager.role == "factory_manager_member"
+        ).delete(synchronize_session=False)
+
+        db.delete(group_card)
+        
+        db.commit()
+        return {"status": "success", "message": f"Group {manager_id} and its members removed."}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
 # ==========================================
 # GET — Live Analytics for one manager
 # ==========================================
-
 @router.get("/{manager_id}/analytics")
-def get_manager_analytics(manager_id: int, db: Session = Depends(get_db)):
-    """
-    Connects to the Production table to calculate real efficiency.
-    """
-    manager_card = db.query(TeamManager).filter(
-        TeamManager.id == manager_id,
-        TeamManager.role == "factory_manager"
+def get_manager_analytics(manager_id: int, db: Session = Depends(get_tenant_db)):
+    manager_card = db.query(FactoryManager).filter(
+        FactoryManager.id == manager_id,
+        FactoryManager.role == "factory_manager"
     ).first()
 
     if not manager_card:
@@ -180,9 +194,11 @@ def get_manager_analytics(manager_id: int, db: Session = Depends(get_db)):
     batches_count = 0
     completed_count = 0
     reliability = "Pending Registration"
+    recent_batches = []
+    quality_score = None
+    incidents = None
 
     if user:
-        # Check if the UI needs to be updated to show they registered
         if not manager_card.is_used:
             manager_card.is_used = True
             db.commit()
@@ -197,11 +213,24 @@ def get_manager_analytics(manager_id: int, db: Session = Depends(get_db)):
             efficiency = (stats.total_out / stats.total_target) * 100
             batches_count = stats.batch_count
             reliability = "High" if efficiency > 85 else "Standard"
+            quality_score = 98.5
+            incidents = 0
 
         completed_count = db.query(Production).filter(
             Production.created_by == user.id,
             Production.status == Production_status.COMPLETED
         ).count()
+
+        recent_production = db.query(Production).filter(
+            Production.created_by == user.id
+        ).order_by(Production.id.desc()).limit(3).all()
+
+        for prod in recent_production:
+            recent_batches.append({
+                "batch_id": f"Batch #{prod.id}",
+                "completed_at": "Today", 
+                "status": prod.status.value
+            })
 
     return {
         "manager_id": manager_card.id,
@@ -214,23 +243,64 @@ def get_manager_analytics(manager_id: int, db: Session = Depends(get_db)):
         "total_batches": batches_count,
         "avg_cycle_time": "4.5h" if user else "N/A",
         "reliability": reliability,
+        "recent_batches": recent_batches,
+        "quality_score": quality_score,
+        "incidents": incidents
     }
 
+# ==========================================
+# GET — Group Members
+# ==========================================
+@router.get("/{group_id}/members", response_model=List[FMCardResponse])
+def get_group_members(group_id: int, db: Session = Depends(get_tenant_db)):
+    members = db.query(FactoryManager).filter(
+        FactoryManager.factory_id == group_id,
+        FactoryManager.role == "factory_manager_member" 
+    ).all()
+    return members
 
 # ==========================================
-# DELETE — Remove a manager card
+# POST — Invite a New Member to a Group
 # ==========================================
+@router.post("/{group_id}/invite")
+async def invite_to_group(
+    group_id: int, 
+    payload: InviteRequest, 
+    background_tasks: BackgroundTasks, 
+    db: Session = Depends(get_tenant_db)
+):
+    group = db.query(FactoryManager).filter(FactoryManager.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group card not found")
 
-@router.delete("/{manager_id}", status_code=status.HTTP_200_OK)
-def remove_factory_manager(manager_id: int, db: Session = Depends(get_db)):
-    manager = db.query(TeamManager).filter(
-        TeamManager.id == manager_id,
-        TeamManager.role == "factory_manager"
-    ).first()
+    # 🚀 THE FIX: Check if the email already exists before doing anything
+    existing_user = db.query(FactoryManager).filter(FactoryManager.email == payload.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"The email {payload.email} is already registered to a manager."
+        )
 
-    if not manager:
-        raise HTTPException(status_code=404, detail="Manager not found.")
-
-    db.delete(manager)
+    token = str(uuid.uuid4())
+    new_member = FactoryManager(
+        name=payload.email.split('@')[0], 
+        email=payload.email,
+        role="factory_manager_member",
+        factory_id=group_id, 
+        business_id=group.business_id,
+        shift=group.shift,
+        department=group.department,
+        is_used=False
+    )
+    
+    db.add(new_member)
     db.commit()
-    return {"status": "success", "message": f"Manager {manager_id} removed."}
+
+    invite_link = f"http://localhost:5173/register?token={token}&role=factory_member"
+    background_tasks.add_task(dispatch_n8n_invite, {
+        "email": payload.email,
+        "invite_link": invite_link,
+        "group_name": group.name
+    })
+
+    return {"status": "success", "message": f"Invite sent to {payload.email}"}

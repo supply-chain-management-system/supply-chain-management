@@ -5,12 +5,13 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 import uuid
 import httpx
+import os
 
-from app.db.deps import get_db
-# 🚀 Replaced InviteToken with TeamManager
-from app.models.business_manager.team import TeamManager
+from app.db.deps import get_db, get_tenant_db
+from app.models.business_manager.team import WarehouseManager
 from app.models.auth.user import User, RoleEnum
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse, Inventory_ware, Rack
+from app.services.auth.dependancy import get_current_user
 
 router = APIRouter(
     prefix="/business-manager/warehouse-managers",
@@ -28,7 +29,14 @@ class WHMCreateSchema(BaseModel):
     shift: str        # Day | Night | Swing
     zone: str         # The frontend sends 'zone' (e.g., Cold Storage)
     warehouse_id: Optional[int] = 1
-    business_id: Optional[int] = 1 # 🚀 Added business_id for multi-tenant scaling
+    business_id: Optional[int] = 1
+    business_card_id: Optional[int] = None
+
+    # Card Fields
+    size: Optional[str] = "Standard"
+    tagline: Optional[str] = None
+    description: Optional[str] = None
+    color: Optional[str] = "#185FA5"
 
 class WHMCardResponse(BaseModel):
     id: int
@@ -36,9 +44,14 @@ class WHMCardResponse(BaseModel):
     email: str
     phone: Optional[str]
     shift: str
-    department: str   # We map 'zone' to 'department' in the DB
-    role: str
+    department: str   # We map 'zone' to 'department' for frontend compatibility
     is_used: bool     # Controls the "Active / Invite Sent" pulsing dot
+    
+    business_card_id: Optional[int]
+    size: Optional[str]
+    tagline: Optional[str]
+    description: Optional[str]
+    color: Optional[str]
 
     class Config:
         from_attributes = True
@@ -50,7 +63,7 @@ class WHMCardResponse(BaseModel):
 async def dispatch_n8n_invite(payload: dict):
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post("http://127.0.0.1:5678/webhook/invite-user", json=payload)
+            await client.post(N8N_WEBHOOK_URL, json=payload)
     except Exception as e:
         print(f"⚠️ n8n WHM dispatch failed: {e}")
 
@@ -64,17 +77,16 @@ def get_warehouse_managers(
     warehouse_id: Optional[int] = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(9, ge=1, le=50),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_tenant_db)
 ):
     skip = (page - 1) * size
     
-    # Filter exclusively for warehouse managers
-    query = db.query(TeamManager).filter(TeamManager.role == "warehouse_manager")
+    query = db.query(WarehouseManager)
     
     if warehouse_id:
-        query = query.filter(TeamManager.entity_id == warehouse_id)
+        query = query.filter(WarehouseManager.warehouse_id == warehouse_id)
 
-    managers = query.order_by(TeamManager.id.desc()).offset(skip).limit(size).all()
+    managers = query.order_by(WarehouseManager.id.desc()).offset(skip).limit(size).all()
     return managers
 
 # ==========================================
@@ -84,11 +96,11 @@ def get_warehouse_managers(
 @router.get("/count")
 def get_warehouse_manager_count(
     warehouse_id: Optional[int] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_tenant_db)
 ):
-    query = db.query(TeamManager).filter(TeamManager.role == "warehouse_manager")
+    query = db.query(WarehouseManager)
     if warehouse_id:
-        query = query.filter(TeamManager.entity_id == warehouse_id)
+        query = query.filter(WarehouseManager.warehouse_id == warehouse_id)
     return {"total": query.count()}
 
 # ==========================================
@@ -96,24 +108,33 @@ def get_warehouse_manager_count(
 # ==========================================
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=WHMCardResponse)
-async def create_warehouse_manager(data: WHMCreateSchema, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    existing = db.query(TeamManager).filter(TeamManager.email == data.email).first()
+async def create_warehouse_manager(
+    data: WHMCreateSchema, 
+    db: Session = Depends(get_tenant_db),
+    current_user: User = Depends(get_current_user)
+):
+    existing = db.query(WarehouseManager).filter(WarehouseManager.email == data.email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Manager with email {data.email} already exists."
         )
 
-    # Map the incoming 'zone' to the generic 'department' column, and warehouse_id to entity_id
-    new_whm = TeamManager(
+    # Map the incoming 'zone' to both 'zone' and 'department' columns
+    new_whm = WarehouseManager(
         name=data.name,
         email=data.email,
         phone=data.phone,
         shift=data.shift,
-        department=data.zone,  
-        entity_id=data.warehouse_id, 
+        zone=data.zone,
+        department=data.zone,         # Keep department in sync for frontend compat
+        warehouse_id=data.warehouse_id, 
         business_id=data.business_id,
-        role="warehouse_manager",
+        business_card_id=data.business_card_id,
+        size=data.size,
+        tagline=data.tagline,
+        description=data.description,
+        color=data.color,
         is_used=False
     )
 
@@ -125,23 +146,7 @@ async def create_warehouse_manager(data: WHMCreateSchema, background_tasks: Back
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-    token = str(uuid.uuid4())
-    invite_link = (
-        f"http://localhost:5173/register"
-        f"?token={token}&role=warehouse_manager&tid={data.warehouse_id or 1}&bid={data.business_id or 1}"
-    )
 
-    webhook_payload = {
-        "name": data.name,
-        "email": data.email,
-        "role": "warehouse_manager",
-        "business_id": data.business_id,
-        "token": token,
-        "invite_link": invite_link,
-    }
-
-    # Pass the HTTP call to a background task so the React UI returns instantly
-    background_tasks.add_task(dispatch_n8n_invite, webhook_payload)
 
     return new_whm
 
@@ -150,13 +155,12 @@ async def create_warehouse_manager(data: WHMCreateSchema, background_tasks: Back
 # ==========================================
 
 @router.get("/{manager_id}/analytics")
-def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_db)):
+def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_tenant_db)):
     """
     Connects to Warehouse and Inventory_ware tables to feed the frontend analytics view.
     """
-    card = db.query(TeamManager).filter(
-        TeamManager.id == manager_id,
-        TeamManager.role == "warehouse_manager"
+    card = db.query(WarehouseManager).filter(
+        WarehouseManager.id == manager_id
     ).first()
     
     if not card:
@@ -179,7 +183,7 @@ def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_d
             db.commit()
 
         # User is registered, pull real data from their assigned warehouse
-        warehouse_id = card.entity_id 
+        warehouse_id = card.warehouse_id 
         
         # Calculate real stock managed by querying Inventory_ware joined with Rack
         total_stock_query = db.query(func.sum(Inventory_ware.quantity)).join(Rack).filter(
@@ -205,7 +209,7 @@ def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_d
     return {
         "manager_id": card.id,
         "name": card.name,
-        "zone": card.department, # Map back to zone for the frontend
+        "zone": card.zone,          # Direct zone field now
         "is_registered": bool(user),
         "total_stock_managed": total_stock,
         "space_utilization": space_utilization,
@@ -219,10 +223,9 @@ def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_d
 # ==========================================
 
 @router.delete("/{manager_id}", status_code=status.HTTP_200_OK)
-def remove_warehouse_manager(manager_id: int, db: Session = Depends(get_db)):
-    manager = db.query(TeamManager).filter(
-        TeamManager.id == manager_id,
-        TeamManager.role == "warehouse_manager"
+def remove_warehouse_manager(manager_id: int, db: Session = Depends(get_tenant_db)):
+    manager = db.query(WarehouseManager).filter(
+        WarehouseManager.id == manager_id
     ).first()
 
     if not manager:
