@@ -96,25 +96,40 @@ async def send_invite(
             "notification_recipients": recipients["notification_recipients"],
         }
 
-        async with httpx.AsyncClient() as client:
+        n8n_status = "skipped"
+        n8n_error = None
 
-            response = await client.post(
-                N8N_WEBHOOK_URL,
-                json=data,
-                timeout=20.0,
-            )
+        if N8N_WEBHOOK_URL:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        N8N_WEBHOOK_URL,
+                        json=data,
+                        timeout=20.0,
+                    )
 
-        print(response.status_code, response.text)
+                print(response.status_code, response.text)
 
-        if response.status_code not in [200, 201]:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to trigger n8n: {response.text}",
-            )
+                if response.status_code in [200, 201]:
+                    n8n_status = "sent"
+                else:
+                    n8n_status = "failed"
+                    n8n_error = f"n8n returned {response.status_code}: {response.text}"
+                    print(f"n8n invite dispatch failed: {n8n_error}")
+
+            except Exception as e:
+                n8n_status = "failed"
+                n8n_error = str(e)
+                print(f"n8n invite dispatch failed: {n8n_error}")
+        else:
+            n8n_error = "N8N_WEBHOOK_URL is not configured"
+            print(n8n_error)
 
         return {
             "status": "success",
             "event_id": invitation.id,
+            "n8n_status": n8n_status,
+            "n8n_error": n8n_error,
         }
 
     except HTTPException as e:

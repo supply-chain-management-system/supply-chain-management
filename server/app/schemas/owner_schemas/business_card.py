@@ -1,6 +1,6 @@
 # app/schemas/business_card.py
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 
@@ -29,9 +29,24 @@ class BusinessCardUpdate(BaseModel):
     color: Optional[str] = None
 
 
+class BusinessManagerResponse(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    role: str
+    business_id: Optional[str] = None
+    is_active: bool
+    is_verified: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class BusinessCardResponse(BusinessCardBase):
     id: int
     created_at: datetime
+    managers: list[BusinessManagerResponse] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
