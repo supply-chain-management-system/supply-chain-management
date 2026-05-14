@@ -47,6 +47,13 @@ async def send_invite(
             f"Received invite request from user: {current_user.email} for {payload.email}"
         )
 
+        existing_user = db.query(User).filter(User.email == payload.email).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User already exists.",
+            )
+        
         validate_invite_permission(current_user, payload)
 
         event_id = str(uuid.uuid4())

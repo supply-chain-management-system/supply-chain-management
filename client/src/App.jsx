@@ -89,9 +89,9 @@ function App() {
 
           {/* BUSINESS MANAGER */}
           <Route
-            element={
-              <ProtectedRoute allowedRoles={['business_manager']} />
-            }
+            // element={
+            //   <ProtectedRoute allowedRoles={['business_manager']} />
+            // }
           >
             <Route
               path="/business-manager"
@@ -124,9 +124,9 @@ function App() {
 
           {/* WAREHOUSE MANAGER */}
           <Route
-            element={
-              <ProtectedRoute allowedRoles={['warehouse_manager']} />
-            }
+            // element={
+            //   <ProtectedRoute allowedRoles={['warehouse_manager']} />
+            // }
           >
             <Route element={<Ware_Layout />}>
               <Route path="/ware_dashboard" element={<WarehouseDashboard />} />
@@ -139,9 +139,9 @@ function App() {
 
           {/* FACTORY MANAGER */}
           <Route
-            element={
-              <ProtectedRoute allowedRoles={['factory_manager']} />
-            }
+            // element={
+            //   <ProtectedRoute allowedRoles={['factory_manager']} />
+            // }
           >
             <Route element={<LayoutFactory />}>
               <Route path="production" element={<ProductionManagement />} />

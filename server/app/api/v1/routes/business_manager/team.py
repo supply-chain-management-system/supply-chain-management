@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 import httpx
 import uuid
 from sqlalchemy.orm import Session
-from app.db.deps import get_db
+from app.db.deps import get_db ,get_tenant_db
 from app.models.company_auth.managers import InviteToken 
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -18,7 +18,7 @@ class RefinedInviteSchema(BaseModel):
     target_id: Optional[int] = None  # The specific Factory or Warehouse ID
 
 @router.post("/invite", status_code=status.HTTP_201_CREATED)
-async def create_context_aware_invite(data: RefinedInviteSchema, db: Session = Depends(get_db)):
+async def create_context_aware_invite(data: RefinedInviteSchema, db: Session = Depends(get_tenant_db)):
     token = str(uuid.uuid4())
     
     # Save to DB with the target_id (ensure your InviteToken model has this column!)
