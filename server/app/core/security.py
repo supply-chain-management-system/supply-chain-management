@@ -3,9 +3,10 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import jwt
 import os
+from passlib.context import CryptContext
 from dotenv import load_dotenv
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 load_dotenv()
 
@@ -46,3 +47,4 @@ def create_refresh_token(data: dict) -> str:
 
     to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+

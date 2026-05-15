@@ -8,26 +8,27 @@ import httpx
 import os
 
 from app.db.deps import get_db, get_tenant_db
-from app.models.business_manager.team import LogisticsManager
+from app.models.business_manager.team import SupplyManager
 from app.models.auth.user import User, RoleEnum
 from app.services.auth.dependancy import get_current_user
 
 router = APIRouter(
-    prefix="/business-manager/logistics-managers",
-    tags=["BM — Logistics Manager Control"]
+    prefix="/business-manager/supply-managers",
+    tags=["BM — Supply Manager Control"]
 )
 
 # ==========================================
 # SCHEMAS
 # ==========================================
 
-class LMCreateSchema(BaseModel):
+class SMCreateSchema(BaseModel):
     name: str
     email: EmailStr
     phone: Optional[str] = None
-    shift: str        # Day | Night | Swing
-    route: str        # Local | Regional | Long Haul | Last Mile | Cross-Border
-    logistics_id: Optional[int] = 1   # Hub / logistics unit ID
+    category: str     # Electronics | Raw Material | Hydraulics | Plastics | Chemicals | Packaging | Textiles | Machinery
+    region: str       # Domestic | International | Asia-Pacific | Europe | Americas
+    department: str = "Procurement"
+    supplier_id: Optional[int] = None
     business_id: Optional[int] = 1
     business_card_id: Optional[int] = None
 
@@ -37,14 +38,14 @@ class LMCreateSchema(BaseModel):
     description: Optional[str] = None
     color: Optional[str] = "#185FA5"
 
-class LMCardResponse(BaseModel):
+class SMCardResponse(BaseModel):
     id: int
     name: str
     email: str
     phone: Optional[str]
-    shift: str
-    route: str        # Direct route field
-    department: str   # Keep for backward compat with frontend
+    category: str
+    region: str
+    department: str
     is_active: bool   # Controls the "Active / Invite Sent" pulsing dot
     
     business_card_id: Optional[int]
@@ -65,28 +66,28 @@ async def dispatch_n8n_invite(payload: dict):
         async with httpx.AsyncClient(timeout=5.0) as client:
             await client.post(N8N_WEBHOOK_URL, json=payload)
     except Exception as e:
-        print(f"⚠️ n8n LM dispatch failed: {e}")
+        print(f"⚠️ n8n SM dispatch failed: {e}")
 
 
 # ==========================================
-# GET — All LM Cards (Paginated Grid)
+# GET — All SM Cards (Paginated Grid)
 # ==========================================
 
-@router.get("/", response_model=List[LMCardResponse])
-def get_logistics_managers(
-    logistics_id: Optional[int] = Query(None),
+@router.get("/", response_model=List[SMCardResponse])
+def get_supply_managers(
+    supplier_id: Optional[int] = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(9, ge=1, le=50),
     db: Session = Depends(get_tenant_db)
 ):
     skip = (page - 1) * size
     
-    query = db.query(LogisticsManager)
+    query = db.query(SupplyManager)
     
-    if logistics_id:
-        query = query.filter(LogisticsManager.hub_id == logistics_id)
+    if supplier_id:
+        query = query.filter(SupplyManager.supplier_id == supplier_id)
 
-    managers = query.order_by(LogisticsManager.id.desc()).offset(skip).limit(size).all()
+    managers = query.order_by(SupplyManager.id.desc()).offset(skip).limit(size).all()
     return managers
 
 
@@ -95,13 +96,13 @@ def get_logistics_managers(
 # ==========================================
 
 @router.get("/count")
-def get_logistics_manager_count(
-    logistics_id: Optional[int] = Query(None),
+def get_supply_manager_count(
+    supplier_id: Optional[int] = Query(None),
     db: Session = Depends(get_tenant_db)
 ):
-    query = db.query(LogisticsManager)
-    if logistics_id:
-        query = query.filter(LogisticsManager.hub_id == logistics_id)
+    query = db.query(SupplyManager)
+    if supplier_id:
+        query = query.filter(SupplyManager.supplier_id == supplier_id)
     return {"total": query.count()}
 
 
@@ -109,13 +110,13 @@ def get_logistics_manager_count(
 # POST — Create card + send invite email
 # ==========================================
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=LMCardResponse)
-async def create_logistics_manager(
-    data: LMCreateSchema, 
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=SMCardResponse)
+async def create_supply_manager(
+    data: SMCreateSchema, 
     db: Session = Depends(get_tenant_db),
     current_user: User = Depends(get_current_user)
 ):
-    existing = db.query(LogisticsManager).filter(LogisticsManager.email == data.email).first()
+    existing = db.query(SupplyManager).filter(SupplyManager.email == data.email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -123,14 +124,14 @@ async def create_logistics_manager(
         )
 
     # Map incoming fields to model columns
-    new_lm = LogisticsManager(
+    new_sm = SupplyManager(
         name=data.name,
         email=data.email,
         phone=data.phone,
-        shift=data.shift,
-        route=data.route,
-        department=data.route,        # Keep department in sync for frontend compat
-        hub_id=data.logistics_id, 
+        category=data.category,
+        region=data.region,
+        department=data.department,
+        supplier_id=data.supplier_id, 
         business_id=data.business_id,
         business_card_id=data.business_card_id,
         size=data.size,
@@ -142,30 +143,29 @@ async def create_logistics_manager(
     )
 
     try:
-        db.add(new_lm)
+        db.add(new_sm)
         db.commit()
-        db.refresh(new_lm)
+        db.refresh(new_sm)
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 
-    return new_lm
+    return new_sm
 
 
 # ==========================================
-# GET — LM Analytics (Fleet & Delivery)
+# GET — SM Analytics
 # ==========================================
 
 @router.get("/{manager_id}/analytics")
-def get_logistics_manager_analytics(manager_id: int, db: Session = Depends(get_tenant_db)):
+def get_supply_manager_analytics(manager_id: int, db: Session = Depends(get_tenant_db)):
     """
-    Analytics for the Logistics Control Tower. 
-    Ready to hook into 'Shipment' or 'Fleet' tables when teammates build them.
+    Analytics for the Supply Manager Control Tower.
     """
-    card = db.query(LogisticsManager).filter(
-        LogisticsManager.id == manager_id
+    card = db.query(SupplyManager).filter(
+        SupplyManager.id == manager_id
     ).first()
     
     if not card:
@@ -175,11 +175,11 @@ def get_logistics_manager_analytics(manager_id: int, db: Session = Depends(get_t
     user = db.query(User).filter(User.email == card.email).first()
     
     # Initialize defaults for unregistered managers
-    total_deliveries = 0
-    on_time_rate = 0
-    fleet_utilization = 0
-    pending_shipments = 0
-    avg_transit_days = 0
+    total_suppliers_managed = 0
+    on_time_delivery = 0
+    quality_score = 0
+    active_contracts = 0
+    avg_lead_time_days = 0
     reliability = "Pending Setup"
 
     if user:
@@ -190,36 +190,36 @@ def get_logistics_manager_analytics(manager_id: int, db: Session = Depends(get_t
             db.commit()
 
         # User is registered! 
-        # (Replace these mocks with real db.query(Shipment) logic later)
-        total_deliveries = 24
-        on_time_rate = 96.4
-        fleet_utilization = 82.0
-        pending_shipments = 3
-        avg_transit_days = 2.5
+        # Mocked real data
+        total_suppliers_managed = 12
+        on_time_delivery = 98.4
+        quality_score = 99.1
+        active_contracts = 8
+        avg_lead_time_days = 14
         reliability = "Excellent"
 
     return {
         "manager_id": card.id,
         "name": card.name,
-        "route": card.route,            # Direct route field now
+        "category": card.category,
         "is_registered": bool(user),
-        "total_deliveries_managed": total_deliveries,
-        "on_time_rate": on_time_rate,
-        "fleet_utilization": fleet_utilization,
-        "pending_shipments": pending_shipments,
-        "avg_transit_days": avg_transit_days,
+        "total_suppliers_managed": total_suppliers_managed,
+        "on_time_delivery": on_time_delivery,
+        "quality_score": quality_score,
+        "active_contracts": active_contracts,
+        "avg_lead_time_days": avg_lead_time_days,
         "reliability": reliability
     }
 
 
 # ==========================================
-# DELETE — Remove LM Card
+# DELETE — Remove SM Card
 # ==========================================
 
 @router.delete("/{manager_id}", status_code=status.HTTP_200_OK)
-def remove_logistics_manager(manager_id: int, db: Session = Depends(get_tenant_db)):
-    manager = db.query(LogisticsManager).filter(
-        LogisticsManager.id == manager_id
+def remove_supply_manager(manager_id: int, db: Session = Depends(get_tenant_db)):
+    manager = db.query(SupplyManager).filter(
+        SupplyManager.id == manager_id
     ).first()
 
     if not manager:
@@ -227,4 +227,4 @@ def remove_logistics_manager(manager_id: int, db: Session = Depends(get_tenant_d
 
     db.delete(manager)
     db.commit()
-    return {"status": "success", "message": f"Logistics Manager {manager_id} removed."}
+    return {"status": "success", "message": f"Supply Manager {manager_id} removed."}

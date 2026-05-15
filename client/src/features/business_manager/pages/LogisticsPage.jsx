@@ -19,6 +19,8 @@ import {
   PackageCheck, Clock, Star, AlertCircle, TrendingUp,
 } from 'lucide-react';
 
+import LMAnalyticsPage from './LMAnalyticsPage';
+
 /* ═══════════════════════════════════════════════
    CONSTANTS
 ═══════════════════════════════════════════════ */
@@ -443,7 +445,7 @@ const LogisticsManagerPage = () => {
   if (view === 'analytics' && selectedManager) {
     return (
       <div className="space-y-6">
-        <AnalyticsView
+        <LMAnalyticsPage
           manager={selectedManager}
           analytics={analytics}
           loading={analyticsLoading}
