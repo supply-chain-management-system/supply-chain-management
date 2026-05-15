@@ -20,6 +20,8 @@ import {
   TrendingUp, ShoppingCart, BadgeCheck,
 } from 'lucide-react';
 
+import SMAnalyticsPage from './SMAnalyticsPage';
+
 /* ═══════════════════════════════════════════════
    CONSTANTS
 ═══════════════════════════════════════════════ */
@@ -451,7 +453,7 @@ const SuppliersPage = () => {
   if (view === 'analytics' && selectedSupplier) {
     return (
       <div className="space-y-6">
-        <AnalyticsView
+        <SMAnalyticsPage
           supplier={selectedSupplier}
           analytics={analytics}
           loading={analyticsLoading}

@@ -37,6 +37,14 @@ export const createLogisticsManager = createAsyncThunk(
         route:        formData.route,
         logistics_id: formData.logistics_id || 1,
       });
+
+      // Send the central invite using company_auth.py API
+      await api.post('/company/auth/invite/send', {
+        business_id: 1,
+        role: 'logistics_manager',
+        email: formData.email.trim()
+      });
+
       return res.data;
     } catch (err) {
       return rejectWithValue(err?.response?.data?.detail || 'Failed to create manager.');
