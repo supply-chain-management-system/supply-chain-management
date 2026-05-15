@@ -39,6 +39,7 @@ from app.api.v1.routes.sub_managers import request
 
 
 from app.api.v1.routes.sub_managers.factory_manager import production, team,factory_machine
+from app.api.v1.routes.sub_managers.factory_manager import analytics    
 
 
 
@@ -85,6 +86,7 @@ app.include_router(suppliers.router, prefix="/api/v1")
 
 
 app.include_router(factory_machine.router,prefix='/api/v1/factory_machine')
+app.include_router(analytics.router,prefix='/api/v1/factory_analytics')
 
 
 

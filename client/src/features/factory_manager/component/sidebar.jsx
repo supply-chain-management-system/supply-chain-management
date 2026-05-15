@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'Dashboard',  active: true },
+  { icon: LayoutDashboard, label: 'Dashboard',path: '/factorydash',active: true },
   { icon: Factory, label: 'Production', path:'/production', active: false },
   { icon: Users, label: 'Teams',path:'/factoryteam', active: false },
   { icon: Settings2, label: 'Machines',path:'/factory_machine', active: false },

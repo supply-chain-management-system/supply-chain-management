@@ -22,7 +22,7 @@ class Worker(BaseTenant):
 
     id=Column(Integer,primary_key=True,index=True)
     name=Column(String,nullable=False)
-    role=Column(Enum(worker_role),default=worker_role.Worker)
+    role = Column(Enum(worker_role, native_enum=False), default=worker_role.Worker)
     status=Column(Enum(worker_status),default=worker_status.Active)
     factory_id=Column(Integer,ForeignKey('factories.id'))
     
@@ -40,7 +40,7 @@ class Productionteam(BaseTenant):
     team_name=Column(String,nullable=True)
     production_id=Column(Integer,ForeignKey('production.id'))
     worker_id=Column(Integer,ForeignKey('workers.id'))
-    role=Column(Enum(worker_role),default=worker_role.Worker)
+    role = Column(Enum(worker_role, native_enum=False), default=worker_role.Worker)
     production=relationship('Production')
     worker=relationship('Worker')
 

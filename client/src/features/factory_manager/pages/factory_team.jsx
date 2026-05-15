@@ -34,6 +34,40 @@ const [groupedTeam, setGroupedTeam] = useState({});
   const [selectedUsers, setSelectedUsers] = useState([]);
 
   const [workers, setWorkers] = useState([]);
+  const [newWorker, setNewWorker] = useState({
+  name: "",
+  role: "",
+  factory_id: 1
+});
+
+const handleCreateWorker = async () => {
+  try {
+    const payload = {
+      name: newWorker.name,
+      role: newWorker.role,
+      factory_id: Number(newWorker.factory_id)
+    };
+
+    const res = await api.post(
+      '/factory_team/factory/create_worker',
+      
+      payload
+    );
+
+    console.log(res.data);
+    alert("Worker created successfully");
+
+    // refresh list
+    fetchWorkers();
+
+    // reset form
+    setNewWorker({ name: "", role: "", factory_id: 1 });
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to create worker");
+  }
+};
 
   const DEFAULT_AVATAR = "https://i.pravatar.cc/150?img=10";
 
@@ -80,7 +114,7 @@ useEffect(() => {
   api.get("factory_team/factory/all_team")
     .then((res) => {
       console.log('haid',res.data);
-      setGroupedTeam(res.data)
+      setGroupedTeam(res.data,'hai iam ansil')
 
 
     });
@@ -92,7 +126,7 @@ const handleAssignTeam = async () => {
     console.log('hai ian',selectedRole)
   try {
     const payload = {
-      production_id: 1, 
+      production_id: 2, 
       workers: selectedUsers, 
       
    
@@ -205,6 +239,39 @@ console.log(workers.id)
                 />
               </div>
             </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
+  <h3 className="font-semibold text-slate-700">Add Worker</h3>
+
+  <input
+    className="w-full p-2 border rounded"
+    placeholder="Name"
+    value={newWorker.name}
+    onChange={(e) =>
+      setNewWorker({ ...newWorker, name: e.target.value })
+    }
+  />
+
+  <select
+  className="w-full p-2 border rounded"
+  value={newWorker.role}
+  onChange={(e) =>
+    setNewWorker({ ...newWorker, role: e.target.value })
+  }
+>
+  <option value="">Select Role</option>
+
+  <option value="worker">Worker</option>
+  <option value="operator">Operator</option>
+  <option value="supervisor">Supervisor</option>
+</select>
+
+  <button
+    onClick={handleCreateWorker}
+    className="w-full bg-green-600 text-white py-2 rounded-lg"
+  >
+    Create Worker
+  </button>
+</div>
 
         
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

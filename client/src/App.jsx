@@ -29,6 +29,7 @@ import Factorydash from './features/factory_manager/pages/dashboard';
 import  ProductionManagement from './features/factory_manager/pages/production_page'
 import Team from './features/factory_manager/pages/factory_team'
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
+import Dashboardfactory from './features/factory_manager/pages/dashboard';
 
 import ProductionOutputHistory from './features/factory_manager/pages/outputlogs';
 

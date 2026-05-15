@@ -1,0 +1,11 @@
+supply_chain:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: postgres   # docker service name                
+      user: postgres
+      password: 12345
+      port: 5432
+      dbname: supply_chain_db
+      schema: t_dkja_8bb04_analytic

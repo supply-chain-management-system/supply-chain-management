@@ -1,0 +1,10 @@
+name: supply_chain_analytics
+version: 1.0
+profile: supply_chain
+
+models:
+  supply_chain_analytics:
+    staging:
+      materialized: view
+    marts:
+      materialized: table

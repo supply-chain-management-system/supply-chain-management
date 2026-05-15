@@ -41,22 +41,19 @@ def create_worker(data: worker_create, db: Session = Depends(get_tenant_db)):
 
 
 @router.get('/get_worker', response_model=list[get_worker])
-def get_worker(db: Session = Depends(get_db)):
+def get_worker(db: Session = Depends(get_tenant_db)):  
+    assigned_worker_ids = db.query(Productionteam.worker_id).subquery()
 
-    query = """
-SELECT * FROM workers
-WHERE id NOT IN (
-  SELECT worker_id FROM production_team
-)
-"""
-    workers = db.execute(text(query)).mappings().all()
-    print('workd', workers)
+  
+    workers = db.query(Worker).filter(Worker.id.not_in(assigned_worker_ids)).all()
 
+    print('Available workers:', workers)
     return workers
 
 
 @router.post("/assign_team")
 def assign_team(data: team_create, db: Session = Depends(get_tenant_db)):
+    print('hai ak',data.production_id)
 
     production = (
         db.query(Production).filter(Production.id == data.production_id).first()
@@ -103,35 +100,32 @@ def assign_team(data: team_create, db: Session = Depends(get_tenant_db)):
 
 @router.get("/all_team")
 def get_all_production_teams(db: Session = Depends(get_tenant_db)):
-
-    query = """
-        SELECT 
-            pt.id,
-            pt.production_id,
-            u.name,
-            pt.role,
-            pt.worker_id,
-            u.status
-        FROM production_team pt
-        JOIN workers u ON u.id = pt.worker_id
-        ORDER BY pt.production_id
-    """
-
-    result = db.execute(text(query)).mappings().all()
+  
+    results = (
+        db.query(
+            Productionteam.id,
+            Productionteam.production_id,
+            Worker.name,
+            Productionteam.role,
+            Productionteam.worker_id,
+            Worker.status
+        )
+        .join(Worker, Worker.id == Productionteam.worker_id)
+        .order_by(Productionteam.production_id)
+        .all()
+    )
+    print('results ansil', results)
 
     grouped = defaultdict(list)
-    print('ja', result)
-
-    for row in result:
-        grouped[row["production_id"]].append(
-            {
-                "id": row["id"],
-                "name": row["name"],
-                "role": row["role"],
-                "worker_id": row["worker_id"],
-                'status': row['status'],
-            }
-        )
+    for row in results:
+        
+        grouped[row.production_id].append({
+            "id": row.id,
+            "name": row.name,
+            "role": row.role,
+            "worker_id": row.worker_id,
+            'status': row.status,
+        })
 
     return grouped
 
@@ -161,3 +155,6 @@ def remove_teammember(mem_id: int, db: Session = Depends(get_tenant_db)):
     except SQLAlchemyError as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="database error while delete")
+
+
+

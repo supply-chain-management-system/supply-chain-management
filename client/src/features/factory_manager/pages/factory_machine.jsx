@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../../../api/api';
+import { useEffect } from 'react';
 
 // Mock Data
 const mockMachines = [
@@ -263,7 +264,7 @@ const SidebarPanel = ({ selectedMachine, setSelectedMachine }) => {
 const AddMachineModal = ({ open, onClose, onSubmit }) => {
   const [form, setForm] = useState({
     name: '',
-    category: '',
+   
     status: 'available',
     location: '',
     lastMaintenance: '',
@@ -288,8 +289,8 @@ const AddMachineModal = ({ open, onClose, onSubmit }) => {
       <div className="bg-white p-6 rounded-xl w-[400px]">
         <h2 className="font-bold mb-4">Add Machine</h2>
 
-        <input name="name" placeholder="Name" onChange={handleChange} className="input" />
-        <input name="category" placeholder="Category" onChange={handleChange} className="input" />
+        <input name="name" placeholder="Name" required onChange={handleChange} className="input" />
+        <input name="category" placeholder="Category" required onChange={handleChange} className="input" />
         <input name="location" placeholder="Location" onChange={handleChange} className="input" />
         <input type="date" name="lastMaintenance" onChange={handleChange} className="input" />
         <input name="efficiency" placeholder="Efficiency" onChange={handleChange} className="input" />
@@ -315,40 +316,54 @@ const AddMachineModal = ({ open, onClose, onSubmit }) => {
 export default function Machine() {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedMachine, setSelectedMachine] = useState(null);
+  const [machines, setMachines] = useState([]);
   
 
   const[model,showmodel]=useState(false)
 
-  const filteredMachines = mockMachines.filter(machine => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'available') return machine.status === 'available';
-    if (activeTab === 'maintenance') return machine.status === 'maintenance';
-    return true;
-  });
-
-  const handleAddMachine = async (data) => {
+ const filteredMachines = machines.filter(machine => {
+  if (activeTab === 'all') return true;
+  if (activeTab === 'available') return machine.status === 'available';
+  if (activeTab === 'maintenance') return machine.status === 'maintenance';
+  return true;
+});
+const formattedMachines = filteredMachines.map(m => ({
+  ...m,
+  category: m.type, // backend → UI
+  location: "Not Assigned", // temporary
+  lastMaintenance: m.last_maintenance_date,
+  efficiency: 100 // default
+}));
+const handleAddMachine = async (data) => {
   try {
-    const res = await api.post('factory_machine/machines/', {
-    
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    // 🔴 VALIDATION
+    if (!data.name || !data.category) {
+      alert("Name and Category are required");
+      return;
+    }
 
-    const newMachine = await res.json();
+    const payload = {
+      name: data.name,
+      
+      status: data.status,
+      last_maintenance_date: data.lastMaintenance || null,
+      purchase_date: new Date().toISOString().split('T')[0]
+    };
 
-    console.log("Created:", newMachine);
+    console.log("PAYLOAD:", payload); // 👈 DEBUG
 
-    // 🔥 OPTIONAL: update UI instantly
-    // setMachines(prev => [...prev, newMachine]);
+    const res = await api.post('/factory_machine/machines/', payload);
+
+    console.log("Created:", res.data);
+
+    await fetchMachines();
 
     showmodel(false);
 
   } catch (err) {
-    console.error(err);
+    console.error("FULL ERROR:", err.response?.data);
   }
 };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -379,7 +394,7 @@ export default function Machine() {
           {/* Machine Cards Grid */}
           <div className="lg:col-span-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredMachines.map((machine) => (
+              {formattedMachines.map((machine) => (
                 <MachineCard 
                   key={machine.id} 
                   machine={machine}

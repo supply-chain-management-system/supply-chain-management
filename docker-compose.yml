@@ -101,6 +101,9 @@ services:
     command: >
       celery -A app.core.celery.celery_app worker --loglevel=info
 
+ 
+ 
+
 volumes:
   postgres_data:
   n8n_data:
