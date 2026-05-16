@@ -13,6 +13,7 @@ from ai_app.api.v1.routes.business_manager import bm_routes
 from ai_app.api.v1.routes.warehouse_manger import routes
 
 
+
 # ==========================================
 # SWAGGER DOCUMENTATION METADATA
 # ==========================================
@@ -33,7 +34,8 @@ app = FastAPI(
     version="2.0.0",
     openapi_tags=tags_metadata,
     docs_url="/docs",       # Swagger UI will live here
-    redoc_url="/redoc",     # ReDoc will live here
+    redoc_url="/redoc",
+    root_path="/ai-docs"     # ReDoc will live here
 )
 
 # ==========================================
@@ -52,6 +54,7 @@ app.add_middleware(
 # ==========================================
 app.include_router(bm_routes.router, prefix="/api/v1")
 app.include_router(routes.router, prefix="/api/v1")
+
 
 
 @app.get("/health", tags=["System"])

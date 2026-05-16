@@ -1,28 +1,26 @@
-import os
-
-from dotenv import load_dotenv
-
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import initialize_agent
-from langchain.agents import AgentType
+from langgraph.prebuilt import create_react_agent
+from langgraph.checkpoint.memory import MemorySaver
+from ai_app.tools.warehouse_manager.tools import get_stock_level
+from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
+from langchain_cohere import ChatCohere
+from langgraph.prebuilt import create_react_agent
 
-from ai_app.tools.warehouse_manager.tools import get_low_stock
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+memory = MemorySaver()
+groq_model = ChatGroq(model="llama-3.3-70b-versatile")
+openai_model = ChatOpenAI(model="gpt-4o-mini")
+cohere_model = ChatCohere(model="command-r-plus")
 
-load_dotenv()
+smart_llm = groq_model.with_fallbacks([
+    openai_model,
+    cohere_model
+])
+tools = [get_stock_level]
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
-    google_api_key=GEMINI_API_KEY
-)
-
-tools = [get_low_stock]
-
-agent = initialize_agent(
+agent_executor = create_react_agent(
+    model=smart_llm,
     tools=tools,
-    llm=llm,
-    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True
+    checkpointer=memory
 )

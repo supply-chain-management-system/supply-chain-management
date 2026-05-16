@@ -12,6 +12,13 @@ ALGORITHM = "HS256"
 class TenantMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         print(f"Processing request for path: {request.url.path}")
+
+        if "internal" in request.url.path or "webhook" in request.url.path:
+          print(f"Bypassing tenant middleware for internal path: {request.url.path}")
+          return await call_next(request)
+
+
+
         if "webhook" in request.url.path:
             return await call_next(request)
 

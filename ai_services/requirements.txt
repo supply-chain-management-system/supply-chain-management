@@ -1,37 +1,35 @@
-# ai_services/requirements.txt
-
 # Web Framework
 fastapi
 uvicorn
-pydantic
 httpx
 
 # Environment
 python-dotenv
-
-# AI & Orchestration
-langgraph
-langchain==0.1.20
-langchain-google-genai
-langchain-core
-langchain-groq
-langchain-google-genai
-langchain-cohere
+pydantic-settings
 
 # Database
 sqlalchemy
+alembic
 psycopg2-binary
-
-# Extra
+motor
 numpy
-# Database Access
+email-validator
+pydantic[email]
+python-jose[cryptography]
+python-multipart
+passlib[bcrypt]
 
-
-motor
-
-# Database Access
-sqlalchemy
-psycopg2-binary
-
-motor
-
+# AI & Orchestration
+langchain
+langchain-core
+langchain-community
+langgraph
+langchain-groq
+langchain-cohere
+langchain-openai
+langchain-google-genai    # <-- ADD THIS BACK SO PYTHON STOPS CRASHING
+google-generativeai       # <-- ADD THIS BACK AS A COMPANION DEPENDENCY
+langsmith
+openai
+groq
+cohere

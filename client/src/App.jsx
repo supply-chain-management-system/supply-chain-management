@@ -119,9 +119,9 @@ function App() {
 
           {/* WAREHOUSE MANAGER */}
           <Route
-            element={
-              <ProtectedRoute allowedRoles={['warehouse_manager']} />
-            }
+            // element={
+            //   <ProtectedRoute allowedRoles={['warehouse_manager']} />
+            // }
           >
             <Route element={<Ware_Layout />}>
               <Route path="/ware_dashboard" element={<WarehouseDashboard />} />
