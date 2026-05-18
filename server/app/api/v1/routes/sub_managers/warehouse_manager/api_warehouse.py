@@ -13,7 +13,7 @@ from fastapi import HTTPException, status
 router=APIRouter()
 
 @router.post("/ware_house", response_model=WarehouseOut, status_code=status.HTTP_201_CREATED)
-def create_warehouse(data: WarehouseCreate, db: Session = Depends(get_db)):
+def create_warehouse(data: WarehouseCreate, db: Session = Depends(get_tenant_db)):
     try:
         warehouse = Warehouse(**data.dict())
         db.add(warehouse)
@@ -25,13 +25,13 @@ def create_warehouse(data: WarehouseCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
 @router.get("/ware_house", response_model=List[WarehouseOut], status_code=status.HTTP_200_OK)
-def get_warehouse(db: Session = Depends(get_db)):
+def get_warehouse(db: Session = Depends(get_tenant_db)):
     return db.query(Warehouse).all()
 
 
 
 @router.post("/ware_products", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
-def create_product(data: ProductCreate, db: Session = Depends(get_db)):
+def create_product(data: ProductCreate, db: Session = Depends(get_tenant_db)):
     try:
         new_product = Product(**data.dict())
         db.add(new_product)
@@ -43,7 +43,7 @@ def create_product(data: ProductCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create product")
 
 @router.get("/ware_products", response_model=List[ProductOut], status_code=status.HTTP_200_OK)
-def get_products(db: Session = Depends(get_db)):
+def get_products(db: Session = Depends(get_tenant_db)):
     return db.query(Product).all()
 
 
@@ -87,7 +87,7 @@ def update_inventory(data: InventoryUpdate, db: Session = Depends(get_db)):
 
 
 @router.get("/inventory", response_model=List[InventoryOut], status_code=status.HTTP_200_OK)
-def get_inventory(db: Session = Depends(get_db)):
+def get_inventory(db: Session = Depends(get_tenant_db)):
     try:
         # We join Inventory with Product and Rack to get their names
         results = db.query(
@@ -120,7 +120,7 @@ def get_inventory(db: Session = Depends(get_db)):
 
 
 @router.post("/racks", response_model=RackOut, status_code=status.HTTP_201_CREATED)
-def create_rack(data: RackCreate, db: Session = Depends(get_db)):
+def create_rack(data: RackCreate, db: Session = Depends(get_tenant_db)):
     try:
         rack = Rack(**data.dict())
         db.add(rack)
@@ -132,7 +132,7 @@ def create_rack(data: RackCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Rack creation failed")
 
 @router.get("/racks", response_model=List[dict], status_code=status.HTTP_200_OK)
-def get_racks(db: Session = Depends(get_db)):
+def get_racks(db: Session = Depends(get_tenant_db)):
     try:
         # Join Rack with Warehouse to get the warehouse name
         results = db.query(
@@ -161,7 +161,7 @@ def get_racks(db: Session = Depends(get_db)):
 
 
 @router.delete("/racks/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_rack(id: int, db: Session = Depends(get_db)):
+def delete_rack(id: int, db: Session = Depends(get_tenant_db)):
     rack = db.query(Rack).filter(Rack.id == id).first()
     if not rack:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rack not found")
@@ -181,7 +181,7 @@ def delete_rack(id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/internal/stock/{product_name}", status_code=status.HTTP_200_OK)
-def get_stock_proxy(product_name: str, db: Session = Depends(get_db)):
+def get_stock_proxy(product_name: str, db: Session = Depends(get_tenant_db)):
     try:
         # 1. Find the product by name to get its ID
         product = db.query(Product).filter(Product.name == product_name).first()

@@ -15,7 +15,7 @@ router = APIRouter()
 
 
 @router.post("/request", response_model=MaterialRequestOut, status_code=status.HTTP_201_CREATED)
-def create_material_request(data: MaterialRequestCreate, db: Session = Depends(get_db)):
+def create_material_request(data: MaterialRequestCreate, db: Session = Depends(get_tenant_db)):
     try:
         new_request = MaterialRequest(
             product_id=data.product_id,
@@ -39,7 +39,7 @@ def create_material_request(data: MaterialRequestCreate, db: Session = Depends(g
         )
 
 @router.get("/request", response_model=List[MaterialRequestOut], status_code=status.HTTP_200_OK)
-def get_material_requests(db: Session = Depends(get_db)):
+def get_material_requests(db: Session = Depends(get_tenant_db)):
     try:
         return db.query(MaterialRequest).all()
     except SQLAlchemyError:
@@ -51,7 +51,7 @@ def get_material_requests(db: Session = Depends(get_db)):
 
 
 @router.get("/factory_details", status_code=status.HTTP_200_OK)
-def get_factory_info(db: Session = Depends(get_db)):
+def get_factory_info(db: Session = Depends(get_tenant_db)):
     try:
         factories = db.query(Factory).all()
         return factories

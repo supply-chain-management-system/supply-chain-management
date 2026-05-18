@@ -5,7 +5,7 @@ from app.db.database import BaseTenant
 
 
 
-class Warehouse(Base):
+class Warehouse(BaseTenant):
     __tablename__ = "warehouses"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -15,7 +15,7 @@ class Warehouse(Base):
     racks = relationship("Rack", back_populates="warehouse")
 
 
-class Rack(Base):
+class Rack(BaseTenant):
     __tablename__ = "racks"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -26,7 +26,7 @@ class Rack(Base):
     warehouse = relationship("Warehouse", back_populates="racks")
 
 
-class Product(Base):
+class Product(BaseTenant):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -35,7 +35,7 @@ class Product(Base):
 
 
 
-class Inventory_ware(Base):
+class Inventory_ware(BaseTenant):
     __tablename__ = "inventory_ware"
 
     id = Column(Integer, primary_key=True, index=True)
