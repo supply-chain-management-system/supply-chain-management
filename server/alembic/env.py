@@ -10,14 +10,17 @@ from app.models.company_auth.managers import InviteToken
 
 
 
+from app.models.sub_managers.factory_manager.factory_machinery import Machine
+
+
 from app.models.sub_managers.factory_manager.production import Factory,Production
 from app.models.sub_managers.factory_manager.teams import Worker,Productionteam
 
 from app.models.business_manager.domain import Inventory, Approval, Supplier
 from app.models.business_manager.business_owners import BusinessOwners
 
-from app.models.sub_managers.factory_manager.production import Factory, Production
-from app.models.sub_managers.factory_manager.teams import Worker, Productionteam
+
+
 
 from app.models.business_manager.domain import Inventory, Approval, Supplier
 from app.models.business_manager.business_owners import BusinessOwners

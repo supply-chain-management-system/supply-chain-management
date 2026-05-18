@@ -32,15 +32,24 @@ from app.api.v1.routes.business_manager import supply_manager
 
 
 
-from app.api.v1.routes.sub_managers.factory_manager import production, team
+
 
 
 from app.api.v1.routes.sub_managers.warehouse_manager import api_warehouse
 from app.api.v1.routes.sub_managers import request
 
 
-from app.api.v1.routes.sub_managers.factory_manager import production, team
+
+
+
+from app.api.v1.routes.sub_managers.factory_manager import production, team,factory_machine
+from app.api.v1.routes.sub_managers.factory_manager import analytics    
+
+
+
+
 from app.api.v1.routes.auth import company_auth
+
 
 app = FastAPI(
     title="FastAPI App",
@@ -78,6 +87,15 @@ app.include_router(suppliers.router, prefix="/api/v1")
 app.include_router(supply_manager.router, prefix="/api/v1")
 
 
+
+
+
+app.include_router(factory_machine.router,prefix='/api/v1/factory_machine')
+app.include_router(analytics.router,prefix='/api/v1/factory_analytics')
+
+
+
+
 app.include_router(api_warehouse.router, prefix='/api/v1')
 
 
@@ -85,6 +103,8 @@ app.include_router(request.router, prefix='/api/v1')
 
 
 app.include_router(team.router, prefix='/api/v1/factory_team')
+
+
 app.include_router(business_card.router, prefix="/api/v1")
 
 
