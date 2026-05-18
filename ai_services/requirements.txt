@@ -13,6 +13,7 @@ python-dotenv
 langgraph
 langchain-core
 langchain-groq
+
 langchain-google-genai
 langchain-cohere
 

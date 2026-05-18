@@ -126,6 +126,7 @@ async def google_auth(
         raise HTTPException(status_code=400, detail="Email not available")
 
     user = get_user_by_email(db, email)
+  
 
     if not user:
         user = create_user(
@@ -140,6 +141,7 @@ async def google_auth(
     access_token = create_access_token({"sub": user.email, "user_id": user.id})
 
     refresh_token = create_refresh_token({"sub": user.email})
+    print('hai iam ansil iam co,',access_token)
 
     response.set_cookie(
         key="access_token",

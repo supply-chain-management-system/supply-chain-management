@@ -12,8 +12,12 @@ export const fetchWarehouseManagers = createAsyncThunk(
     try {
       const params = { page, size };
       if (warehouse_id) params.warehouse_id = warehouse_id;
-      const res = await apiClient.get(BASE + '/', { params });
-      return { data: res.data, page };
+
+      const [rosterRes, countRes] = await Promise.all([
+        api.get(BASE + '/', { params }),
+        api.get(BASE + '/count', { params: warehouse_id ? { warehouse_id } : {} }),
+      ]);
+      return { managers: rosterRes.data, total: countRes.data.total, page };
     } catch (err) {
       return rejectWithValue(err?.response?.data?.detail || 'Failed to fetch warehouse managers.');
     }
@@ -22,9 +26,9 @@ export const fetchWarehouseManagers = createAsyncThunk(
 
 export const createWarehouseManager = createAsyncThunk(
   'warehouseManager/create',
-  async (form, { rejectWithValue, dispatch }) => {
+  async (form, { rejectWithValue }) => {
     try {
-      const res = await apiClient.post(BASE + '/', {
+      const res = await api.post(BASE + '/', {
         name:         form.name.trim(),
         email:        form.email.trim(),
         phone:        form.phone?.trim() || null,
@@ -32,7 +36,14 @@ export const createWarehouseManager = createAsyncThunk(
         zone:         form.zone,
         warehouse_id: form.warehouse_id || 1,
       });
-      dispatch(fetchWarehouseManagers({ page: 1 }));
+
+      // Send the central invite using company_auth.py API
+      await api.post('/company/auth/invite/send', {
+        business_id: 1,
+        role: 'warehouse_manager',
+        email: form.email.trim()
+      });
+
       return res.data;
     } catch (err) {
       return rejectWithValue(err?.response?.data?.detail || 'Failed to create manager.');
@@ -44,7 +55,7 @@ export const fetchManagerAnalytics = createAsyncThunk(
   'warehouseManager/analytics',
   async (managerId, { rejectWithValue }) => {
     try {
-      const res = await apiClient.get(`${BASE}/${managerId}/analytics`);
+      const res = await api.get(`${BASE}/${managerId}/analytics`);
       return res.data;
     } catch (err) {
       return rejectWithValue(err?.response?.data?.detail || 'Failed to fetch analytics.');
@@ -56,7 +67,7 @@ export const removeWarehouseManager = createAsyncThunk(
   'warehouseManager/remove',
   async (managerId, { rejectWithValue, dispatch, getState }) => {
     try {
-      await apiClient.delete(`${BASE}/${managerId}`);
+      await api.delete(`${BASE}/${managerId}`);
       const { currentPage } = getState().warehouseManager;
       dispatch(fetchWarehouseManagers({ page: currentPage }));
       return managerId;
@@ -108,8 +119,8 @@ const warehouseManagerSlice = createSlice({
       .addCase(fetchWarehouseManagers.pending,   (s) => { s.loading = true; })
       .addCase(fetchWarehouseManagers.fulfilled, (s, a) => {
         s.loading      = false;
-        s.managers     = a.payload.data;
-        s.total        = a.payload.data.length; // adjust if backend returns total separately
+        s.managers     = a.payload.managers;
+        s.total        = a.payload.total;
         s.currentPage  = a.payload.page;
       })
       .addCase(fetchWarehouseManagers.rejected,  (s, a) => {
@@ -120,8 +131,10 @@ const warehouseManagerSlice = createSlice({
     /* create */
     builder
       .addCase(createWarehouseManager.pending,   (s) => { s.inviteLoading = true; })
-      .addCase(createWarehouseManager.fulfilled, (s) => {
+      .addCase(createWarehouseManager.fulfilled, (s, a) => {
         s.inviteLoading = false;
+        s.managers      = [a.payload, ...s.managers];
+        s.total        += 1;
         s.isFormOpen    = false;
         s.form          = initialForm;
         s.toast         = { type: 'success', msg: '✅ Manager card created & invite sent!' };

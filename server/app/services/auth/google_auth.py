@@ -33,7 +33,7 @@ def verify_google_token(code: str):
             return None
 
         idinfo = id_token.verify_oauth2_token(
-            id_token_str, requests.Request(), GOOGLE_CLIENT_ID
+            id_token_str, requests.Request(), GOOGLE_CLIENT_ID, clock_skew_in_seconds=120
         )
 
         return idinfo

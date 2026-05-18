@@ -7,7 +7,7 @@ from datetime import datetime
 from app.db.database import Base,BaseTenant
 from app.models.auth.user import User
 
-class Supplier(Base):
+class Supplier(BaseTenant):
     __tablename__ = 'suppliers'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -18,11 +18,12 @@ class Supplier(Base):
     lead_time_days = Column(Integer, default=7)
     rating = Column(Float, default=5.0) # 1.0 to 5.0 scale
     is_active = Column(Boolean, default=True)
+    business_id = Column(Integer, default=1)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 
-class Inventory(Base):
+class Inventory(BaseTenant):
     __tablename__ = "inventory"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -37,7 +38,7 @@ class Inventory(Base):
 
 
 
-class Approval(Base):
+class Approval(BaseTenant):
     """
     This acts as the master 'System Requests' table.
     It tracks all AI-drafted actions and human requests.
@@ -55,9 +56,9 @@ class Approval(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # CRITICAL FIX: nullable=True allows the AI Agent to create tickets without a user account!
-    requester_id = Column(Integer, ForeignKey("users.id"), nullable=True) 
-    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    requester_id = Column(Integer, index=True)
+    reviewer_id = Column(Integer, index=True)
 
     # Relationships (Make sure app.models.auth.user.User exists!)
-    requester = relationship("User", foreign_keys=[requester_id])
-    reviewer = relationship("User", foreign_keys=[reviewer_id])
+    # requester = relationship("User", foreign_keys=[requester_id])
+    # reviewer = relationship("User", foreign_keys=[reviewer_id])

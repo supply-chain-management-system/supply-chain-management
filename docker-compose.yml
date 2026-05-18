@@ -30,8 +30,12 @@ services:
       - postgres
     env_file:
       - ./server/.env
+    environment:
+      - PYTHONPATH=/app
     volumes:
       - ./server:/app
+      
+    
 
   ai_service:
     build:
@@ -43,10 +47,13 @@ services:
     env_file:
       - ./ai_services/.env
     environment:
-      - PYTHONPATH=/server_code
+      - PYTHONPATH=/app
     volumes:
       - ./ai_services:/app
+
       - ./server:/server_code
+
+      
   nginx:
     image: nginx:latest
     container_name: api-gateway
@@ -72,6 +79,64 @@ services:
 
     volumes:
       - n8n_data:/home/node/.n8n
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+  celery_worker:
+    build:
+      context: ./server
+    container_name: celery-worker
+    restart: always
+    depends_on:
+      - redis
+      - postgres
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./server:/app
+      
+    environment:
+      - PYTHONPATH=/app:/app/ai_services
+    command: >
+      celery -A app.core.celery.celery_app worker --loglevel=info
+
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      
+  debezium:
+    image: debezium/connect:2.5
+    depends_on:
+      - kafka
+      - postgres
+    ports:
+      - "8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_status
+
+ 
+ 
 
 volumes:
   postgres_data:

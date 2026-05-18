@@ -18,6 +18,8 @@ import {
   Package, Warehouse, Truck, CheckCircle2, BarChart3, ShieldCheck,
 } from 'lucide-react';
 
+import WMAnalyticsPage from './WMAnalyticsPage';
+
 const ITEMS_PER_PAGE = 9;
 
 /* ── zone colour map (banner + badge) ────────────────────── */
@@ -467,115 +469,12 @@ const WarehouseManagerPage = () => {
 
       {/* ══ ANALYTICS VIEW ══ */}
       {view === 'analytics' && selectedManager && (
-        <div className="space-y-6">
-
-          {/* back bar */}
-          <div className="flex items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <button
-              onClick={() => dispatch(setView('roster'))}
-              className="text-slate-400 hover:text-slate-800 transition-colors text-sm font-semibold flex items-center gap-1"
-            >
-              <ChevronLeft size={16} /> Back
-            </button>
-            <div
-              className="h-10 w-10 rounded-xl flex items-center justify-center font-black text-white text-sm"
-              style={{ background: ZONE_COLOR[selectedManager.department]?.banner ?? '#475569' }}
-            >
-              {selectedManager.name.charAt(0)}
-            </div>
-            <div>
-              <h2 className="font-bold text-slate-800">
-                Performance Report: {selectedManager.name}
-              </h2>
-              <p className="text-xs text-slate-400">
-                {selectedManager.department} Zone · {selectedManager.shift} Shift
-              </p>
-            </div>
-          </div>
-
-          {analyticsLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl border border-slate-100 h-44 animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <>
-              {/* KPI row — warehouse specific */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                  { label: 'Stock Managed',      value: analytics?.total_stock_managed ?? '—',  icon: <Package size={18} />,     color: 'text-blue-500'    },
-                  { label: 'Space Utilization',  value: analytics?.space_utilization ?? '—',    icon: <Warehouse size={18} />,   color: 'text-amber-500'   },
-                  { label: 'Inv. Accuracy',      value: analytics?.inventory_accuracy ?? '—',   icon: <CheckCircle2 size={18} />,color: 'text-emerald-500' },
-                  { label: 'Pending Shipments',  value: analytics?.pending_shipments ?? '—',    icon: <Truck size={18} />,       color: 'text-violet-500'  },
-                ].map((kpi, i) => (
-                  <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
-                    <span className={kpi.color}>{kpi.icon}</span>
-                    <p className="text-2xl font-black text-slate-800 mt-2">{kpi.value}</p>
-                    <p className="text-[10px] text-slate-400 uppercase font-bold mt-1">{kpi.label}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* main cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* utilization gauge */}
-                <div className="bg-slate-900 rounded-2xl p-8 text-white">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    Space Utilization
-                  </p>
-                  <h3 className="text-5xl font-black">{analytics?.space_utilization ?? '—'}</h3>
-                  <div className="mt-8 h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 rounded-full transition-all duration-700"
-                      style={{ width: analytics?.space_utilization ?? '0%' }}
-                    />
-                  </div>
-                  <p className="text-xs text-slate-500 mt-4 uppercase font-bold tracking-widest">
-                    Reliability: {analytics?.reliability ?? '—'}
-                  </p>
-                </div>
-
-                {/* warehouse feed */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
-                  <h3 className="font-bold text-slate-800 mb-4">Zone Inventory Report</h3>
-                  <p className="text-slate-400 text-sm italic">
-                    Live zone data for <span className="font-semibold not-italic text-slate-600">{selectedManager.name}</span> in{' '}
-                    <span className="font-semibold not-italic text-slate-600">{selectedManager.department}</span> is connected
-                    to Inventory_ware and Rack tables.
-                  </p>
-                  <div className="mt-6 grid grid-cols-3 gap-4">
-                    <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                      <p className="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1">
-                        <Package size={11} /> Total Stock
-                      </p>
-                      <p className="text-2xl font-black text-slate-800 mt-1">
-                        {analytics?.total_stock_managed ?? '—'}
-                      </p>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                      <p className="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1">
-                        <Truck size={11} /> Pending
-                      </p>
-                      <p className="text-2xl font-black text-slate-800 mt-1">
-                        {analytics?.pending_shipments ?? '—'}
-                      </p>
-                    </div>
-                    <div className="bg-slate-50 rounded-xl border border-slate-100 p-4">
-                      <p className="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1">
-                        <ShieldCheck size={11} /> Status
-                      </p>
-                      <div className="mt-1">
-                        <StatusDot isUsed={selectedManager.is_used} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+        <WMAnalyticsPage
+          manager={selectedManager}
+          analytics={analytics}
+          loading={analyticsLoading}
+          onBack={() => dispatch(setView('roster'))}
+        />
       )}
 
       {/* TOAST */}

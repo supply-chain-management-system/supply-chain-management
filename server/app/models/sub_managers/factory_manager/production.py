@@ -1,6 +1,6 @@
-from sqlalchemy import  Column,Integer,String,Enum,ForeignKey,DateTime
+from sqlalchemy import  Column,Integer,String,Enum,ForeignKey,DateTime,Text
+from app.db.database import BaseTenant
 
-from app.db.database import Base
 from sqlalchemy.sql import  func  
 import enum
 from sqlalchemy.orm import relationship
@@ -8,14 +8,17 @@ from sqlalchemy.orm import relationship
 
 
 
-class Factory(Base):
-    __tablename__='factories'    
+class Factory(BaseTenant):
+    __tablename__='factories'   
+    __table_args__ = {"schema": None} 
 
     id=Column(Integer,primary_key=True,index=True)
     name=Column(String,nullable=False)
-    company_id=Column(Integer,ForeignKey('companies.id'))
+    company_id = Column(Integer)
+    
 
-    company=relationship('Company') 
+    # company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+
     productions=relationship('Production',back_populates='factory')
 
 
@@ -27,7 +30,7 @@ class Production_status(str,enum.Enum):
 
 
 
-class Production(Base):
+class Production(BaseTenant):
     
     __tablename__='production'
 
@@ -38,10 +41,19 @@ class Production(Base):
     output_qty=Column(Integer,default=0)
     status=Column(Enum(Production_status),default=Production_status.PENDING)
     factory_id=Column(Integer,ForeignKey('factories.id'),nullable=False)
-    created_by=Column(Integer,ForeignKey('users.id'),nullable=False)
+    created_by=Column(Integer)
     created_at=Column(DateTime(timezone=True),server_default=func.now())
 
     factory=relationship('Factory',back_populates='productions')
-    creator = relationship("User")
+    
+
+    doc=Column(Text,nullable=True)
 
 
+
+
+# class producion_documentation(BaseTenant):
+#     __tablename__='production_documentation'
+#     id=Column(Integer,primary_key=True,index=True)
+#     production_id=Column(Integer,ForeignKey('production.id'),nullable=False)
+#     document_url=Column(String,nullable=False)

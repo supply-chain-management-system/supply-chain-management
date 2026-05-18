@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 import uuid
 import httpx
+import os
 
-from app.db.deps import get_db
-from app.models.company_auth.managers import InviteToken
+from app.db.deps import get_db, get_tenant_db
+from app.models.business_manager.team import WarehouseManager
 from app.models.auth.user import User, RoleEnum
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse, Inventory_ware, Rack
+from app.services.auth.dependancy import get_current_user
 
 router = APIRouter(
     prefix="/business-manager/warehouse-managers",
@@ -27,6 +29,14 @@ class WHMCreateSchema(BaseModel):
     shift: str        # Day | Night | Swing
     zone: str         # The frontend sends 'zone' (e.g., Cold Storage)
     warehouse_id: Optional[int] = 1
+    business_id: Optional[int] = 1
+    business_card_id: Optional[int] = None
+
+    # Card Fields
+    size: Optional[str] = "Standard"
+    tagline: Optional[str] = None
+    description: Optional[str] = None
+    color: Optional[str] = "#185FA5"
 
 class WHMCardResponse(BaseModel):
     id: int
@@ -34,11 +44,29 @@ class WHMCardResponse(BaseModel):
     email: str
     phone: Optional[str]
     shift: str
-    department: str   # The frontend expects 'department' for the banner mapping
+    department: str   # We map 'zone' to 'department' for frontend compatibility
     is_used: bool     # Controls the "Active / Invite Sent" pulsing dot
+    
+    business_card_id: Optional[int]
+    size: Optional[str]
+    tagline: Optional[str]
+    description: Optional[str]
+    color: Optional[str]
 
     class Config:
         from_attributes = True
+
+
+# ==========================================
+# HELPER: n8n Webhook Dispatch
+# ==========================================
+async def dispatch_n8n_invite(payload: dict):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post(N8N_WEBHOOK_URL, json=payload)
+    except Exception as e:
+        print(f"⚠️ n8n WHM dispatch failed: {e}")
+
 
 # ==========================================
 # GET — All WHM Cards (Paginated 3x3 Grid)
@@ -49,35 +77,17 @@ def get_warehouse_managers(
     warehouse_id: Optional[int] = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(9, ge=1, le=50),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_tenant_db)
 ):
     skip = (page - 1) * size
-    query = db.query(InviteToken).filter(
-        InviteToken.role == "warehouse_manager"
-    )
-    if warehouse_id:
-        query = query.filter(InviteToken.factory_id == warehouse_id)
-
-    managers = query.order_by(InviteToken.created_at.desc()).offset(skip).limit(size).all()
     
-    # Check which managers have actually registered (is_used)
-    registered_emails = {
-        u.email for u in db.query(User.email).filter(User.role == RoleEnum.warehouse_manager).all()
-    }
+    query = db.query(WarehouseManager)
+    
+    if warehouse_id:
+        query = query.filter(WarehouseManager.warehouse_id == warehouse_id)
 
-    results = []
-    for m in managers:
-        results.append({
-            "id": m.id,
-            "name": m.name,
-            "email": m.email,
-            "phone": m.phone,
-            "shift": m.shift,
-            "department": getattr(m, 'department', 'General Storage'),
-            "is_used": m.email in registered_emails
-        })
-
-    return results
+    managers = query.order_by(WarehouseManager.id.desc()).offset(skip).limit(size).all()
+    return managers
 
 # ==========================================
 # GET — Total count for frontend pagination
@@ -86,11 +96,11 @@ def get_warehouse_managers(
 @router.get("/count")
 def get_warehouse_manager_count(
     warehouse_id: Optional[int] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_tenant_db)
 ):
-    query = db.query(InviteToken).filter(InviteToken.role == "warehouse_manager")
+    query = db.query(WarehouseManager)
     if warehouse_id:
-        query = query.filter(InviteToken.factory_id == warehouse_id)
+        query = query.filter(WarehouseManager.warehouse_id == warehouse_id)
     return {"total": query.count()}
 
 # ==========================================
@@ -98,26 +108,34 @@ def get_warehouse_manager_count(
 # ==========================================
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=WHMCardResponse)
-async def create_warehouse_manager(data: WHMCreateSchema, db: Session = Depends(get_db)):
-    existing = db.query(InviteToken).filter(InviteToken.email == data.email).first()
+async def create_warehouse_manager(
+    data: WHMCreateSchema, 
+    db: Session = Depends(get_tenant_db),
+    current_user: User = Depends(get_current_user)
+):
+    existing = db.query(WarehouseManager).filter(WarehouseManager.email == data.email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Manager with email {data.email} already exists."
         )
 
-    token = str(uuid.uuid4())
-
-    new_whm = InviteToken(
-        token=token,
-        email=data.email,
-        role="warehouse_manager",
+    # Map the incoming 'zone' to both 'zone' and 'department' columns
+    new_whm = WarehouseManager(
         name=data.name,
+        email=data.email,
         phone=data.phone,
         shift=data.shift,
-        department=data.zone,  # Map the incoming 'zone' to 'department' in DB
-        factory_id=data.warehouse_id, 
-        extra_data={"type": "warehouse_specific"}, 
+        zone=data.zone,
+        department=data.zone,         # Keep department in sync for frontend compat
+        warehouse_id=data.warehouse_id, 
+        business_id=data.business_id,
+        business_card_id=data.business_card_id,
+        size=data.size,
+        tagline=data.tagline,
+        description=data.description,
+        color=data.color,
+        is_used=False
     )
 
     try:
@@ -128,48 +146,21 @@ async def create_warehouse_manager(data: WHMCreateSchema, db: Session = Depends(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-    invite_link = (
-        f"http://localhost:5173/register"
-        f"?token={token}&role=warehouse_manager&tid={data.warehouse_id or 1}"
-    )
 
-    # Fire n8n (Non-blocking)
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post(
-                "http://127.0.0.1:5678/webhook/invite-user",
-                json={
-                    **data.dict(),
-                    "role": "Warehouse Manager",
-                    "token": token,
-                    "invite_link": invite_link,
-                }
-            )
-    except Exception as e:
-        print(f"⚠️ n8n WHM dispatch skipped: {e}")
 
-    return {
-        "id": new_whm.id,
-        "name": new_whm.name,
-        "email": new_whm.email,
-        "phone": new_whm.phone,
-        "shift": new_whm.shift,
-        "department": new_whm.department,
-        "is_used": False
-    }
+    return new_whm
 
 # ==========================================
 # GET — WHM Analytics (Real-time Inventory)
 # ==========================================
 
 @router.get("/{manager_id}/analytics")
-def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_db)):
+def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_tenant_db)):
     """
     Connects to Warehouse and Inventory_ware tables to feed the frontend analytics view.
     """
-    card = db.query(InviteToken).filter(
-        InviteToken.id == manager_id,
-        InviteToken.role == "warehouse_manager"
+    card = db.query(WarehouseManager).filter(
+        WarehouseManager.id == manager_id
     ).first()
     
     if not card:
@@ -186,8 +177,13 @@ def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_d
     reliability = "Pending Setup"
 
     if user:
+        # Update is_used status automatically if they have registered
+        if not card.is_used:
+            card.is_used = True
+            db.commit()
+
         # User is registered, pull real data from their assigned warehouse
-        warehouse_id = card.factory_id 
+        warehouse_id = card.warehouse_id 
         
         # Calculate real stock managed by querying Inventory_ware joined with Rack
         total_stock_query = db.query(func.sum(Inventory_ware.quantity)).join(Rack).filter(
@@ -213,7 +209,7 @@ def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_d
     return {
         "manager_id": card.id,
         "name": card.name,
-        "zone": card.department,
+        "zone": card.zone,          # Direct zone field now
         "is_registered": bool(user),
         "total_stock_managed": total_stock,
         "space_utilization": space_utilization,
@@ -227,10 +223,9 @@ def get_warehouse_manager_analytics(manager_id: int, db: Session = Depends(get_d
 # ==========================================
 
 @router.delete("/{manager_id}", status_code=status.HTTP_200_OK)
-def remove_warehouse_manager(manager_id: int, db: Session = Depends(get_db)):
-    manager = db.query(InviteToken).filter(
-        InviteToken.id == manager_id,
-        InviteToken.role == "warehouse_manager"
+def remove_warehouse_manager(manager_id: int, db: Session = Depends(get_tenant_db)):
+    manager = db.query(WarehouseManager).filter(
+        WarehouseManager.id == manager_id
     ).first()
 
     if not manager:
