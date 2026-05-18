@@ -160,7 +160,22 @@ const handleGoogleResponse = () => {
         const data = await res.json();
         console.log("Google login response:", data);
         if (res.ok && data.user.company_verified) {
-          navigate("/admindashboard");
+          const role = data.user.role;
+          if (role === "admin") {
+            navigate("/admindashboard");
+          } else if (role === "business_manager") {
+            navigate("/business-manager/dashboard");
+          } else if (role === "warehouse_manager") {
+            navigate("/ware_dashboard");
+          } else if (role === "factory_manager") {
+            navigate("/factorydash");
+          } else if (role === "supply_manager") {
+            navigate("/supplier-manager/dashboard");
+          } else if (role === "logistics_manager") {
+            navigate("/logistics_dashboard");
+          } else {
+            navigate("/");
+          }
         } else {
           navigate("/company-onboarding");
         }
@@ -202,6 +217,7 @@ const handleGoogleResponse = () => {
 
   return (
     <div className="min-h-screen bg-[#080c14] flex items-center justify-center px-4 py-10 relative overflow-hidden">
+
 
       {/* ── Atmospheric background ─────────────── */}
       {/* Grid */}

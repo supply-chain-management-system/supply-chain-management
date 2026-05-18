@@ -14,6 +14,8 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+from sqlalchemy import MetaData
 Base = declarative_base()
 
-BaseTenant = declarative_base()
+tenant_metadata = MetaData(schema=None)
+BaseTenant = declarative_base(metadata=tenant_metadata)

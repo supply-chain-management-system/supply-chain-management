@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Plus,
   Building2,
@@ -6,7 +7,9 @@ import {
   Calendar,
   Send,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Mail,
+  UserCheck
 } from 'lucide-react';
 
 import api from '../../../api/api';
@@ -37,7 +40,7 @@ const CAT_COLOR = {
 /* ══════════════════════════════════════════════════════════
    Invite row
 ═══════════════════════════════════════════════════════════ */
-const InviteRow = ({ card }) => {
+const InviteRow = ({ card, onInviteSent }) => {
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -59,6 +62,7 @@ const InviteRow = ({ card }) => {
 
       setSent(true);
       setEmail('');
+      onInviteSent?.();
 
       setTimeout(() => {
         setSent(false);
@@ -226,13 +230,75 @@ const MetaChip = ({ icon, label, value }) => (
 /* ══════════════════════════════════════════════════════════
    Single business card
 ═══════════════════════════════════════════════════════════ */
-const BizCard = ({ card }) => {
+const ManagerList = ({ managers = [] }) => (
+  <div className="border-t border-gray-100 pt-3">
+    <div className="flex items-center justify-between mb-2">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        Managers
+      </p>
+
+      <span className="text-[10px] font-bold text-gray-400">
+        {managers.length}
+      </span>
+    </div>
+
+    {managers.length === 0 ? (
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-xs text-gray-400">
+        No registered managers yet
+      </div>
+    ) : (
+      <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+        {managers.map((manager) => (
+          <div
+            key={manager.id}
+            className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2"
+          >
+            <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
+              {manager.name?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-semibold text-gray-800 truncate">
+                  {manager.name}
+                </p>
+
+                {manager.is_verified && (
+                  <UserCheck size={13} className="text-emerald-500 flex-shrink-0" />
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 min-w-0">
+                <Mail size={11} className="flex-shrink-0" />
+                <span className="truncate">{manager.email}</span>
+              </div>
+            </div>
+
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              manager.is_active
+                ? 'bg-emerald-50 text-emerald-600'
+                : 'bg-gray-100 text-gray-500'
+            }`}>
+              {manager.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+const BizCard = ({ card, onInviteSent }) => {
+  const navigate = useNavigate();
   const catCls =
     CAT_COLOR[card.category] ??
     'bg-gray-50 text-gray-600 border-gray-200';
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
+    <div
+      onClick={() => navigate(`/managers/${card.id}`, { state: { card } })}
+      className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 flex flex-col cursor-pointer"
+    >
 
       {/* ── coloured banner ── */}
       <div
@@ -283,8 +349,13 @@ const BizCard = ({ card }) => {
           />
         </div>
 
-        <div className="mt-auto">
-          <InviteRow card={card} />
+        <ManagerList managers={card.managers} />
+
+        <div
+          className="mt-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <InviteRow card={card} onInviteSent={onInviteSent} />
         </div>
       </div>
     </div>
@@ -309,8 +380,33 @@ const ManagerGrid = () => {
       setLoading(true);
 
       const res = await api.get('/business-cards/');
+      const cardsWithManagers = await Promise.all(
+        res.data.map(async (card) => {
+          if (card.managers?.length) {
+            return card;
+          }
 
-      setCards(res.data);
+          try {
+            const managersRes = await api.get(`/business-cards/managers/by-business/${card.id}`);
+            return {
+              ...card,
+              managers: managersRes.data,
+            };
+          } catch (managerErr) {
+            console.error(
+              `Failed to fetch managers for business card ${card.id}:`,
+              managerErr
+            );
+
+            return {
+              ...card,
+              managers: card.managers || [],
+            };
+          }
+        })
+      );
+
+      setCards(cardsWithManagers);
 
     } catch (err) {
 
@@ -419,6 +515,7 @@ const ManagerGrid = () => {
             <BizCard
               key={card.id}
               card={card}
+              onInviteSent={fetchCards}
             />
           ))}
         </div>
