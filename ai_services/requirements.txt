@@ -25,6 +25,11 @@ langchain-core
 langchain-community
 langgraph
 langchain-groq
+<<<<<<< HEAD
+=======
+
+langchain-google-genai
+>>>>>>> development
 langchain-cohere
 langchain-openai
 langchain-google-genai    # <-- ADD THIS BACK SO PYTHON STOPS CRASHING

@@ -20,7 +20,7 @@ class Company(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    name = Column(String, nullable=False, index=True)
+    name = Column(String, unique=True, nullable=False, index=True)
     industry = Column(String, nullable=True)
     company_size = Column(String, nullable=True)
 

@@ -10,7 +10,7 @@ BASE_DIR = os.path.abspath(
 sys.path.append(BASE_DIR)
 
 # Assuming main server routes are prefixed with /api/v1
-MAIN_SERVER_URL = os.getenv("MAIN_SERVER_URL", "http://fastapi-server:8000/api/v1")
+MAIN_SERVER_URL = os.getenv("MAIN_SERVER_URL", "http://fastapi:8000/api/v1")
 N8N_URL = os.getenv("N8N_URL", "http://n8n:5678/webhook")
 HTTP_TIMEOUT = 10.0
 
