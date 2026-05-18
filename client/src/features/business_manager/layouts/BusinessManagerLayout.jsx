@@ -1,9 +1,9 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useState } from 'react';
+
 import { logoutUser } from '../../../redux/authSlice';
 
-// IMPORT THE NEW COPILOT WIDGET
 import CopilotWidget from '../components/CopilotWidget';
 
 const BusinessManagerLayout = () => {

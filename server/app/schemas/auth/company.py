@@ -32,3 +32,5 @@ class InviteRequest(BaseModel):
     business_id: int
     role: str
     email: str
+    manager_card_id: Optional[int] = None
+    manager_card_name: Optional[str] = None

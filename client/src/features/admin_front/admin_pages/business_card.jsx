@@ -92,7 +92,7 @@ const BusinessCardPage = () => {
             </p>
           </div>
           <button
-            onClick={() => navigate('/addmanagers', { state: { cardData: card } })}
+            onClick={() => navigate('/managers', { state: { cardData: card } })}
             className="flex items-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition shadow-sm"
           >
             <UserPlus size={15} />

@@ -141,6 +141,11 @@ export default function InviteRegisterPage() {
     e.preventDefault();
     setApiError("");
 
+    if (!token) {
+      setApiError("Invitation token is missing from the URL.");
+      return;
+    }
+
     const errors = validate();
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
@@ -149,19 +154,28 @@ export default function InviteRegisterPage() {
 
     setLoading(true);
     try {
-      const res = await api.post(`/company/auth/invite/register/${token}/`, {
-        name: form.name,
-        email: form.email,
+      const response = await api.post(`/company/auth/invite/register/${token}`, {
+        name: form.name.trim(),
+        email: form.email.trim(),
         password: form.password,
       });
-      localStorage.setItem("email", form.email);
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Registration failed");
-      }
-      navigate(`/verify-email`);
+
+      const registeredEmail = response.data?.user?.email || form.email.trim();
+      localStorage.setItem("email", registeredEmail);
+      navigate("/verify-email", {
+        replace: true,
+        state: {
+          email: registeredEmail,
+          message: response.data?.message,
+        },
+      });
     } catch (err) {
-      setApiError(err.message);
+      const detail = err?.response?.data?.detail;
+      setApiError(
+        Array.isArray(detail)
+          ? detail.map((item) => item.msg).join(", ")
+          : detail || err?.response?.data?.message || err.message || "Registration failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -197,7 +211,9 @@ export default function InviteRegisterPage() {
             <span className="font-semibold">registration</span>
           </h1>
           <p className="text-sm text-blue-300/80 font-light">
-            You've been invited to join the company workspace
+            {token
+              ? "You've been invited to join the company workspace"
+              : "This invitation link is missing a token"}
           </p>
         </div>
 

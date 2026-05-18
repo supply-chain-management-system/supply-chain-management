@@ -14,6 +14,17 @@ from app.services.company.schema_service import (
 )
 from fastapi import Depends
 from app.db.database import BaseTenant
+import uuid
+
+
+def generate_unique_company_name(db: Session, base_name: str) -> str:
+    name = base_name
+    while True:
+        existing = db.query(Company).filter(Company.name == name).first()
+        if not existing:
+            return name
+        unique_id = uuid.uuid4().hex[:5]
+        name = f"{base_name}_{unique_id}"
 
 
 def setup_company(
@@ -31,9 +42,11 @@ def setup_company(
     schema_name = generate_unique_schema(db, data.name)
 
     public_id = generate_public_id()
+    
+    unique_company_name = generate_unique_company_name(db, data.name)
 
     company = Company(
-        name=data.name,
+        name=unique_company_name,
         industry=data.industry,
         owner_email=current_user.email,
         mode=data.is_mode,
@@ -56,10 +69,8 @@ def setup_company(
     from app.models.business_manager.business_owners import BusinessOwners
     from app.models.owner_models.business_card import BusinessCard
 
-    for table in BaseTenant.metadata.tables.values():
-        table.schema = schema_name
-
-    BaseTenant.metadata.create_all(bind=engine)
+    tenant_engine = engine.execution_options(schema_translate_map={None: schema_name})
+    BaseTenant.metadata.create_all(bind=tenant_engine)
 
     with engine.begin() as conn:
         conn.execute(text("SET search_path TO public"))

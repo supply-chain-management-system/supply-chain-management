@@ -11,7 +11,7 @@ from app.db.deps import get_db
 from app.schemas.auth.company import InviteRequest
 from app.services.auth.dependancy import get_current_user
 
-from app.models.auth.user import User, Invitation
+from app.models.auth.user import User, Invitation, UserAssignment
 
 
 from app.services.auth.rolebased import (
@@ -47,6 +47,13 @@ async def send_invite(
             f"Received invite request from user: {current_user.email} for {payload.email}"
         )
 
+        existing_user = db.query(User).filter(User.email == payload.email).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User already exists.",
+            )
+
         validate_invite_permission(current_user, payload)
 
         event_id = str(uuid.uuid4())
@@ -61,6 +68,13 @@ async def send_invite(
 
         invite_link = f"{FRONTEND_URL}/invite/accept/{event_id}"
 
+        invite_category = "manager_card" if payload.manager_card_id else "business"
+        invite_category_id = (
+            str(payload.manager_card_id)
+            if payload.manager_card_id
+            else str(payload.business_id)
+        )
+
         # STORE IN DATABASE
         invitation = Invitation(
             id=event_id,
@@ -68,8 +82,8 @@ async def send_invite(
             company_id=current_user.company_id,
             business_id=payload.business_id,
             role=payload.role,
-            category="business",
-            category_id=str(payload.business_id),
+            category=invite_category,
+            category_id=invite_category_id,
             invited_by=current_user.email,
             owner_email=business_owner_email,
             accepted=False,
@@ -94,27 +108,46 @@ async def send_invite(
             "invite_link": invite_link,
             "invite_recipient": recipients["invite_recipient"],
             "notification_recipients": recipients["notification_recipients"],
+            "category": invitation.category,
+            "category_id": invitation.category_id,
+            "manager_card_id": payload.manager_card_id,
+            "manager_card_name": payload.manager_card_name,
         }
 
-        async with httpx.AsyncClient() as client:
+        n8n_status = "skipped"
+        n8n_error = None
 
-            response = await client.post(
-                N8N_WEBHOOK_URL,
-                json=data,
-                timeout=20.0,
-            )
+        if N8N_WEBHOOK_URL:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        N8N_WEBHOOK_URL,
+                        json=data,
+                        timeout=20.0,
+                    )
 
-        print(response.status_code, response.text)
+                print(response.status_code, response.text)
 
-        if response.status_code not in [200, 201]:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to trigger n8n: {response.text}",
-            )
+                if response.status_code in [200, 201]:
+                    n8n_status = "sent"
+                else:
+                    n8n_status = "failed"
+                    n8n_error = f"n8n returned {response.status_code}: {response.text}"
+                    print(f"n8n invite dispatch failed: {n8n_error}")
+
+            except Exception as e:
+                n8n_status = "failed"
+                n8n_error = str(e)
+                print(f"n8n invite dispatch failed: {n8n_error}")
+        else:
+            n8n_error = "N8N_WEBHOOK_URL is not configured"
+            print(n8n_error)
 
         return {
             "status": "success",
             "event_id": invitation.id,
+            "n8n_status": n8n_status,
+            "n8n_error": n8n_error,
         }
 
     except HTTPException as e:
@@ -190,13 +223,23 @@ async def invite_register(
         otp_expiry=otp_expiry,
         company_id=invitation.company_id,
         role=invitation.role,
-        business_id=invitation.category_id,
+        business_id=invitation.business_id,
         is_active=True,
         is_verified=False,
         is_approved_company=False,
     )
 
     db.add(new_user)
+    db.flush()
+
+    assignment = UserAssignment(
+        user_id=new_user.id,
+        company_id=invitation.company_id,
+        role=invitation.role,
+        category=invitation.category,
+        category_id=invitation.category_id,
+    )
+    db.add(assignment)
 
     invitation.accepted = True
 

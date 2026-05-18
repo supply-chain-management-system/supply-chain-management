@@ -57,7 +57,6 @@ class Invitation(Base):
     category_id = Column(String, nullable=False)
 
     invited_by = Column(String, nullable=False)
-
     owner_email = Column(String, nullable=False)
 
     accepted = Column(Boolean, default=False)
@@ -65,3 +64,14 @@ class Invitation(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     company = relationship("Company")
+
+
+class UserAssignment(Base):
+    __tablename__ = "user_assignments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    role = Column(Enum(RoleEnum), nullable=False)
+    category = Column(String, nullable=False)
+    category_id = Column(String, nullable=False)

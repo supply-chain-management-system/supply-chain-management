@@ -15,6 +15,7 @@ import FaceVerification from './features/auth/pages/face-verification';
 import A_Layout from './features/admin_front/admin_layout/A_Layout';
 import Admin_dashboard from './features/admin_front/admin_pages/Admin_dashboard';
 import ManagerGrid from './features/admin_front/admin_pages/Managers';
+import BusinessManagerDetails from './features/admin_front/admin_pages/BusinessManagerDetails';
 import RequestsPage from './features/business_manager/pages/RequestsPage';
 import OTPVerification from './features/auth/pages/verify-email';
 import ForgotPassword from './features/auth/pages/forgot-password';
@@ -50,8 +51,12 @@ import CreateWarehouse from './features/admin_front/admin_pages/CreateWarehouse'
 
 import InviteAcceptPage from './features/auth/pages/invitation';
 
+import LogisticsLayout from './features/logistics_manager/LogisticsLayout';
+import LogisticsDashboard from './features/logistics_manager/LogisticsDashboard';
+
 import ProtectedRoute from './protectedroutes/authenticate_protector';
 import PublicRoute from './protectedroutes/block_public_pages';
+import KorvexLanding from './components/layout/landing_page';
 
 
 function App() {
@@ -81,11 +86,11 @@ function App() {
 
         <Routes>
 
-          <Route path="/" element={<Navigate to="/business-manager/dashboard" replace />} />
+          <Route path="/" element={<KorvexLanding />} />
 
           {/* PUBLIC ROUTES */}
-          <Route element={<PublicRoute />}>
-            <Route path="/login" element={<Login />} />
+          <Route >
+            <Route path="/login" element={<Login />} /> 
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -116,6 +121,8 @@ function App() {
        
           <Route path="/verify-email" element={<OTPVerification />} />
           <Route path="/invite/accept/:token" element={<InviteAcceptPage />} />
+          <Route path="/invite/register/:token" element={<InviteAcceptPage />} />
+          <Route path="/invite/:token" element={<InviteAcceptPage />} />
           <Route path="/face-verification" element={<FaceVerification />} />
           <Route path="/company-onboarding" element={<CompanyOnboarding />} />
 
@@ -164,6 +171,7 @@ function App() {
             <Route element={<A_Layout />}>
               <Route path="/admindashboard" element={<Admin_dashboard />} />
               <Route path="/managers" element={<ManagerGrid />} />
+              <Route path="/managers/:cardId" element={<BusinessManagerDetails />} />
               <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
               <Route path="/addmanagers" element={<AddManager />} />
               <Route path="/createwarehouse" element={<CreateWarehouse />} />
@@ -198,6 +206,17 @@ function App() {
               <Route path="factoryteam" element={<Team />} />
                  <Route path='/factory_machine' element={<Machine/>}/>
             <Route path='/outputlogs' element={<ProductionOutputHistory/>}/>
+            </Route>
+          </Route>
+
+          {/* LOGISTICS MANAGER */}
+          <Route
+            // element={
+            //   <ProtectedRoute allowedRoles={['logistics_manager']} />
+            // }
+          >
+            <Route element={<LogisticsLayout />}>
+              <Route path="/logistics_dashboard" element={<LogisticsDashboard />} />
             </Route>
           </Route>
 

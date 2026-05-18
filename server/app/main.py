@@ -13,7 +13,6 @@ from fastapi import FastAPI
 from app.models.company_auth.managers import InviteToken
 
 
-
 from app.models.business_manager import domain
 from app.models.business_manager.team import (     # noqa — register models with BaseTenant metadata
     FactoryManager, WarehouseManager, LogisticsManager, SupplyManager
@@ -48,6 +47,7 @@ from app.api.v1.routes.sub_managers.factory_manager import analytics
 
 
 
+
 from app.api.v1.routes.auth import company_auth
 
 
@@ -79,14 +79,13 @@ app.include_router(company.router, prefix="/api/v1/company")
 app.include_router(company_auth.router, prefix="/api/v1/company/auth")
 
 
-
-app.include_router(production.router,prefix='/api/v1/production')
-app.include_router(team.router,prefix='/api/v1/factory_team')
-app.include_router(bm_factory.router, prefix="/api/v1") 
+app.include_router(production.router, prefix='/api/v1/production')
+app.include_router(bm_factory.router, prefix="/api/v1")
 app.include_router(logistics_manager.router, prefix="/api/v1")
 app.include_router(warehouse_manager.router, prefix="/api/v1")
 app.include_router(suppliers.router, prefix="/api/v1")
 app.include_router(supply_manager.router, prefix="/api/v1")
+
 
 
 
@@ -96,16 +95,13 @@ app.include_router(analytics.router,prefix='/api/v1/factory_analytics')
 
 
 
-app.include_router(api_warehouse.router,prefix='/api/v1')
 
 app.include_router(api_warehouse.router, prefix='/api/v1')
 
 
-
-
 app.include_router(request.router, prefix='/api/v1')
 
-app.include_router(production.router, prefix='/api/v1/production')
+
 app.include_router(team.router, prefix='/api/v1/factory_team')
 
 
