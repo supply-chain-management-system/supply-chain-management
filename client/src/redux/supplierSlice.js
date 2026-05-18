@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../api/api';
 
-const BASE = '/business-manager/suppliers';
+const BASE = '/supplier-manager/suppliers';
 
 /* ══════════════════════════════════════════════════════════
    THUNKS

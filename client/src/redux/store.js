@@ -5,6 +5,8 @@ import requestsReducer from "./requestsSlice";
 import warehouseManagerReducer from './warehouseManagerSlice';
 import logisticsManagerReducer from './logisticsManagerSlice';
 import supplierReducer from './supplierSlice';
+import inventoryReducer from './inventorySlice';
+import orderReducer from './orderSlice';
 
 const store = configureStore({
   reducer: {
@@ -14,6 +16,8 @@ const store = configureStore({
     warehouseManager: warehouseManagerReducer,
     logisticsManager: logisticsManagerReducer,
     supplier: supplierReducer,
+    inventory: inventoryReducer,
+    order: orderReducer,
   },
 });
 

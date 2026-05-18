@@ -26,6 +26,11 @@ class N8nRestockPayload(BaseModel):
 class RequestActionPayload(BaseModel):
     action: str  # "APPROVE" or "REJECT"
 
+class BulkApprovePayload(BaseModel):
+    filter_type: str
+    filter_value: str
+    reviewer_id: int
+
 class AnalyticsResponse(BaseModel):
     inventory_value: str
     on_time_delivery: str
@@ -177,6 +182,28 @@ def process_request_action(request_id: int, payload: RequestActionPayload, db: S
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database operation failed: {str(e)}")
+
+@router.post("/approvals/bulk-approve")
+def bulk_approve_requests(payload: BulkApprovePayload, db: Session = Depends(get_tenant_db)):
+    """Bulk approves pending requests based on a filter."""
+    try:
+        query = db.query(Approval).filter(Approval.status.in_(["pending", "PENDING_WHM_APPROVAL"]))
+        
+        if payload.filter_type == "type":
+             query = query.filter(Approval.type == payload.filter_value)
+             
+        pending_requests = query.all()
+        count = 0
+        for req in pending_requests:
+             req.status = "APPROVED"
+             req.reviewer_id = payload.reviewer_id
+             count += 1
+             
+        db.commit()
+        return {"status": "success", "approved_count": count}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
     
     
 # ==========================================

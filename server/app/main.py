@@ -18,6 +18,7 @@ from app.models.business_manager import domain
 from app.models.business_manager.team import (     # noqa — register models with BaseTenant metadata
     FactoryManager, WarehouseManager, LogisticsManager, SupplyManager
 )
+from app.models.supplier_manager import supplier, inventory as inv_model, order as order_model # noqa
 
 from app.api.v1.routes.auth import authentication as auth
 from app.api.v1.routes.business_manager import team as bm_team
@@ -28,7 +29,9 @@ from app.api.v1.routes.business_manager import factory_manager as bm_factory
 from app.middlewares.comapny.company_middleware import TenantMiddleware
 from app.api.v1.routes.business_manager import logistics_manager
 from app.api.v1.routes.business_manager import warehouse_manager
-from app.api.v1.routes.business_manager import suppliers
+from app.api.v1.routes.supplier_manager import suppliers as sm_suppliers
+from app.api.v1.routes.supplier_manager import inventory as sm_inventory
+from app.api.v1.routes.supplier_manager import orders as sm_orders
 from app.api.v1.routes.business_manager import supply_manager
 
 
@@ -78,7 +81,9 @@ app.include_router(team.router,prefix='/api/v1/factory_team')
 app.include_router(bm_factory.router, prefix="/api/v1") 
 app.include_router(logistics_manager.router, prefix="/api/v1")
 app.include_router(warehouse_manager.router, prefix="/api/v1")
-app.include_router(suppliers.router, prefix="/api/v1")
+app.include_router(sm_suppliers.router, prefix="/api/v1")
+app.include_router(sm_inventory.router, prefix="/api/v1/supplier-manager")
+app.include_router(sm_orders.router, prefix="/api/v1/supplier-manager")
 app.include_router(supply_manager.router, prefix="/api/v1")
 
 

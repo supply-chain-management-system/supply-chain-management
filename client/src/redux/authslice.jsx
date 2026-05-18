@@ -33,6 +33,9 @@ export const loginUser = createAsyncThunk(
         } else if (role === "factory_manager") {
           navigate("/factorydash");
 
+        } else if (role === "supply_manager") {
+          navigate("/supplier-manager/dashboard");
+
         } else {
           navigate("/");
         }

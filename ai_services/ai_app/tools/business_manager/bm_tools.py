@@ -30,7 +30,7 @@ def create_factory_production_draft(
 
         # Hitting the real POST /factory/product_create endpoint
         response = httpx.post(
-            f"{MAIN_SERVER_URL}/factory/product_create",
+            f"{MAIN_SERVER_URL}/production/factory/product_create",
             json=payload,
             timeout=HTTP_TIMEOUT,
         )
@@ -124,7 +124,7 @@ def check_supplier_status(max_rating: float, min_lead_time_days: int) -> str:
     try:
         # Note: Your teammate still needs to build this supplier endpoint!
         response = httpx.get(
-            f"{MAIN_SERVER_URL}/business-manager/suppliers", timeout=HTTP_TIMEOUT
+            f"{MAIN_SERVER_URL}/supplier-manager/suppliers", timeout=HTTP_TIMEOUT
         )
         response.raise_for_status()
 

@@ -20,6 +20,13 @@ import OTPVerification from './features/auth/pages/verify-email';
 import ForgotPassword from './features/auth/pages/forgot-password';
 import ResetPassword from './features/auth/pages/reset-password';
 
+import SupplierManagerLayout from './features/supplier_manager/layouts/SupplierManagerLayout';
+import SM_Dashboard from './features/supplier_manager/pages/DashboardPage';
+import SM_Suppliers from './features/supplier_manager/pages/SuppliersPage';
+import SM_Inventory from './features/supplier_manager/pages/InventoryPage';
+import SM_Orders from './features/supplier_manager/pages/OrdersPage';
+import SM_Requests from './features/supplier_manager/pages/RequestsPage';
+
 import Factorydash from './features/factory_manager/pages/dashboard';
 import ProductionManagement from './features/factory_manager/pages/production_page';
 import Team from './features/factory_manager/pages/factory_team';
@@ -142,6 +149,20 @@ function App() {
               <Route path="production" element={<ProductionManagement />} />
               <Route path="factorydash" element={<Factorydash />} />
               <Route path="factoryteam" element={<Team />} />
+            </Route>
+          </Route>
+
+          {/* SUPPLIER MANAGER */}
+          <Route>
+            <Route
+              path="/supplier-manager"
+              element={<SupplierManagerLayout />}
+            >
+              <Route path="dashboard" element={<SM_Dashboard />} />
+              <Route path="suppliers" element={<SM_Suppliers />} />
+              <Route path="inventory" element={<SM_Inventory />} />
+              <Route path="orders" element={<SM_Orders />} />
+              <Route path="requests" element={<SM_Requests />} />
             </Route>
           </Route>
 

@@ -28,7 +28,7 @@ tools = [
 
 primary_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
 fallback_groq = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
-fallback_google = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
+fallback_google = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
 fallback_cohere = ChatCohere(model="command-r", temperature=0)
 
 models_to_try = [

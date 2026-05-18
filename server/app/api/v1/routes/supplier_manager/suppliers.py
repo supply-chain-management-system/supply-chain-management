@@ -1,43 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 import httpx
 
-from app.db.deps import get_db ,get_tenant_db
-from app.models.business_manager.domain import Supplier
-from app.models.business_manager.domain import Inventory 
+from app.db.deps import get_db, get_tenant_db
+from app.models.supplier_manager.supplier import Supplier
+from app.schemas.supplier_manager.supplier import SupplierCreate, SupplierOut
 
 router = APIRouter(
-    prefix="/business-manager/suppliers",
-    tags=["BM — Suppliers & Procurement"]
+    prefix="/supplier-manager/suppliers",
+    tags=["Supplier Manager — Suppliers & Procurement"]
 )
 
 # ==========================================
 # SCHEMAS
 # ==========================================
-
-class SupplierCreate(BaseModel):
-    name: str
-    category: str # e.g., Raw Materials, Packaging, Electronics
-    contact_email: EmailStr
-    phone: Optional[str] = None
-    lead_time_days: int
-    business_id: Optional[int] = 1 # 🚀 Multi-tenant support
-
-class SupplierOut(BaseModel):
-    id: int
-    name: str
-    category: str
-    contact_email: str
-    phone: Optional[str]
-    lead_time_days: int
-    rating: float
-    is_active: bool
-    business_id: int
-
-    class Config:
-        from_attributes = True
+# (Moved to app.schemas.supplier_manager)
 
 
 # ==========================================
