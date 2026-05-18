@@ -81,7 +81,6 @@ app.include_router(supply_manager.router, prefix="/api/v1")
 app.include_router(api_warehouse.router, prefix='/api/v1')
 
 
-
 app.include_router(request.router, prefix='/api/v1')
 
 

@@ -1,8 +1,8 @@
 # app/api/v1/routes/business_card.py
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.models.auth.user import RoleEnum, User
-from sqlalchemy import func, or_
+from app.models.auth.user import Invitation, RoleEnum, User
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db, get_tenant_db
@@ -13,50 +13,15 @@ from app.schemas.owner_schemas.business_card import (
     BusinessCardUpdate,
     BusinessCardResponse,
 )
-from app.services.auth.dependancy import require_role
+from app.services.auth.dependancy import require_role, get_current_user
+from app.services.managers.manager_services import (
+    serialize_manager,
+    build_card_response,
+    query_business_assignees,
+    query_business_managers,
+)
 
 router = APIRouter(prefix="/business-cards", tags=["Business Cards"])
-
-
-def serialize_manager(manager: User):
-    return {
-        "id": manager.id,
-        "name": manager.name,
-        "email": manager.email,
-        "role": manager.role.value if manager.role else None,
-        "business_id": manager.business_id,
-        "is_active": manager.is_active,
-        "is_verified": manager.is_verified,
-        "created_at": manager.created_at,
-    }
-
-
-def build_card_response(
-    card: BusinessCard, managers_by_business: dict[str, list[User]]
-):
-    card_data = BusinessCardResponse.model_validate(card).model_dump()
-    card_data["managers"] = [
-        serialize_manager(manager)
-        for manager in managers_by_business.get(str(card.id), [])
-    ]
-    return card_data
-
-
-def query_business_managers(app_db: Session, business_ids: list[str]):
-    normalized_ids = [str(business_id).strip() for business_id in business_ids]
-
-    return (
-        app_db.query(User)
-        .filter(
-            or_(
-                User.role == RoleEnum.business_manager,
-                User.role == "business_manager",
-            ),
-            func.trim(User.business_id).in_(normalized_ids),
-        )
-        .order_by(User.created_at.desc())
-        .all()
-    )
 
 
 @router.post("/")
@@ -82,6 +47,7 @@ def create_business_card(
 def get_all_business_cards(
     db: Session = Depends(get_tenant_db),
     app_db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     cards = db.query(BusinessCard).order_by(BusinessCard.created_at.desc()).all()
 
@@ -89,10 +55,11 @@ def get_all_business_cards(
 
     managers_by_business: dict[str, list[User]] = {}
     if business_ids:
-        managers = query_business_managers(app_db, business_ids)
+        managers_with_ids = query_business_managers(app_db, business_ids, current_user.company_id)
 
-        for manager in managers:
-            managers_by_business.setdefault(str(manager.business_id).strip(), []).append(
+        for manager, assigned_business_id in managers_with_ids:
+            manager.business_id = assigned_business_id
+            managers_by_business.setdefault(str(assigned_business_id).strip(), []).append(
                 manager
             )
 
@@ -106,9 +73,94 @@ def get_all_business_cards(
 def get_business_card_managers(
     card_id: int,
     app_db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    managers = query_business_managers(app_db, [str(card_id)])
+    managers_with_ids = query_business_managers(app_db, [str(card_id)], current_user.company_id)
+    managers = []
+    for manager, assigned_business_id in managers_with_ids:
+        manager.business_id = assigned_business_id
+        managers.append(manager)
     return [serialize_manager(manager) for manager in managers]
+
+
+@router.get(
+    "/managers/by-business/{card_id}/team",
+)
+def get_business_card_team(
+    card_id: int,
+    app_db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assigned_users = query_business_assignees(
+        app_db,
+        [str(card_id)],
+        current_user.company_id,
+        [
+            RoleEnum.business_manager,
+            RoleEnum.factory_manager,
+            RoleEnum.warehouse_manager,
+            RoleEnum.logistics_manager,
+            RoleEnum.co_manager,
+            RoleEnum.supply_manager,
+            "business_manager",
+            "factory_manager",
+            "warehouse_manager",
+            "logistics_manager",
+            "co_manager",
+            "supply_manager",
+        ],
+    )
+
+    team = []
+    for manager, assigned_business_id in assigned_users:
+        manager.business_id = assigned_business_id
+        team.append(serialize_manager(manager))
+
+    pending_invites = (
+        app_db.query(Invitation)
+        .filter(
+            Invitation.company_id == current_user.company_id,
+            Invitation.category == "business",
+            func.trim(Invitation.category_id) == str(card_id),
+            Invitation.accepted == False,  # noqa: E712
+            Invitation.role.in_(
+                [
+                    RoleEnum.business_manager,
+                    RoleEnum.factory_manager,
+                    RoleEnum.warehouse_manager,
+                    RoleEnum.logistics_manager,
+                    RoleEnum.co_manager,
+                    RoleEnum.supply_manager,
+                    "business_manager",
+                    "factory_manager",
+                    "warehouse_manager",
+                    "logistics_manager",
+                    "co_manager",
+                    "supply_manager",
+                ]
+            ),
+        )
+        .order_by(Invitation.created_at.desc())
+        .all()
+    )
+
+    for invite in pending_invites:
+        role = invite.role.value if invite.role else None
+        team.append(
+            {
+                "id": f"invite-{invite.id}",
+                "name": invite.invited_email.split("@")[0],
+                "email": invite.invited_email,
+                "role": role,
+                "business_id": invite.category_id,
+                "is_active": False,
+                "is_verified": False,
+                "is_pending": True,
+                "created_at": invite.created_at,
+            }
+        )
+
+    return team
 
 
 @router.get(
@@ -119,13 +171,18 @@ def get_business_card(
     card_id: int,
     db: Session = Depends(get_tenant_db),
     app_db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     card = db.query(BusinessCard).filter(BusinessCard.id == card_id).first()
 
     if not card:
         raise HTTPException(status_code=404, detail="Business card not found")
 
-    managers = query_business_managers(app_db, [str(card.id)])
+    managers_with_ids = query_business_managers(app_db, [str(card.id)], current_user.company_id)
+    managers = []
+    for manager, assigned_business_id in managers_with_ids:
+        manager.business_id = assigned_business_id
+        managers.append(manager)
 
     return build_card_response(card, {str(card.id): managers})
 

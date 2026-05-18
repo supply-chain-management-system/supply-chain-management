@@ -11,7 +11,7 @@ from app.db.deps import get_db
 from app.schemas.auth.company import InviteRequest
 from app.services.auth.dependancy import get_current_user
 
-from app.models.auth.user import User, Invitation
+from app.models.auth.user import User, Invitation, UserAssignment
 
 
 from app.services.auth.rolebased import (
@@ -53,7 +53,7 @@ async def send_invite(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="User already exists.",
             )
-        
+
         validate_invite_permission(current_user, payload)
 
         event_id = str(uuid.uuid4())
@@ -68,6 +68,13 @@ async def send_invite(
 
         invite_link = f"{FRONTEND_URL}/invite/accept/{event_id}"
 
+        invite_category = "manager_card" if payload.manager_card_id else "business"
+        invite_category_id = (
+            str(payload.manager_card_id)
+            if payload.manager_card_id
+            else str(payload.business_id)
+        )
+
         # STORE IN DATABASE
         invitation = Invitation(
             id=event_id,
@@ -75,8 +82,8 @@ async def send_invite(
             company_id=current_user.company_id,
             business_id=payload.business_id,
             role=payload.role,
-            category="business",
-            category_id=str(payload.business_id),
+            category=invite_category,
+            category_id=invite_category_id,
             invited_by=current_user.email,
             owner_email=business_owner_email,
             accepted=False,
@@ -101,6 +108,10 @@ async def send_invite(
             "invite_link": invite_link,
             "invite_recipient": recipients["invite_recipient"],
             "notification_recipients": recipients["notification_recipients"],
+            "category": invitation.category,
+            "category_id": invitation.category_id,
+            "manager_card_id": payload.manager_card_id,
+            "manager_card_name": payload.manager_card_name,
         }
 
         n8n_status = "skipped"
@@ -212,13 +223,23 @@ async def invite_register(
         otp_expiry=otp_expiry,
         company_id=invitation.company_id,
         role=invitation.role,
-        business_id=invitation.category_id,
+        business_id=invitation.business_id,
         is_active=True,
         is_verified=False,
         is_approved_company=False,
     )
 
     db.add(new_user)
+    db.flush()
+
+    assignment = UserAssignment(
+        user_id=new_user.id,
+        company_id=invitation.company_id,
+        role=invitation.role,
+        category=invitation.category,
+        category_id=invitation.category_id,
+    )
+    db.add(assignment)
 
     invitation.accepted = True
 

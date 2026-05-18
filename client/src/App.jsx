@@ -38,6 +38,9 @@ import CreateWarehouse from './features/admin_front/admin_pages/CreateWarehouse'
 
 import InviteAcceptPage from './features/auth/pages/invitation';
 
+import LogisticsLayout from './features/logistics_manager/LogisticsLayout';
+import LogisticsDashboard from './features/logistics_manager/LogisticsDashboard';
+
 import ProtectedRoute from './protectedroutes/authenticate_protector';
 import PublicRoute from './protectedroutes/block_public_pages';
 import KorvexLanding from './components/layout/landing_page';
@@ -147,6 +150,17 @@ function App() {
               <Route path="production" element={<ProductionManagement />} />
               <Route path="factorydash" element={<Factorydash />} />
               <Route path="factoryteam" element={<Team />} />
+            </Route>
+          </Route>
+
+          {/* LOGISTICS MANAGER */}
+          <Route
+            // element={
+            //   <ProtectedRoute allowedRoles={['logistics_manager']} />
+            // }
+          >
+            <Route element={<LogisticsLayout />}>
+              <Route path="/logistics_dashboard" element={<LogisticsDashboard />} />
             </Route>
           </Route>
 
