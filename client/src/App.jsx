@@ -32,8 +32,20 @@ import Factorydash from './features/factory_manager/pages/dashboard';
 import ProductionManagement from './features/factory_manager/pages/production_page';
 import Team from './features/factory_manager/pages/factory_team';
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
+import Dashboardfactory from './features/factory_manager/pages/dashboard';
+
+import ProductionOutputHistory from './features/factory_manager/pages/outputlogs';
+
+
+
+import { Ribbon } from 'lucide-react';
+import Machine from './features/factory_manager/pages/factory_machine';
+
 
 import BusinessCardPage from './features/admin_front/admin_pages/business_card';
+
+
+
 
 import Ware_Layout from './features/warehouse_manager/ware_layout';
 import WarehouseDashboard from './features/warehouse_manager/WarehouseDashboard';
@@ -43,6 +55,7 @@ import RackPage from './features/warehouse_manager/RackPage';
 import StockUpdatePage from './features/warehouse_manager/StockUpdatePage';
 import CreateWarehouse from './features/admin_front/admin_pages/CreateWarehouse';
 
+
 import InviteAcceptPage from './features/auth/pages/invitation';
 
 import LogisticsLayout from './features/logistics_manager/LogisticsLayout';
@@ -51,6 +64,7 @@ import LogisticsDashboard from './features/logistics_manager/LogisticsDashboard'
 import ProtectedRoute from './protectedroutes/authenticate_protector';
 import PublicRoute from './protectedroutes/block_public_pages';
 import KorvexLanding from './components/layout/landing_page';
+
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -87,6 +101,28 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
+
+            <Route path="/face-verification" element={<FaceVerification />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/company-onboarding" element={<CompanyOnboarding />} />
+
+          <Route path="/business-manager" element={<BusinessManagerLayout />}>
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="factory" element={<FactoryPage />} />
+            <Route path="warehouse" element={<WarehousePage />} />
+            <Route path="logistics" element={<LogisticsPage />} />
+            <Route path="suppliers" element={<SuppliersPage />} />
+            <Route path="requests" element={<RequestsPage />} />
+          </Route>
+             
+          <Route  element={<A_Layout />}>
+            <Route path="/admindashboard" element={<Admin_dashboard />} />
+            <Route path="/managers" element={<ManagerGrid/>} />
+            <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
+            <Route path="/addmanagers" element={<AddManager />} />
+
+            <Route path="/createwarehouse" element={<CreateWarehouse/>} />
+
           </Route>
 
        
@@ -96,6 +132,22 @@ function App() {
           <Route path="/invite/:token" element={<InviteAcceptPage />} />
           <Route path="/face-verification" element={<FaceVerification />} />
           <Route path="/company-onboarding" element={<CompanyOnboarding />} />
+
+
+
+          </Route>
+
+
+          
+
+
+
+
+
+
+
+        
+
 
           {/* BUSINESS MANAGER */}
           <Route
@@ -114,6 +166,7 @@ function App() {
               <Route path="suppliers" element={<SuppliersPage />} />
               <Route path="requests" element={<RequestsPage />} />
             </Route>
+
           </Route>
 
           {/* ADMIN */}
@@ -130,6 +183,7 @@ function App() {
               <Route path="/addmanagers" element={<AddManager />} />
               <Route path="/createwarehouse" element={<CreateWarehouse />} />
             </Route>
+
           </Route>
 
           {/* WAREHOUSE MANAGER */}
@@ -157,6 +211,8 @@ function App() {
               <Route path="production" element={<ProductionManagement />} />
               <Route path="factorydash" element={<Factorydash />} />
               <Route path="factoryteam" element={<Team />} />
+                 <Route path='/factory_machine' element={<Machine/>}/>
+            <Route path='/outputlogs' element={<ProductionOutputHistory/>}/>
             </Route>
           </Route>
 

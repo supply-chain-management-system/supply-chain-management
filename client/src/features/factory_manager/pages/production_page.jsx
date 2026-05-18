@@ -4,48 +4,80 @@ import api from "../../../api/api";
 const ProductionManagement = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [showModal, setShowModal] = useState(false);
+  const [editId, setEditId] = useState(null);
 
-  // Form state from CreateProduct
+  // Form state
   const [form, setForm] = useState({
     product_name: "",
     target_qty: "",
     factory_id: "",
-    created_by: "",
+    status: "pending", 
   });
-  const [product, setproduct] = useState([]);
+  
+  const [products, setProducts] = useState([]);
+  const [factories, setFactories] = useState([]); // Renamed from users for clarity
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-   const [users, setUsers] = useState([]);
 
-useEffect(() => {
-  api.get("production/factory/products")
-    .then((res) => {
-      setproduct(res.data);
-    })
-    .catch((err) => {
-      console.error(err);
-    });
-}, []);
-
-    useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await api.get("/production/factory/user");
-        setUsers(res.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchUsers();
+  // Fetch products on mount
+  useEffect(() => {
+    fetchProducts();
+    fetchFactories();
   }, []);
-  console.log(product)
 
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get("production/factory/products");
+      setProducts(res.data);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+    }
+  };
+
+  const fetchFactories = async () => {
+    try {
+      const res = await api.get("/production/factory/user"); // Adjust endpoint if needed
+      setFactories(res.data);
+    } catch (err) {
+      console.error("Failed to fetch factories:", err);
+    }
+  };
+
+  // Filter products based on active tab
+const filteredProducts = products.filter((item) => {
+  const status = item.status?.toLowerCase();
+
+  if (activeTab === "all") return true;
+  if (activeTab === "inprogress") return status === "progress";   
+  if (activeTab === "pending") return status === "pending";
+  if (activeTab === "completed") return status === "completed";  
+
+  return true;
+});
+
+  const handleUpdate = async (id, updatedData) => {
+    try {
+      await api.put(`/production/factory/products/${id}`, updatedData);
+      await fetchProducts();
+    } catch (err) {
+      console.error(err.response?.data || err);
+      setMessage("❌ Failed to update product");
+    }
+  };
+
+  const handleComplete = async (id) => {
+    try {
+      await api.patch(`/production/factory/products/${id}/complete`);
+      await fetchProducts();
+      setMessage("✅ Job marked as complete");
+    } catch (err) {
+      console.error(err.response?.data || err);
+      setMessage("❌ Failed to complete job");
+    }
+  };
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -54,38 +86,41 @@ useEffect(() => {
     setMessage("");
 
     try {
-      await api.post("/production/factory/product_create", {
-        ...form,
-        target_qty: Number(form.target_qty) || 0,
+      const payload = {
+        product_name: form.product_name,
+        target_qty: Number(form.target_qty),
         factory_id: Number(form.factory_id),
-        created_by: Number(form.created_by),
-      });
+        status: form.status, // ✅ ADD
+      };
 
-      setMessage("✅ Production job created successfully");
-      setForm({
-        product_name: "",
-        target_qty: "",
-        factory_id: "",
-        created_by: "",
-      });
+      if (editId) {
+        await api.put(`/production/factory/products/${editId}`, payload);
+        setMessage("✅ Product updated successfully");
+      } else {
+        await api.post("/production/factory/product_create", payload);
+        setMessage("✅ Production job created successfully");
+      }
 
-    
+      await fetchProducts();
+
       setTimeout(() => {
         setShowModal(false);
+        setEditId(null);
+        setForm({ product_name: "", target_qty: "", factory_id: "" });
         setMessage("");
-      }, 2000);
+      }, 1500);
     } catch (err) {
-      setMessage(err.response?.data?.detail || "❌ Error creating product");
+      const errorDetail = err.response?.data?.detail || "Something went wrong";
+      setMessage(`❌ ${errorDetail}`);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
- 
+  // Escape key & body scroll lock for modal
   useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === "Escape") setShowModal(false);
-    };
+    const handleEscape = (e) => e.key === "Escape" && setShowModal(false);
+    
     if (showModal) {
       document.addEventListener("keydown", handleEscape);
       document.body.style.overflow = "hidden";
@@ -95,10 +130,11 @@ useEffect(() => {
       document.body.style.overflow = "auto";
     };
   }, [showModal]);
-const activeJobsCount = product.filter(
-  (item) => item.status === "pending"
-).length;
- 
+
+  const activeJobsCount = products.filter((item) => 
+    item.status?.toLowerCase() === "pending"
+  ).length;
+
   const stats = [
     { label: "Active Jobs", value: activeJobsCount, icon: "📊", color: "bg-blue-50 text-blue-600" },
     { label: "Avg Cycle Time", value: "14.2 min", icon: "⏱️", color: "bg-yellow-50 text-yellow-600" },
@@ -106,58 +142,62 @@ const activeJobsCount = product.filter(
     { label: "Completed Today", value: "182", icon: "✅", color: "bg-green-50 text-green-600" },
   ];
 
- 
+  const getStatusColor = (status) => {
+    const s = status?.toLowerCase();
+    if (s === "completed") return "bg-green-100 text-green-700";
+    if (s === "progress") return "bg-blue-100 text-blue-700";
+    return "bg-yellow-100 text-yellow-700";
+  };
 
+  const openEditModal = (job) => {
+    setEditId(job.id);
+    setForm({
+      product_name: job.product_name,
+      target_qty: job.target_qty || "",
+      factory_id: job.factory_id || "",
+       status: job.status || "pending",
+    });
+    setShowModal(true);
+  };
 
-  const jobs = product.map((item, index) => ({
-  id: item.id || `JOB-${index + 1}`,
-  name: item.product_name,
-  machine: item.factory_name || `Factory ${item.factory_id}`,
-  progress: item.progress || 0,
-  output: `${item.completed_qty || 0} / ${item.target_qty}`,
-  status: item.status || "Pending",
-  statusColor:
-    item.status === "Completed"
-      ? "bg-green-100 text-green-700"
-      : item.status === "In Progress"
-      ? "bg-blue-100 text-blue-700"
-      : "bg-yellow-100 text-yellow-700",
-}));
+  const openCreateModal = () => {
+    setEditId(null);
+    setForm({ product_name: "", target_qty: "", factory_id: "" });
+    setMessage("");
+    setShowModal(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      {/* Header */}
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-2">
-          <h1 className="text-2xl font-bold text-gray-900">Production Management</h1>
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Production Management</h1>
+            <p className="text-gray-500 mt-1">Monitor and manage manufacturing jobs across all lines</p>
+          </div>
           <button
-            onClick={() => {
-              setShowModal(true);
-              setMessage("");
-              setForm({ product_name: "", target_qty: "", factory_id: "", created_by: "" });
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-md shadow-blue-200"
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-md shadow-blue-200"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Create Production Job
+            Create Job
           </button>
         </div>
-        <p className="text-gray-500 mb-8">
-          Monitor and manage ongoing manufacturing jobs across all lines.
-        </p>
 
-   
-        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
+        {/* Stats Cards (Uncomment to use) */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {stats.map((stat, idx) => (
+            <div key={idx} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-sm text-gray-500">{stat.label}</p>
+                  <p className="text-xl font-bold text-gray-900 mt-1">{stat.value}</p>
                 </div>
-                <div className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center text-xl`}>
+                <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center`}>
                   {stat.icon}
                 </div>
               </div>
@@ -165,20 +205,29 @@ const activeJobsCount = product.filter(
           ))}
         </div> */}
 
-      
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="border-b border-gray-200 px-6 py-4">
+        {/* Jobs Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          
+          {/* Tabs */}
+          <div className="border-b border-gray-200 px-6 py-3">
             <div className="flex gap-6">
-              {["all", "inprogress", "pending"].map((tab) => (
+              {[
+                { key: "all", label: "All Jobs" },
+                { key: "inprogress", label: "In Progress" },
+                { key: "pending", label: "Pending" },
+                 { key: "completed", label: "Completed" }
+              ].map((tab) => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`pb-2 px-1 font-medium text-sm transition-colors relative capitalize ${
-                    activeTab === tab ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`pb-2 px-1 text-sm font-medium transition-colors relative capitalize ${
+                    activeTab === tab.key 
+                      ? "text-blue-600" 
+                      : "text-gray-500 hover:text-gray-700"
                   }`}
                 >
-                  {tab === "all" ? "All Jobs" : tab === "inprogress" ? "In Progress" : "Pending"}
-                  {activeTab === tab && (
+                  {tab.label}
+                  {activeTab === tab.key && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
                   )}
                 </button>
@@ -186,103 +235,133 @@ const activeJobsCount = product.filter(
             </div>
           </div>
 
-    
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
-            <div className="grid grid-cols-12 gap-4 text-sm font-semibold text-gray-600">
-              <div className="col-span-4">Job Name / ID</div>
-              <div className="col-span-2">Machine</div>
+          {/* Table Header */}
+          <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+            <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <div className="col-span-4">Job</div>
+              <div className="col-span-2">Factory</div>
               <div className="col-span-3">Progress</div>
-              <div className="col-span-1">Output</div>
-              <div className="col-span-1">Status</div>
-              <div className="col-span-1">Actions</div>
+              <div className="col-span-1 text-center">Output</div>
+              <div className="col-span-1 text-center">Status</div>
+              <div className="col-span-1 text-center">Actions</div>
             </div>
           </div>
 
-     
-          <div className="divide-y divide-gray-200">
-            {jobs.map((job, index) => (
-              <div key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                <div className="grid grid-cols-12 gap-4 items-center">
-                  <div className="col-span-4">
-                    <p className="font-semibold text-gray-900">{job.name}</p>
-                    <p className="text-sm text-gray-500">{job.id}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-sm text-gray-700">{job.machine}</p>
-                  </div>
-                  <div className="col-span-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
-                          style={{ width: `${job.progress}%` }}
-                        />
+          {/* Table Body */}
+          <div className="divide-y divide-gray-100">
+            {filteredProducts.length === 0 ? (
+              <div className="px-6 py-12 text-center text-gray-500">
+                No jobs found for this filter
+              </div>
+            ) : (
+              filteredProducts.map((item) => {
+                const progress = item.progress || 0;
+                const completed = item.completed_qty || 0;
+                const target = item.target_qty || 0;
+                
+                return (
+                  <div key={item.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      
+                      {/* Job Name & ID */}
+                      <div className="col-span-4">
+                        <p className="font-medium text-gray-900">{item.product_name}</p>
+                        <p className="text-xs text-gray-400">#{item.id}</p>
                       </div>
-                      <span className="text-sm font-medium text-gray-700">{job.progress}%</span>
+
+                      {/* Factory */}
+                      <div className="col-span-2">
+                        <p className="text-sm text-gray-700">
+                          {item.factory_name || `Factory #${item.factory_id}`}
+                        </p>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="col-span-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-gray-600 w-8 text-right">
+                            {progress}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Output */}
+                      <div className="col-span-1 text-center">
+                        <p className="text-sm font-medium text-gray-900">
+                          {completed}/{target}
+                        </p>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="col-span-1 flex justify-center">
+                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
+                          {item.status || "Pending"}
+                        </span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="col-span-1 flex justify-center gap-3">
+                        <button
+                          onClick={() => handleComplete(item.id)}
+                          className="text-green-600 hover:text-green-700 text-xs font-medium transition-colors"
+                          title="Mark Complete"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          onClick={() => openEditModal({
+                            id: item.id,
+                            name: item.product_name,
+                            target_qty: item.target_qty,
+                            factory_id: item.factory_id,
+                            status: item.status
+                          })}
+                          className="text-blue-600 hover:text-blue-700 text-xs font-medium transition-colors"
+                          title="Edit Job"
+                        >
+                          ✎
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="col-span-1">
-                    <p className="text-sm font-medium text-gray-900">{job.output}</p>
-                  </div>
-                  <div className="col-span-1">
-                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${job.statusColor}`}>
-                      {job.status}
-                    </span>
-                  </div>
-                  <div className="col-span-1">
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium hover:underline">
-                      View
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
-
-       
-          {/* <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <p className="text-sm text-gray-500">Showing 1-4 of 24 jobs</p>
-            <div className="flex gap-2">
-              <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                Previous
-              </button>
-              <button className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">
-                Next
-              </button>
-            </div>
-          </div> */}
         </div>
       </div>
 
-     
+      {/* Modal */}
       {showModal && (
-        <div
+        <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onClick={() => {
-            setShowModal(false);
-            setMessage("");
-          }}
+          onClick={() => setShowModal(false)}
         >
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" />
-
-          {/* Modal Content */}
-          <div
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto overflow-hidden animate-slide-up"
+          
+          <div 
+            className="relative bg-white rounded-2xl shadow-xl w-full max-w-md animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-white">Create Production Job</h2>
-                  <p className="text-blue-100 text-sm mt-1">Fill in the details to start a new job</p>
+                  <h2 className="text-lg font-semibold text-white">
+                    {editId ? "Edit Production Job" : "Create Production Job"}
+                  </h2>
+                  <p className="text-blue-100 text-sm mt-0.5">
+                    {editId ? "Update job details" : "Fill in details to start a new job"}
+                  </p>
                 </div>
                 <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setMessage("");
-                  }}
+                  onClick={() => setShowModal(false)}
                   className="text-white/80 hover:text-white hover:bg-white/20 rounded-lg p-1.5 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,78 +371,92 @@ const activeJobsCount = product.filter(
               </div>
             </div>
 
-            {/* Modal Body */}
+            {/* Modal Form */}
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              
               {/* Product Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Product Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
                 <input
                   type="text"
                   name="product_name"
-                  placeholder="Enter product name"
                   value={form.product_name}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
+                  placeholder="e.g., Widget Pro X1"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   required
                 />
               </div>
 
               {/* Target Quantity */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Target Quantity</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Target Quantity</label>
                 <input
                   type="number"
                   name="target_qty"
-                  placeholder="Enter target quantity"
                   value={form.target_qty}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
+                  placeholder="e.g., 500"
+                  min="1"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   required
                 />
               </div>
 
-              {/* Factory ID */}
+              {/* Factory Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Factory ID</label>
-                <input
-                  type="number"
-                  name="factory_id"
-                  placeholder="Enter factory ID"
-                  value={form.factory_id}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all placeholder:text-gray-400"
-                  required
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Factory</label>
+                {factories.length > 0 ? (
+                  <select
+                    name="factory_id"
+                    value={form.factory_id}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+                    required
+                  >
+                    <option value="">Select a factory</option>
+                    {factories.map((factory) => (
+                      <option key={factory.id} value={factory.id}>
+                        {factory.name || `Factory #${factory.id}`}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="number"
+                    name="factory_id"
+                    value={form.factory_id}
+                    onChange={handleChange}
+                    placeholder="Enter factory ID"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    required
+                  />
+                )}
               </div>
+              {/* Status */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Status
+  </label>
+  <select
+    name="status"
+    value={form.status}
+    onChange={handleChange}
+    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+  >
+    <option value="pending">Pending</option>
+    <option value="progress">In Progress</option>
+    <option value="completed">Completed</option>
+  </select>
+</div>
 
-              {/* Assigned User */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Assign To</label>
-                <select
-                  name="created_by"
-                  value={form.created_by}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
-                  required
-                >
-                  <option value="" disabled>Select User</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Message */}
+              {/* Status Message */}
               {message && (
-                <div
-                  className={`p-3 rounded-lg text-sm font-medium ${
-                    message.includes("✅")
-                      ? "bg-green-50 text-green-700 border border-green-200"
-                      : "bg-red-50 text-red-700 border border-red-200"
-                  }`}
-                >
+                <div className={`p-3 rounded-lg text-sm font-medium ${
+                  message.includes("✅") 
+                    ? "bg-green-50 text-green-700 border border-green-200" 
+                    : "bg-red-50 text-red-700 border border-red-200"
+                }`}>
                   {message}
                 </div>
               )}
@@ -372,22 +465,22 @@ const activeJobsCount = product.filter(
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 shadow-md shadow-blue-200"
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
-                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
-                    Creating...
+                    Processing...
                   </>
                 ) : (
                   <>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    Create Production Job
+                    {editId ? "Update Job" : "Create Job"}
                   </>
                 )}
               </button>
@@ -396,22 +489,15 @@ const activeJobsCount = product.filter(
         </div>
       )}
 
-      {/* Inline styles for animations */}
+      {/* Animation Styles */}
       <style>{`
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slide-up { 
+          from { opacity: 0; transform: translateY(16px); } 
+          to { opacity: 1; transform: translateY(0); } 
         }
-        @keyframes slide-up {
-          from { opacity: 0; transform: translateY(20px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.2s ease-out;
-        }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
-        }
+        .animate-fade-in { animation: fade-in 0.2s ease-out; }
+        .animate-slide-up { animation: slide-up 0.25s ease-out; }
       `}</style>
     </div>
   );
