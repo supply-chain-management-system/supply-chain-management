@@ -17,6 +17,20 @@ export const fetchRequests = createAsyncThunk(
   }
 );
 
+export const createRequest = createAsyncThunk(
+  "requests/createRequest",
+  async (requestData, { rejectWithValue }) => {
+    try {
+      const response = await api.post("/business-manager/requests", requestData);
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data || { detail: "Failed to create request." }
+      );
+    }
+  }
+);
+
 export const approveRequest = createAsyncThunk(
   "requests/approveRequest",
   async (requestId, { rejectWithValue }) => {
@@ -54,6 +68,20 @@ export const handleRequestAction = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(
         err.response?.data || { detail: "Action failed." }
+      );
+    }
+  }
+);
+
+export const bulkRequestAction = createAsyncThunk(
+  "requests/bulkRequestAction",
+  async ({ ids, action }, { rejectWithValue }) => {
+    try {
+      const response = await api.post("/business-manager/requests/bulk-action", { ids, action });
+      return { ids, action, data: response.data };
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data || { detail: "Bulk action failed." }
       );
     }
   }
@@ -145,6 +173,27 @@ const requestsSlice = createSlice({
       .addCase(handleRequestAction.rejected, (state, action) => {
         state.actionLoadingId = null;
         state.actionError = action.payload?.detail || "Action failed.";
+      });
+
+    // ── Bulk Request Action ──
+    builder
+      .addCase(bulkRequestAction.pending, (state) => {
+        state.loading = true;
+        state.actionError = null;
+      })
+      .addCase(bulkRequestAction.fulfilled, (state, action) => {
+        state.loading = false;
+        const { ids, action: actionType } = action.payload;
+        ids.forEach(id => {
+          const req = state.items.find(r => r.id === id);
+          if (req) {
+            req.status = actionType.toLowerCase() === "approve" ? "approved" : "rejected";
+          }
+        });
+      })
+      .addCase(bulkRequestAction.rejected, (state, action) => {
+        state.loading = false;
+        state.actionError = action.payload?.detail || "Bulk action failed.";
       });
   },
 });

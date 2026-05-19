@@ -6,6 +6,10 @@ class OrderBase(BaseModel):
     supplier_id: int
     total_amount: float
     status: str = "pending"
+    material_name: Optional[str] = None
+    quantity: Optional[float] = None
+    unit: Optional[str] = "units"
+    unit_price: Optional[float] = None
     expected_delivery: Optional[datetime] = None
     business_id: Optional[int] = 1
 

@@ -27,6 +27,42 @@ export const createOrder = createAsyncThunk(
   }
 );
 
+export const updateOrderStatus = createAsyncThunk(
+  'orders/updateStatus',
+  async ({ orderId, status }, { rejectWithValue }) => {
+    try {
+      const res = await api.put(`${BASE}/${orderId}/status?status=${status}`);
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.detail || 'Failed to update order status.');
+    }
+  }
+);
+
+export const updateOrder = createAsyncThunk(
+  'orders/update',
+  async ({ orderId, data }, { rejectWithValue }) => {
+    try {
+      const res = await api.put(`${BASE}/${orderId}`, data);
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.detail || 'Failed to update order.');
+    }
+  }
+);
+
+export const deleteOrder = createAsyncThunk(
+  'orders/delete',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      await api.delete(`${BASE}/${orderId}`);
+      return orderId;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.detail || 'Failed to delete order.');
+    }
+  }
+);
+
 const orderSlice = createSlice({
   name: 'order',
   initialState: {
@@ -48,6 +84,21 @@ const orderSlice = createSlice({
       })
       .addCase(createOrder.fulfilled, (state, action) => {
         state.orders.push(action.payload);
+      })
+      .addCase(updateOrderStatus.fulfilled, (state, action) => {
+        const index = state.orders.findIndex(o => o.id === action.payload.id);
+        if (index !== -1) {
+          state.orders[index] = action.payload;
+        }
+      })
+      .addCase(updateOrder.fulfilled, (state, action) => {
+        const index = state.orders.findIndex(o => o.id === action.payload.id);
+        if (index !== -1) {
+          state.orders[index] = action.payload;
+        }
+      })
+      .addCase(deleteOrder.fulfilled, (state, action) => {
+        state.orders = state.orders.filter(o => o.id !== action.payload);
       });
   }
 });

@@ -69,7 +69,9 @@ const SupplierManagerLayout = () => {
               >
                 {({ isActive }) => (
                   <>
-                    <item.icon size={18} className={isActive ? 'text-red-500' : ''} />
+                    <span className={isActive ? 'text-red-500' : 'text-gray-500'}>
+                      <item.icon size={18} />
+                    </span>
                     {item.name}
                   </>
                 )}

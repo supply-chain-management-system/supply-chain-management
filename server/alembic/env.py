@@ -16,15 +16,17 @@ from app.models.sub_managers.factory_manager.factory_machinery import Machine
 from app.models.sub_managers.factory_manager.production import Factory,Production
 from app.models.sub_managers.factory_manager.teams import Worker,Productionteam
 
-from app.models.business_manager.domain import Inventory, Approval, Supplier
-from app.models.business_manager.business_owners import BusinessOwners
 
 
 
 
-from app.models.business_manager.domain import Inventory, Approval, Supplier
+
+from app.models.business_manager.domain import Inventory, Approval
 from app.models.business_manager.business_owners import BusinessOwners
 from app.models.owner_models.business_card import BusinessCard
+from app.models.supplier_manager.supplier import Supplier
+from app.models.supplier_manager.inventory import RawMaterialInventory
+from app.models.supplier_manager.order import PurchaseOrder
 
 
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse,Product,Inventory_ware,Rack

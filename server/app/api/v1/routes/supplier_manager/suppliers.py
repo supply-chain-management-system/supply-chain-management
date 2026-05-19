@@ -6,6 +6,8 @@ import httpx
 from app.db.deps import get_db, get_tenant_db
 from app.models.supplier_manager.supplier import Supplier
 from app.schemas.supplier_manager.supplier import SupplierCreate, SupplierOut
+from app.models.auth.user import User
+from app.services.auth.dependancy import get_current_user
 
 router = APIRouter(
     prefix="/supplier-manager/suppliers",
@@ -45,7 +47,7 @@ def get_suppliers(
     business_id: Optional[int] = Query(1),
     category: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    size: int = Query(10, ge=1, le=50),
+    size: int = Query(10, ge=1, le=500),
     db: Session = Depends(get_tenant_db)
 ):
     skip = (page - 1) * size
@@ -83,7 +85,8 @@ def get_supplier_count(
 def create_supplier(
     data: SupplierCreate, 
     background_tasks: BackgroundTasks, 
-    db: Session = Depends(get_tenant_db)
+    db: Session = Depends(get_tenant_db),
+    current_user: User = Depends(get_current_user)
 ):
     # Check for duplicate names within the same business
     existing = db.query(Supplier).filter(
@@ -97,6 +100,11 @@ def create_supplier(
             detail=f"A supplier named {data.name} is already onboarded."
         )
 
+    # Resolve manager_id from the logged-in user
+    from app.models.business_manager.team import SupplyManager
+    sm_card = db.query(SupplyManager).filter(SupplyManager.email == current_user.email).first()
+    manager_id = sm_card.id if sm_card else None
+
     new_supplier = Supplier(
         name=data.name,
         category=data.category,
@@ -104,6 +112,7 @@ def create_supplier(
         phone=data.phone,
         lead_time_days=data.lead_time_days,
         business_id=data.business_id,
+        manager_id=manager_id,
         rating=5.0, # Default initial rating
         is_active=True
     )

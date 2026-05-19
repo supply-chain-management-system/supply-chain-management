@@ -236,7 +236,6 @@ const authSlice = createSlice({
 
       .addCase(logoutUser.fulfilled, (state) => {
         state.loading = false;
-
         state.user = null;
         state.role = null;
         state.isAuthenticated = false;
@@ -246,6 +245,11 @@ const authSlice = createSlice({
 
       .addCase(logoutUser.rejected, (state) => {
         state.loading = false;
+        state.user = null;
+        state.role = null;
+        state.isAuthenticated = false;
+        state.error = null;
+        state.remember = false;
       });
   },
 });

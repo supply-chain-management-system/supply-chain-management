@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from app.db.database import BaseTenant
 
@@ -14,4 +14,5 @@ class Supplier(BaseTenant):
     rating = Column(Float, default=5.0) # 1.0 to 5.0 scale
     is_active = Column(Boolean, default=True)
     business_id = Column(Integer, default=1)
+    manager_id = Column(Integer, ForeignKey("supply_managers.id", ondelete="CASCADE"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

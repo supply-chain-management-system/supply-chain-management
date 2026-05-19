@@ -27,6 +27,30 @@ export const addInventoryItem = createAsyncThunk(
   }
 );
 
+export const updateInventoryItem = createAsyncThunk(
+  'inventory/update',
+  async ({ itemId, data }, { rejectWithValue }) => {
+    try {
+      const res = await api.put(`${BASE}/${itemId}`, data);
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.detail || 'Failed to update item.');
+    }
+  }
+);
+
+export const deleteInventoryItem = createAsyncThunk(
+  'inventory/delete',
+  async (itemId, { rejectWithValue }) => {
+    try {
+      await api.delete(`${BASE}/${itemId}`);
+      return itemId;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.detail || 'Failed to delete item.');
+    }
+  }
+);
+
 const inventorySlice = createSlice({
   name: 'inventory',
   initialState: {
@@ -48,6 +72,15 @@ const inventorySlice = createSlice({
       })
       .addCase(addInventoryItem.fulfilled, (state, action) => {
         state.items.push(action.payload);
+      })
+      .addCase(updateInventoryItem.fulfilled, (state, action) => {
+        const index = state.items.findIndex(item => item.id === action.payload.id);
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
+      .addCase(deleteInventoryItem.fulfilled, (state, action) => {
+        state.items = state.items.filter(item => item.id !== action.payload);
       });
   }
 });

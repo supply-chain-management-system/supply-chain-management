@@ -8,6 +8,7 @@ class SupplierBase(BaseModel):
     phone: Optional[str] = None
     lead_time_days: int
     business_id: Optional[int] = 1
+    manager_id: Optional[int] = None
 
 class SupplierCreate(SupplierBase):
     pass

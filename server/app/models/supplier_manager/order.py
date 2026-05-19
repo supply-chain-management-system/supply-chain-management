@@ -18,6 +18,11 @@ class PurchaseOrder(BaseTenant):
     total_amount = Column(Float, nullable=False)
     status = Column(String, default=OrderStatus.PENDING)
     
+    material_name = Column(String, nullable=True)
+    quantity = Column(Float, nullable=True)
+    unit = Column(String, nullable=True, default="units")
+    unit_price = Column(Float, nullable=True)
+
     order_date = Column(DateTime, default=datetime.datetime.utcnow)
     expected_delivery = Column(DateTime, nullable=True)
     

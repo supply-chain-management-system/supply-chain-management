@@ -8,6 +8,7 @@ from datetime import datetime
 # Internal Imports
 from app.db.deps import get_db ,get_tenant_db
 from app.models.business_manager.domain import Approval, Inventory
+from app.models.supplier_manager.supplier import Supplier
 # Ensure this model is available in your warehouse domain
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse 
 
@@ -26,6 +27,10 @@ class N8nRestockPayload(BaseModel):
 class RequestActionPayload(BaseModel):
     action: str  # "APPROVE" or "REJECT"
 
+class BulkActionPayload(BaseModel):
+    ids: List[int]
+    action: str  # "APPROVE" or "REJECT"
+
 class BulkApprovePayload(BaseModel):
     filter_type: str
     filter_value: str
@@ -37,6 +42,18 @@ class AnalyticsResponse(BaseModel):
     active_shipments: int
     pending_approvals: int
     is_critical: bool
+
+class CreateRequestPayload(BaseModel):
+    type: str  # e.g., "Supplier Request"
+    description: str
+    category: Optional[str] = None
+    project: Optional[str] = None
+    role: Optional[str] = "supply_manager"
+    priority: Optional[str] = "standard"
+    name: Optional[str] = None
+    contact_email: Optional[str] = None
+    phone: Optional[str] = None
+    lead_time_days: Optional[int] = 7
 
 # ==========================================
 # CORE ANALYTICS & STATUS
@@ -106,7 +123,7 @@ def get_suppliers():
 # ==========================================
 
 @router.get("/requests")
-def get_requests(db: Session = Depends(get_tenant_db)):
+def get_requests(role: Optional[str] = None, db: Session = Depends(get_tenant_db)):
     """Fetches full history of requests mapped to UI-friendly statuses."""
     try:
         all_requests = db.query(Approval).order_by(Approval.created_at.desc()).all()
@@ -118,7 +135,8 @@ def get_requests(db: Session = Depends(get_tenant_db)):
             status_map = {
                 "APPROVED": "approved",
                 "REJECTED": "rejected",
-                "PENDING_WHM_APPROVAL": "pending"
+                "PENDING_WHM_APPROVAL": "pending",
+                "pending": "pending"
             }
             ui_status = status_map.get(req.status, "pending")
 
@@ -126,13 +144,50 @@ def get_requests(db: Session = Depends(get_tenant_db)):
                 "id": req.id,
                 "type": req.type,
                 "requester_name": "AI Copilot" if req.requester_id == 0 else f"User {req.requester_id}",
-                "role": "System Agent" if req.requester_id == 0 else "Manager",
+                "role": payload_data.get("role", "System Agent" if req.requester_id == 0 else "Manager"),
                 "description": payload_data.get("alert_message", "Action Required"),
                 "status": ui_status,
-                "created_at": req.created_at.isoformat() if req.created_at else None
+                "created_at": req.created_at.isoformat() if req.created_at else None,
+                "priority": payload_data.get("priority", "standard"),
+                "payload": payload_data
             })
+
+        if role:
+            formatted_requests = [r for r in formatted_requests if r["role"] == role]
+
         return formatted_requests
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/requests", status_code=status.HTTP_201_CREATED)
+def create_system_request(
+    payload: CreateRequestPayload, 
+    db: Session = Depends(get_tenant_db)
+):
+    """Allows Business Managers to submit dynamic onboarding or replenishment requests."""
+    try:
+        new_request = Approval(
+            type=payload.type,
+            payload={
+                "alert_message": payload.description,
+                "role": payload.role,
+                "category": payload.category,
+                "project": payload.project,
+                "priority": payload.priority,
+                "supplier_name": payload.name,
+                "contact_email": payload.contact_email,
+                "phone": payload.phone,
+                "lead_time_days": payload.lead_time_days
+            },
+            status="pending",
+            requester_id=1 # Business Manager
+        )
+        db.add(new_request)
+        db.commit()
+        db.refresh(new_request)
+        return {"status": "success", "id": new_request.id}
+    except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/requests/{request_id}/action")
@@ -153,6 +208,40 @@ def process_request_action(request_id: int, payload: RequestActionPayload, db: S
         if action_type == "APPROVE":
             # 1. Update the original request status
             req.status = "APPROVED"
+            
+            # Check if this is a Supplier Onboarding Request
+            if req.type == "Supplier Request" or req.type == "Supplier Onboarding Request":
+                supplier_name = req.payload.get("supplier_name")
+                category = req.payload.get("category") or "Raw Materials"
+                email = req.payload.get("contact_email") or "info@supplier.com"
+                phone = req.payload.get("phone")
+                lead_time = int(req.payload.get("lead_time_days") or 7)
+                business_id = int(req.payload.get("business_id") or 1)
+                
+                # Check for duplicates to prevent duplicate onboarding
+                existing = db.query(Supplier).filter(
+                    Supplier.name == supplier_name,
+                    Supplier.business_id == business_id
+                ).first()
+                
+                if not existing:
+                    new_supplier = Supplier(
+                        name=supplier_name,
+                        category=category,
+                        contact_email=email,
+                        phone=phone,
+                        lead_time_days=lead_time,
+                        business_id=business_id,
+                        rating=5.0,
+                        is_active=True
+                    )
+                    db.add(new_supplier)
+                    db.commit()
+                    db.refresh(new_supplier)
+                    return {"status": "success", "message": f"Approved! Supplier '{supplier_name}' successfully onboarded."}
+                else:
+                    db.commit()
+                    return {"status": "success", "message": f"Approved! Supplier '{supplier_name}' is already onboarded."}
             
             # 2. Extract data from payload for the warehouse task
             product_name = req.payload.get("product_name", "Unknown Product")
@@ -204,6 +293,83 @@ def bulk_approve_requests(payload: BulkApprovePayload, db: Session = Depends(get
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/requests/bulk-action")
+def bulk_process_requests(payload: BulkActionPayload, db: Session = Depends(get_tenant_db)):
+    """Processes approval or rejection for a list of request IDs in bulk."""
+    action_type = payload.action.upper()
+    if action_type not in ["APPROVE", "REJECT"]:
+        raise HTTPException(status_code=400, detail="Invalid action. Use APPROVE or REJECT.")
+
+    success_ids = []
+    error_messages = []
+
+    for request_id in payload.ids:
+        req = db.query(Approval).filter(Approval.id == request_id).first()
+        if not req:
+            error_messages.append(f"Request {request_id} not found.")
+            continue
+
+        try:
+            if action_type == "APPROVE":
+                req.status = "APPROVED"
+                
+                if req.type in ["Supplier Request", "Supplier Onboarding Request"]:
+                    supplier_name = req.payload.get("supplier_name")
+                    category = req.payload.get("category") or "Raw Materials"
+                    email = req.payload.get("contact_email") or "info@supplier.com"
+                    phone = req.payload.get("phone")
+                    lead_time = int(req.payload.get("lead_time_days") or 7)
+                    business_id = int(req.payload.get("business_id") or 1)
+                    
+                    existing = db.query(Supplier).filter(
+                        Supplier.name == supplier_name,
+                        Supplier.business_id == business_id
+                    ).first()
+                    
+                    if not existing:
+                        new_supplier = Supplier(
+                            name=supplier_name,
+                            category=category,
+                            contact_email=email,
+                            phone=phone,
+                            lead_time_days=lead_time,
+                            business_id=business_id,
+                            rating=5.0,
+                            is_active=True
+                        )
+                        db.add(new_supplier)
+                else:
+                    product_name = req.payload.get("product_name", "Unknown Product")
+                    new_warehouse_task = Warehouse(
+                        product_name=product_name,
+                        requested_qty=100,
+                        priority="HIGH",
+                        status="PENDING_PICKUP",
+                        source_id=req.id
+                    )
+                    db.add(new_warehouse_task)
+                
+                success_ids.append(request_id)
+
+            elif action_type == "REJECT":
+                db.delete(req)
+                success_ids.append(request_id)
+
+        except Exception as e:
+            error_messages.append(f"Request {request_id} failed: {str(e)}")
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
+
+    return {
+        "status": "success",
+        "processed_ids": success_ids,
+        "errors": error_messages
+    }
     
     
 # ==========================================
