@@ -1,6 +1,6 @@
 from fastapi import APIRouter,Depends
 from sqlalchemy.orm  import session
-from app.db.deps import get_db,get_tenant_db
+from app.db.deps import get_tenant_db
 
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse,Rack,Product,Inventory_ware
 
@@ -10,7 +10,7 @@ from fastapi import HTTPException
 router=APIRouter()
 
 @router.post("/ware_house",response_model=WarehouseOut)
-def create_warehouse(data:WarehouseCreate,db:session=Depends(get_db)):
+def create_warehouse(data:WarehouseCreate,db:session=Depends(get_tenant_db)):
 
     warehouse=Warehouse(**data.dict())
     db.add(warehouse)
@@ -19,14 +19,14 @@ def create_warehouse(data:WarehouseCreate,db:session=Depends(get_db)):
     return warehouse
 
 @router.get("/ware_house",response_model=List[WarehouseOut])
-def get_warehouse(db:session=Depends(get_db)):
+def get_warehouse(db:session=Depends(get_tenant_db)):
 
     warehouse=db.query(Warehouse).all()
     return warehouse
 
 
 @router.post("/ware_products",response_model=ProductOut)
-def create_warehouse(data:ProductCreate,db:session=Depends(get_db)):
+def create_warehouse(data:ProductCreate,db:session=Depends(get_tenant_db)):
 
     products=Product(**data.dict())
     db.add(products)
@@ -35,14 +35,14 @@ def create_warehouse(data:ProductCreate,db:session=Depends(get_db)):
     return products
 
 @router.get("/ware_products",response_model=List[ProductOut])
-def get_products(db:session=Depends(get_db)):
+def get_products(db:session=Depends(get_tenant_db)):
 
     products=db.query(Product).all()
     return products
 
 
 @router.post("/inventory")
-def update_inventory(data:InventoryUpdate, db:session = Depends(get_db)):
+def update_inventory(data:InventoryUpdate, db:session = Depends(get_tenant_db)):
     
     inventory = db.query(Inventory_ware).filter(
         Inventory_ware.product_id == data.product_id,
@@ -80,12 +80,12 @@ def update_inventory(data:InventoryUpdate, db:session = Depends(get_db)):
         "quantity": inventory.quantity
     }
 @router.get("/inventory")
-def get_inventory(db: session = Depends(get_db)):
+def get_inventory(db: session = Depends(get_tenant_db)):
     return db.query(Inventory_ware).all()
 
 
 @router.post("/racks",response_model=RackOut)
-def create_rack(data: RackCreate, db: session = Depends(get_db)):
+def create_rack(data: RackCreate, db: session = Depends(get_tenant_db)):
     rack = Rack(**data.dict())
     db.add(rack)
     db.commit()
@@ -93,7 +93,7 @@ def create_rack(data: RackCreate, db: session = Depends(get_db)):
     return rack
 
 @router.get("/racks",response_model=List[RackOut])
-def get_racks(db: session = Depends(get_db)):
+def get_racks(db: session = Depends(get_tenant_db)):
     return db.query(Rack).all()
 
 
