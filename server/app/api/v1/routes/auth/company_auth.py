@@ -67,7 +67,6 @@ async def send_invite(
         )
 
         invite_link = f"{FRONTEND_URL}/invite/accept/{event_id}"
-
         invite_category = "manager_card" if payload.manager_card_id else "business"
         invite_category_id = (
             str(payload.manager_card_id)

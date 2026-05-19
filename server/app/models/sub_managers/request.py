@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from app.db.database import BaseTenant, Base
 
-class MaterialRequest(Base):
+class MaterialRequest(BaseTenant):
     __tablename__ = "material_requests"
 
     id = Column(Integer, primary_key=True)

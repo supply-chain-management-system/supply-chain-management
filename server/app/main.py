@@ -11,6 +11,7 @@ from fastapi import FastAPI
 
 
 from app.models.company_auth.managers import InviteToken
+from app.models.subscriptions import SubscriptionPlan
 
 
 from app.models.business_manager import domain
@@ -49,6 +50,9 @@ from app.api.v1.routes.sub_managers.factory_manager import analytics
 
 
 from app.api.v1.routes.auth import company_auth
+from app.api.v1.routes.subscriptions import subscriptions
+from app.db.database import SessionLocal
+from app.services.subscriptions import seed_subscription_plans
 
 
 app = FastAPI(
@@ -70,6 +74,9 @@ print("error")
 app.add_middleware(TenantMiddleware)
 print("error2")
 Base.metadata.create_all(bind=engine)
+
+with SessionLocal() as db:
+    seed_subscription_plans(db)
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(bm_dashboard.router, prefix="/api/v1")
@@ -101,11 +108,15 @@ app.include_router(api_warehouse.router, prefix='/api/v1')
 
 app.include_router(request.router, prefix='/api/v1')
 
+from app.api.v1.routes.sub_managers import logistics_dashboard
+app.include_router(logistics_dashboard.router, prefix='/api/v1')
+
 
 app.include_router(team.router, prefix='/api/v1/factory_team')
 
 
 app.include_router(business_card.router, prefix="/api/v1")
+app.include_router(subscriptions.router, prefix="/api/v1")
 
 
 @app.get("/")

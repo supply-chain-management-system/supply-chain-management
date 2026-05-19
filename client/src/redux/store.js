@@ -5,15 +5,17 @@ import requestsReducer from "./requestsSlice";
 import warehouseManagerReducer from './warehouseManagerSlice';
 import logisticsManagerReducer from './logisticsManagerSlice';
 import supplierReducer from './supplierSlice';
+import logisticsDashboardReducer from './logisticsDashboardSlice';
 
 const store = configureStore({
   reducer: {
     auth: authReducer,
-    requests: requestsReducer,
     // factoryManager: factoryManagerReducer,
     warehouseManager: warehouseManagerReducer,
     logisticsManager: logisticsManagerReducer,
+    requests: requestsReducer,
     supplier: supplierReducer,
+    logisticsDashboard: logisticsDashboardReducer,
   },
 });
 

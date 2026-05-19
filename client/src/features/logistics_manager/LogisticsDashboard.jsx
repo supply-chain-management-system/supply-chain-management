@@ -1,4 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchDashboardStats,
+  fetchShipments,
+  fetchActivities,
+  fetchVehicles,
+} from '../../redux/logisticsDashboardSlice';
 import {
   Truck,
   Package,
@@ -9,91 +16,81 @@ import {
   ArrowRight,
   MapPin,
   CheckCircle2,
-  Circle,
   RefreshCw,
   MoreHorizontal,
   Navigation,
-  Fuel,
-  Thermometer,
   Wifi,
+  Circle,
+  Activity,
 } from 'lucide-react';
 
-// ─── Shared helpers ────────────────────────────────────────────────────────────
+// ─── Shared ────────────────────────────────────────────────────────────────────
 
-const glass =
-  'bg-white/[0.03] backdrop-blur-xl border border-white/[0.07] rounded-2xl';
+const card = 'bg-[#0f0f0f] border border-white/[0.07] rounded-xl';
 
+// ─── Status badge ───────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
-  const map = {
-    'In Transit': {
-      dot: 'bg-blue-400',
-      text: 'text-blue-400',
-      bg: 'bg-blue-500/[0.12]',
-      border: 'border-blue-500/20',
-    },
-    Pending: {
-      dot: 'bg-amber-400',
-      text: 'text-amber-400',
-      bg: 'bg-amber-500/[0.12]',
-      border: 'border-amber-500/20',
-    },
-    Delivered: {
-      dot: 'bg-emerald-400',
-      text: 'text-emerald-400',
-      bg: 'bg-emerald-500/[0.12]',
-      border: 'border-emerald-500/20',
-    },
-    Delayed: {
-      dot: 'bg-red-400',
-      text: 'text-red-400',
-      bg: 'bg-red-500/[0.12]',
-      border: 'border-red-500/20',
-    },
+  const styles = {
+    'In Transit': 'bg-green-500/10 text-green-400 border-green-500/20',
+    Delivered:    'bg-white/[0.06] text-white/70 border-white/[0.08]',
+    Pending:      'bg-white/[0.04] text-white/40 border-white/[0.06]',
+    Delayed:      'bg-red-500/10 text-red-400 border-red-500/20',
   };
-  const s = map[status] ?? map['Pending'];
+  const dotColors = {
+    'In Transit': 'bg-green-400',
+    Delivered:    'bg-white/50',
+    Pending:      'bg-white/20',
+    Delayed:      'bg-red-400',
+  };
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${s.bg} ${s.text} ${s.border}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold border ${
+        styles[status] ?? styles['Pending']
+      }`}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColors[status] ?? dotColors['Pending']}`} />
       {status}
     </span>
   );
 };
 
-// ─── Mini sparkline bars ────────────────────────────────────────────────────────
-const Sparkline = ({ data, color }) => (
-  <div className="flex items-end gap-[3px] h-8">
-    {data.map((v, i) => (
-      <div
-        key={i}
-        className={`w-1.5 rounded-sm ${color} opacity-60`}
-        style={{ height: `${(v / Math.max(...data)) * 100}%` }}
-      />
-    ))}
+// ─── Mini sparkline ─────────────────────────────────────────────────────────────
+const Sparkline = ({ data, green }) => (
+  <div className="flex items-end gap-[2px] h-7">
+    {data.map((v, i) => {
+      const pct = (v / Math.max(...data)) * 100;
+      return (
+        <div
+          key={i}
+          className={`flex-1 rounded-sm ${green ? 'bg-green-500' : 'bg-white/20'}`}
+          style={{ height: `${pct}%`, opacity: 0.5 + (i / data.length) * 0.5 }}
+        />
+      );
+    })}
   </div>
 );
 
-// ─── Stat Card ─────────────────────────────────────────────────────────────────
-const StatCard = ({ icon: Icon, label, value, delta, deltaUp, sparkData, color, glowColor }) => (
-  <div
-    className={`${glass} p-5 flex flex-col gap-4 cursor-pointer
-      transition-all duration-300 hover:-translate-y-0.5 hover:border-white/[0.12]
-      hover:shadow-[0_20px_60px_rgba(0,0,0,0.3)]`}
-  >
+// ─── Stat card ──────────────────────────────────────────────────────────────────
+const StatCard = ({ icon: Icon, label, value, delta, deltaUp, sparkData, green }) => (
+  <div className={`${card} p-5 flex flex-col gap-4 cursor-default
+    transition-all duration-200 hover:border-white/[0.12] hover:bg-[#111]`}>
     <div className="flex items-start justify-between">
       <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-        style={{ background: glowColor, boxShadow: `0 0 20px ${glowColor}55` }}
+        className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+          green ? 'bg-green-500/15' : 'bg-white/[0.06]'
+        }`}
       >
-        <Icon className="w-5 h-5 text-white" />
+        <Icon
+          style={{ width: '16px', height: '16px' }}
+          className={green ? 'text-green-400' : 'text-white/50'}
+        />
       </div>
 
-      {delta !== undefined && (
+      {delta && (
         <div
-          className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-lg ${
+          className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
             deltaUp
-              ? 'text-emerald-400 bg-emerald-500/10'
+              ? 'text-green-400 bg-green-500/10'
               : 'text-red-400 bg-red-500/10'
           }`}
         >
@@ -105,215 +102,236 @@ const StatCard = ({ icon: Icon, label, value, delta, deltaUp, sparkData, color, 
 
     <div>
       <p className="text-2xl font-bold text-white tracking-tight leading-none">{value}</p>
-      <p className="text-xs text-slate-500 mt-1 leading-none">{label}</p>
+      <p className="text-xs text-white/35 mt-1 leading-none">{label}</p>
     </div>
 
-    {sparkData && <Sparkline data={sparkData} color={color} />}
+    {sparkData && <Sparkline data={sparkData} green={green} />}
   </div>
 );
 
-// ─── Shipment row ───────────────────────────────────────────────────────────────
-const ShipmentRow = ({ id, destination, status, eta, driver, weight }) => (
-  <tr className="group border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors duration-150">
-    <td className="py-3.5 px-4">
-      <span className="font-mono text-sm font-semibold text-blue-400">{id}</span>
+// ─── Shipment row ────────────────────────────────────────────────────────────────
+const ShipmentRow = ({ id, destination, driver, weight, status, eta }) => (
+  <tr className="group border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors duration-100">
+    <td className="py-3 px-4">
+      <span className="font-mono text-xs font-semibold text-green-400">{id}</span>
     </td>
-    <td className="py-3.5 px-4">
-      <div className="flex items-center gap-2">
-        <MapPin className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-        <span className="text-sm text-slate-200">{destination}</span>
+    <td className="py-3 px-4">
+      <div className="flex items-center gap-1.5">
+        <MapPin className="w-3 h-3 text-white/20 shrink-0" />
+        <span className="text-xs text-white/70">{destination}</span>
       </div>
     </td>
-    <td className="py-3.5 px-4">
-      <span className="text-xs text-slate-500">{driver}</span>
+    <td className="py-3 px-4">
+      <span className="text-xs text-white/40">{driver}</span>
     </td>
-    <td className="py-3.5 px-4">
-      <span className="text-xs text-slate-400">{weight}</span>
+    <td className="py-3 px-4">
+      <span className="text-xs text-white/40">{weight}</span>
     </td>
-    <td className="py-3.5 px-4">
+    <td className="py-3 px-4">
       <StatusBadge status={status} />
     </td>
-    <td className="py-3.5 px-4">
-      <span className="text-xs text-slate-400">{eta}</span>
+    <td className="py-3 px-4">
+      <span className="text-xs text-white/40">{eta}</span>
     </td>
-    <td className="py-3.5 px-4">
-      <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-white/[0.06] text-slate-400 hover:text-white">
+    <td className="py-3 px-4">
+      <button className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-white/[0.06] text-white/30 hover:text-white/70 transition-all">
         <MoreHorizontal className="w-4 h-4" />
       </button>
     </td>
   </tr>
 );
 
-// ─── Activity item ──────────────────────────────────────────────────────────────
-const ActivityItem = ({ icon: Icon, color, text, time, isLast }) => (
+// ─── Activity item ───────────────────────────────────────────────────────────────
+const ActivityItem = ({ icon: Icon, green, text, time, isLast }) => (
   <div className="flex gap-3">
-    <div className="flex flex-col items-center">
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${color}`}>
-        <Icon className="w-3.5 h-3.5 text-white" />
+    <div className="flex flex-col items-center shrink-0">
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center
+        ${green ? 'bg-green-500/15' : 'bg-white/[0.06]'}`}>
+        <Icon style={{ width: '12px', height: '12px' }} className={green ? 'text-green-400' : 'text-white/40'} />
       </div>
-      {!isLast && <div className="w-px flex-1 bg-white/[0.05] mt-1 mb-1 min-h-[1.5rem]" />}
+      {!isLast && <div className="w-px flex-1 bg-white/[0.04] mt-1 min-h-[1rem]" />}
     </div>
-    <div className="pb-4">
-      <p className="text-sm text-slate-300 leading-snug">{text}</p>
-      <p className="text-xs text-slate-600 mt-0.5">{time}</p>
+    <div className="pb-3.5">
+      <p className="text-xs text-white/70 leading-snug">{text}</p>
+      <p className="text-[10px] text-white/25 mt-0.5">{time}</p>
     </div>
   </div>
 );
 
-// ─── Vehicle tile ───────────────────────────────────────────────────────────────
-const VehicleTile = ({ id, route, fuel, status }) => {
-  const statusMap = {
-    Active: 'text-emerald-400 bg-emerald-500/10',
-    Idle: 'text-amber-400 bg-amber-500/10',
+// ─── Vehicle tile ────────────────────────────────────────────────────────────────
+const VehicleTile = ({ id, stop_warehouse_name, capacity_kg, vehicle_type, status }) => {
+  const statusCls = {
+    Active:      'text-green-400 bg-green-500/10',
+    Idle:        'text-white/50 bg-white/[0.06]',
     Maintenance: 'text-red-400 bg-red-500/10',
   };
+
   return (
-    <div className={`${glass} p-4 hover:border-white/[0.12] transition-all duration-200`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Truck className="w-4 h-4 text-slate-400" />
-          <span className="text-sm font-semibold text-white">{id}</span>
+    <div className={`${card} p-4 hover:border-white/[0.11] transition-all duration-150`}>
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-1.5">
+          <Truck className="w-3.5 h-3.5 text-white/30" />
+          <span className="text-xs font-semibold text-white">{id}</span>
         </div>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusMap[status]}`}>
+        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusCls[status]}`}>
           {status}
         </span>
       </div>
-      <p className="text-xs text-slate-500 flex items-center gap-1 mb-3">
-        <Navigation className="w-3 h-3" /> {route}
+      <p className="text-[10px] text-white/30 flex items-center gap-1 mb-3 truncate">
+        <MapPin className="w-3 h-3 shrink-0" /> {stop_warehouse_name}
       </p>
-      <div className="flex items-center gap-2">
-        <Fuel className="w-3 h-3 text-slate-600" />
-        <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${
-              fuel > 60 ? 'bg-emerald-500' : fuel > 30 ? 'bg-amber-500' : 'bg-red-500'
-            }`}
-            style={{ width: `${fuel}%` }}
-          />
-        </div>
-        <span className="text-[10px] text-slate-500">{fuel}%</span>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] text-white/35 flex items-center gap-1 truncate">
+          <Package className="w-3 h-3 shrink-0" /> {Number(capacity_kg || 0).toLocaleString()} kg
+        </span>
+        <span className="text-[9px] text-white/30 truncate">{vehicle_type}</span>
       </div>
     </div>
   );
 };
 
-// ─── Main Dashboard ─────────────────────────────────────────────────────────────
+// ─── KPI row ─────────────────────────────────────────────────────────────────────
+const KpiChip = ({ icon: Icon, label, value }) => (
+  <div className="flex-1 flex flex-col items-center gap-1 py-3 border-r border-white/[0.05] last:border-r-0">
+    <Icon className="w-4 h-4 text-green-400" />
+    <p className="text-sm font-bold text-white tabular-nums">{value}</p>
+    <p className="text-[9px] text-white/25 uppercase tracking-wide">{label}</p>
+  </div>
+);
+
+// ─── Main ────────────────────────────────────────────────────────────────────────
 const LogisticsDashboard = () => {
-  const stats = [
+  const dispatch = useDispatch();
+  const { stats, shipments, activities, vehicles, loading } = useSelector(
+    (state) => state.logisticsDashboard
+  );
+
+  useEffect(() => {
+    dispatch(fetchDashboardStats());
+    dispatch(fetchShipments());
+    dispatch(fetchActivities());
+    dispatch(fetchVehicles());
+  }, [dispatch]);
+
+  const defaultStats = [
     {
       icon: Truck,
       label: 'Active Vehicles',
-      value: '42',
-      delta: '+3 today',
+      value: '-',
+      delta: 'Loading...',
       deltaUp: true,
-      sparkData: [30, 45, 38, 50, 42, 60, 55, 70, 65, 42],
-      color: 'bg-blue-500',
-      glowColor: 'rgba(59,130,246,0.8)',
+      sparkData: [10, 10, 10],
+      green: true,
     },
     {
       icon: Package,
       label: 'Deliveries Today',
-      value: '128',
-      delta: '+12%',
+      value: '-',
+      delta: 'Loading...',
       deltaUp: true,
-      sparkData: [80, 95, 88, 110, 105, 120, 115, 128, 122, 128],
-      color: 'bg-emerald-500',
-      glowColor: 'rgba(16,185,129,0.8)',
+      sparkData: [10, 10, 10],
+      green: false,
     },
     {
       icon: Clock,
       label: 'Pending Shipments',
-      value: '15',
-      delta: '-2 cleared',
+      value: '-',
+      delta: 'Loading...',
       deltaUp: true,
-      sparkData: [20, 22, 18, 25, 17, 20, 16, 18, 17, 15],
-      color: 'bg-amber-500',
-      glowColor: 'rgba(245,158,11,0.8)',
+      sparkData: [10, 10, 10],
+      green: false,
     },
     {
       icon: AlertTriangle,
       label: 'Critical Alerts',
-      value: '3',
-      delta: '+1',
+      value: '-',
+      delta: 'Loading...',
       deltaUp: false,
-      sparkData: [1, 2, 1, 3, 2, 4, 2, 3, 4, 3],
-      color: 'bg-red-500',
-      glowColor: 'rgba(239,68,68,0.8)',
+      sparkData: [10, 10, 10],
+      green: false,
     },
   ];
 
-  const shipments = [
-    { id: '#SHP-1001', destination: 'New York, NY', driver: 'James K.', weight: '2.4 t', status: 'In Transit', eta: 'Today, 2:30 PM' },
-    { id: '#SHP-1002', destination: 'Los Angeles, CA', driver: 'Maria S.', weight: '1.8 t', status: 'Pending', eta: 'Tomorrow, 10:00 AM' },
-    { id: '#SHP-1003', destination: 'Chicago, IL', driver: 'Tom R.', weight: '3.1 t', status: 'Delivered', eta: 'Today, 9:15 AM' },
-    { id: '#SHP-1004', destination: 'Houston, TX', driver: 'Sara L.', weight: '0.9 t', status: 'In Transit', eta: 'Today, 4:45 PM' },
-    { id: '#SHP-1005', destination: 'Phoenix, AZ', driver: 'Mark D.', weight: '2.0 t', status: 'Delayed', eta: 'Tomorrow, 3:00 PM' },
-  ];
+  const displayStats = stats && stats.length === 4 ? stats.map((s, idx) => ({
+    ...s,
+    icon: [Truck, Package, Clock, AlertTriangle][idx]
+  })) : defaultStats;
 
-  const activities = [
-    { icon: CheckCircle2, color: 'bg-emerald-600', text: 'SHP-1003 delivered to Chicago, IL', time: '9:15 AM' },
-    { icon: Truck, color: 'bg-blue-600', text: 'SHP-1001 departed Nashville depot', time: '8:42 AM' },
-    { icon: AlertTriangle, color: 'bg-red-600', text: 'SHP-1005 delayed — traffic on I-10', time: '8:10 AM' },
-    { icon: RefreshCw, color: 'bg-amber-600', text: 'Route #R-07 recalculated', time: '7:55 AM' },
-    { icon: Circle, color: 'bg-slate-600', text: 'SHP-1002 queued for departure', time: '7:30 AM' },
-  ];
+  const getIcon = (iconName) => {
+    switch(iconName) {
+      case 'CheckCircle2': return CheckCircle2;
+      case 'Truck': return Truck;
+      case 'AlertTriangle': return AlertTriangle;
+      case 'RefreshCw': return RefreshCw;
+      case 'Circle': default: return Circle;
+    }
+  };
 
-  const vehicles = [
-    { id: 'TRK-001', route: 'Nashville → New York', fuel: 72, status: 'Active' },
-    { id: 'TRK-004', route: 'Dallas → Houston', fuel: 45, status: 'Active' },
-    { id: 'TRK-007', route: 'Depot — Standby', fuel: 88, status: 'Idle' },
-    { id: 'TRK-012', route: 'Service Centre', fuel: 20, status: 'Maintenance' },
-  ];
+  const displayActivities = activities.map(a => ({
+    ...a,
+    icon: getIcon(a.icon)
+  }));
+
+  const handleRefresh = () => {
+    dispatch(fetchDashboardStats());
+    dispatch(fetchShipments());
+    dispatch(fetchActivities());
+    dispatch(fetchVehicles());
+  };
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="max-w-[1400px] mx-auto space-y-5">
 
-      {/* ── Page heading ── */}
+      {/* ── Heading ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Dashboard Overview</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Sunday, 18 May 2026 · Last updated <span className="text-slate-400">just now</span>
+          <h1 className="text-xl font-bold text-white tracking-tight">Dashboard Overview</h1>
+          <p className="text-xs text-white/30 mt-0.5">
+            Real-time Logistics Control Tower
           </p>
         </div>
         <button
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white
-                     transition-all duration-200 hover:brightness-110 hover:-translate-y-0.5"
-          style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)' }}
+          onClick={handleRefresh}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 hover:bg-green-400
+                     text-xs font-semibold text-black transition-all duration-150 hover:-translate-y-0.5"
         >
-          <RefreshCw className="w-4 h-4" /> Refresh
+          <RefreshCw className={`w-3.5 h-3.5 ${Object.values(loading).some(v => v) ? 'animate-spin' : ''}`} /> Refresh
         </button>
       </div>
 
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {stats.map(s => <StatCard key={s.label} {...s} />)}
+        {displayStats.map(s => <StatCard key={s.label} {...s} />)}
       </div>
 
-      {/* ── Row 2: Shipments table + Activity feed ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
+      {/* ── KPI strip ── */}
+      <div className={`${card} flex divide-x divide-white/[0.05]`}>
+        <KpiChip icon={Activity}     label="On-Time Rate"  value="94.2%" />
+        <KpiChip icon={Truck}        label="Fleet Util."   value="78%"   />
+        <KpiChip icon={Package}      label="Avg Delivery"  value="1.4 d" />
+        <KpiChip icon={Navigation}   label="km Driven"     value="12.4k" />
+      </div>
+
+      {/* ── Row: Shipments + Activity ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_300px] gap-4">
 
         {/* Shipments table */}
-        <div className={`${glass} overflow-hidden`}>
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+        <div className={`${card} overflow-hidden`}>
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
             <div>
               <h2 className="text-sm font-semibold text-white">Recent Shipments</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Showing last 5 shipments</p>
+              <p className="text-[10px] text-white/30 mt-0.5">Last 5 active shipments</p>
             </div>
-            <button className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors">
+            <button className="flex items-center gap-1 text-xs font-medium text-green-400 hover:text-green-300 transition-colors">
               View all <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/[0.04]">
-                  {['Shipment ID', 'Destination', 'Driver', 'Weight', 'Status', 'ETA', ''].map(h => (
-                    <th
-                      key={h}
-                      className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider"
-                    >
+                  {['ID', 'Destination', 'Driver', 'Weight', 'Status', 'ETA', ''].map(h => (
+                    <th key={h} className="text-left px-4 py-2.5 text-[9px] font-semibold text-white/25 uppercase tracking-widest">
                       {h}
                     </th>
                   ))}
@@ -323,108 +341,125 @@ const LogisticsDashboard = () => {
                 {shipments.map(s => <ShipmentRow key={s.id} {...s} />)}
               </tbody>
             </table>
+            {shipments.length === 0 && !loading.shipments && (
+               <div className="p-6 text-center text-xs text-white/30">No shipments found</div>
+            )}
           </div>
         </div>
 
         {/* Activity feed */}
-        <div className={`${glass} flex flex-col`}>
-          <div className="px-5 py-4 border-b border-white/[0.06]">
+        <div className={`${card} flex flex-col`}>
+          <div className="px-4 py-3.5 border-b border-white/[0.06]">
             <h2 className="text-sm font-semibold text-white">Live Activity</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Real-time events</p>
+            <p className="text-[10px] text-white/30 mt-0.5">Real-time events</p>
           </div>
-          <div className="flex-1 px-5 pt-5 overflow-y-auto">
-            {activities.map((a, i) => (
-              <ActivityItem key={i} {...a} isLast={i === activities.length - 1} />
+          <div className="flex-1 px-4 pt-4 space-y-0">
+            {displayActivities.map((a, i) => (
+              <ActivityItem key={i} {...a} isLast={i === displayActivities.length - 1} />
             ))}
+            {displayActivities.length === 0 && !loading.activities && (
+              <div className="text-center text-xs text-white/30 pt-4">No recent activity</div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── Row 3: Fleet overview + Tracking panel ── */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-5">
+      {/* ── Row: Fleet + Tracking ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
 
         {/* Fleet grid */}
-        <div className={`${glass} overflow-hidden`}>
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+        <div className={`${card} overflow-hidden`}>
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
             <div>
               <h2 className="text-sm font-semibold text-white">Fleet Overview</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Live vehicle status</p>
+              <p className="text-[10px] text-white/30 mt-0.5">Live vehicle status</p>
             </div>
-            <button className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors">
-              Manage fleet <ArrowRight className="w-3.5 h-3.5" />
+            <button
+              onClick={() => window.location.href = '/logistics_fleet'}
+              className="flex items-center gap-1 text-xs font-medium text-green-400 hover:text-green-300 transition-colors"
+            >
+              Manage <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
           <div className="p-4 grid grid-cols-2 gap-3">
             {vehicles.map(v => <VehicleTile key={v.id} {...v} />)}
+            {vehicles.length === 0 && !loading.vehicles && (
+               <div className="col-span-2 p-6 text-center text-xs text-white/30">No vehicles tracked</div>
+            )}
           </div>
         </div>
 
-        {/* Tracking map placeholder */}
-        <div className={`${glass} flex flex-col overflow-hidden`}>
-          <div className="px-5 py-4 border-b border-white/[0.06]">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-white">Live Tracking</h2>
-                <p className="text-xs text-slate-500 mt-0.5">42 vehicles on road</p>
-              </div>
-              <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">
-                <Wifi className="w-3 h-3" /> LIVE
-              </span>
+        {/* Tracking panel */}
+        <div className={`${card} flex flex-col overflow-hidden`}>
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
+            <div>
+              <h2 className="text-sm font-semibold text-white">Stand Overview</h2>
+              <p className="text-[10px] text-white/30 mt-0.5">{vehicles.length} vehicles assigned to warehouse stands</p>
             </div>
+            <span className="flex items-center gap-1 text-[9px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+              <Wifi className="w-2.5 h-2.5" /> LIVE
+            </span>
           </div>
 
           {/* Map area */}
-          <div className="flex-1 relative m-4 rounded-xl overflow-hidden min-h-[240px]"
-               style={{ background: 'radial-gradient(ellipse at 30% 40%, rgba(59,130,246,0.08) 0%, rgba(99,102,241,0.05) 50%, rgba(0,0,0,0.3) 100%)' }}>
-            {/* Grid lines */}
-            <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
+          <div
+            className="mx-4 mt-4 rounded-lg overflow-hidden relative flex-1 min-h-[200px] bg-[#0a0a0a] border border-white/[0.05]"
+          >
+            {/* Grid SVG */}
+            <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="white" strokeWidth="0.5"/>
+                <pattern id="mapgrid" width="28" height="28" patternUnits="userSpaceOnUse">
+                  <path d="M 28 0 L 0 0 0 28" fill="none" stroke="white" strokeWidth="0.3" strokeOpacity="0.08"/>
                 </pattern>
               </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
+              <rect width="100%" height="100%" fill="url(#mapgrid)" />
             </svg>
 
-            {/* Pulse dots for vehicles */}
+            {/* Stand connection lines */}
+            <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+              <line x1="20%" y1="70%" x2="65%" y2="30%" stroke="#4ade80" strokeWidth="1" strokeOpacity="0.2" strokeDasharray="4 3"/>
+              <line x1="65%" y1="30%" x2="85%" y2="55%" stroke="#4ade80" strokeWidth="1" strokeOpacity="0.15" strokeDasharray="4 3"/>
+              <line x1="30%" y1="40%" x2="60%" y2="65%" stroke="white" strokeWidth="1" strokeOpacity="0.08" strokeDasharray="4 3"/>
+            </svg>
+
+            {/* Vehicle pings */}
             {[
-              { left: '25%', top: '35%' },
-              { left: '60%', top: '55%' },
-              { left: '42%', top: '20%' },
-              { left: '75%', top: '40%' },
+              { left: '22%', top: '68%' },
+              { left: '63%', top: '28%' },
+              { left: '42%', top: '45%' },
+              { left: '83%', top: '53%' },
             ].map((pos, i) => (
               <div key={i} className="absolute" style={pos}>
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500 border-2 border-white/30" />
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-50" style={{ animationDelay: `${i * 0.4}s` }} />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400 border border-black" />
                 </span>
               </div>
             ))}
 
-            {/* Centre label */}
-            <div className="absolute inset-0 flex flex-col items-center justify-end pb-5 gap-1 pointer-events-none">
-              <MapPin className="w-5 h-5 text-slate-600" />
-              <p className="text-xs text-slate-600">Interactive map integration</p>
+            {/* Label */}
+            <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none">
+              <span className="text-[9px] text-white/20">Map integration placeholder</span>
             </div>
           </div>
 
-          {/* Temperature & telemetry strip */}
-          <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+          {/* Telemetry row */}
+          <div className="grid grid-cols-3 gap-2 p-4">
             {[
-              { icon: Thermometer, label: 'Avg Temp', value: '22°C', color: 'text-orange-400' },
-              { icon: Fuel, label: 'Avg Fuel', value: '64%', color: 'text-blue-400' },
-              { icon: Navigation, label: 'On Route', value: '38 / 42', color: 'text-emerald-400' },
-            ].map(({ icon: I, label, value, color }) => (
-              <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3 text-center">
-                <I className={`w-4 h-4 mx-auto mb-1 ${color}`} />
-                <p className="text-[11px] font-bold text-white leading-none">{value}</p>
-                <p className="text-[9px] text-slate-600 mt-0.5 leading-none">{label}</p>
+              { icon: Package,    label: 'Capacity', value: `${vehicles.reduce((sum, v) => sum + Number(v.capacity_kg || 0), 0).toLocaleString()} kg` },
+              { icon: Navigation, label: 'Active',   value: `${vehicles.filter(v => v.status === 'Active').length}/${vehicles.length || 1}` },
+              { icon: Activity,   label: 'Stands',   value: new Set(vehicles.map(v => v.stop_warehouse_name).filter(Boolean)).size },
+            ].map(({ icon: I, label, value }) => (
+              <div key={label} className="flex flex-col items-center gap-1 py-2.5 bg-white/[0.03] border border-white/[0.05] rounded-lg">
+                <I className="w-3.5 h-3.5 text-green-400" />
+                <p className="text-xs font-bold text-white leading-none tabular-nums">{value}</p>
+                <p className="text-[9px] text-white/25 leading-none">{label}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
 
+      </div>
     </div>
   );
 };
