@@ -107,6 +107,26 @@ services:
     command: >
       celery -A app.core.celery.celery_app worker --loglevel=info
 
+  ai_worker:
+    build:
+      context: ./ai_services
+      dockerfile: Dockerfile
+    image: supply-chain-management-ai-worker:latest
+    container_name: ai-worker
+    restart: always
+    depends_on:
+      - redis
+      - postgres
+    env_file:
+      - ./ai_services/.env
+    working_dir: /app
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./ai_services/ai_app:/app/ai_app
+    # 🤫 Added '--uid=nobody' at the end to keep the startup logs perfectly quiet and secure
+    command: python -m celery -A ai_app.core.celery_config.ai_celery_app worker --loglevel=info --uid=nobody
+
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
