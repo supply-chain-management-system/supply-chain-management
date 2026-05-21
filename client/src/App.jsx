@@ -74,12 +74,7 @@ function App() {
     <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
 
       <div className="absolute top-4 right-4 z-50">
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className="px-4 py-2 rounded-lg font-semibold shadow-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-yellow-500 dark:text-gray-900 dark:hover:bg-yellow-400 transition-all"
-        >
-          {isDarkMode ? "☀️ Light" : "🌙 Dark"}
-        </button>
+     
       </div>
 
       <Router>
@@ -131,17 +126,6 @@ function App() {
           </Route>
 
 
-          
-
-
-
-
-
-
-
-        
-
-
           {/* BUSINESS MANAGER */}
           <Route
             // element={
@@ -181,9 +165,9 @@ function App() {
 
           {/* WAREHOUSE MANAGER */}
           <Route
-            // element={
-            //   <ProtectedRoute allowedRoles={['warehouse_manager']} />
-            // }
+             element={
+               <ProtectedRoute allowedRoles={['warehouse_manager']} />
+             }
           >
             <Route element={<Ware_Layout />}>
               <Route path="/ware_dashboard" element={<WarehouseDashboard />} />

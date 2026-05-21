@@ -1,6 +1,7 @@
 import httpx
 from langchain_core.tools import tool
-
+from langchain_mongodb import MongoDBAtlasVectorSearch
+from langchain_openai import OpenAIEmbeddings
 @tool
 def get_stock_level(product_name: str):
     """Check current stock level for a product from the inventory server."""
@@ -13,3 +14,18 @@ def get_stock_level(product_name: str):
         return "Inventory server unreachable."
     except Exception as e:
         return f"Tool Error: {str(e)}"
+    
+
+@tool
+def search_warehouse_manuals(query: str) -> str:
+    """Search internal warehouse operational manuals, guidelines, and safety policies."""
+    vector_store = MongoDBAtlasVectorSearch(
+        collection=mongodb_client["korvex_ai_db"]["knowledge_base"],
+        embedding=OpenAIEmbeddings(model="text-embedding-3-small"),
+        index_name="vector_index"
+    )
+    docs = vector_store.similarity_search(query, k=3)
+    return "\n\n".join([d.page_content for d in docs])
+
+
+

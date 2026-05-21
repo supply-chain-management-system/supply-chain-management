@@ -14,7 +14,8 @@ async def chat_with_agent(session_id: str, request: ChatRequest):
     input_data = {"messages": [HumanMessage(content=request.user_input)]}
     
     try:
-        response = agent_executor.invoke(input_data, config=config)
+        # ✅ FIX: Change .invoke() to await ...ainvoke()
+        response = await agent_executor.ainvoke(input_data, config=config)
         return {"reply": response["messages"][-1].content}
     except Exception as e:
         print(f"TRACELOG ERROR: {str(e)}")
@@ -23,11 +24,12 @@ async def chat_with_agent(session_id: str, request: ChatRequest):
 @router.get("/chat/{session_id}")
 async def get_chat_history(session_id: str):
     config = {"configurable": {"thread_id": session_id}}
-    state = agent_executor.get_state(config)
+    
+    # ✅ FIX: Change .get_state() to await ...aget_state()
+    state = await agent_executor.aget_state(config)
     
     if not state or not state.values.get("messages"):
         return {"messages": []}
-    
     
     formatted_messages = []
     for msg in state.values["messages"]:

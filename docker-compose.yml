@@ -47,7 +47,6 @@ services:
     env_file:
       - ./ai_services/.env
     environment:
-<<<<<<< HEAD
       - PYTHONPATH=/app:/server_code
     volumes:
       # Only mount the specific code folders you are actively editing.
@@ -57,17 +56,7 @@ services:
     ports:
       - "8001:8001"
     command: uvicorn ai_app.main:app --host 0.0.0.0 --port 8001
-
-
-=======
-      - PYTHONPATH=/app
-    volumes:
-      - ./ai_services:/app
-
-      - ./server:/server_code
-
       
->>>>>>> development
   nginx:
     image: nginx:latest
     container_name: api-gateway

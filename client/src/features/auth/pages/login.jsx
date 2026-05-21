@@ -161,7 +161,7 @@ const handleGoogleResponse = () => {
         console.log("Google login response:", data);
         if (res.ok && data.user.company_verified) {
           const role = data.user.role;
-          if (role === "admin") {
+          if (role === "owner") {
             navigate("/admindashboard");
           } else if (role === "business_manager") {
             navigate("/business-manager/dashboard");
