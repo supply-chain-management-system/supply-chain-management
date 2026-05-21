@@ -1,7 +1,12 @@
 from fastapi import APIRouter,Depends
+<<<<<<< HEAD
 from sqlalchemy.orm  import Session
 from sqlalchemy import func
 from app.db.deps import get_db,get_tenant_db
+=======
+from sqlalchemy.orm  import session
+from app.db.deps import get_tenant_db
+>>>>>>> development
 
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse,Rack,Product,Inventory_ware
 from app.models.sub_managers.factory_manager.production import Factory
@@ -12,6 +17,7 @@ from typing import List
 from fastapi import HTTPException, status
 router=APIRouter()
 
+<<<<<<< HEAD
 @router.post("/ware_house", response_model=WarehouseOut, status_code=status.HTTP_201_CREATED)
 def create_warehouse(data: WarehouseCreate, db: Session = Depends(get_tenant_db)):
     try:
@@ -29,6 +35,26 @@ def get_warehouse(db: Session = Depends(get_tenant_db)):
     return db.query(Warehouse).all()
 
 
+=======
+@router.post("/ware_house",response_model=WarehouseOut)
+def create_warehouse(data:WarehouseCreate,db:session=Depends(get_tenant_db)):
+
+    warehouse=Warehouse(**data.dict())
+    db.add(warehouse)
+    db.commit()
+    db.refresh(warehouse)
+    return warehouse
+
+@router.get("/ware_house",response_model=List[WarehouseOut])
+def get_warehouse(db:session=Depends(get_tenant_db)):
+
+    warehouse=db.query(Warehouse).all()
+    return warehouse
+
+
+@router.post("/ware_products",response_model=ProductOut)
+def create_warehouse(data:ProductCreate,db:session=Depends(get_tenant_db)):
+>>>>>>> development
 
 @router.post("/ware_products", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
 def create_product(data: ProductCreate, db: Session = Depends(get_tenant_db)):
@@ -42,11 +68,28 @@ def create_product(data: ProductCreate, db: Session = Depends(get_tenant_db)):
         db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create product")
 
+<<<<<<< HEAD
 @router.get("/ware_products", response_model=List[ProductOut], status_code=status.HTTP_200_OK)
 def get_products(db: Session = Depends(get_tenant_db)):
     return db.query(Product).all()
 
 
+=======
+@router.get("/ware_products",response_model=List[ProductOut])
+def get_products(db:session=Depends(get_tenant_db)):
+
+    products=db.query(Product).all()
+    return products
+
+
+@router.post("/inventory")
+def update_inventory(data:InventoryUpdate, db:session = Depends(get_tenant_db)):
+    
+    inventory = db.query(Inventory_ware).filter(
+        Inventory_ware.product_id == data.product_id,
+        Inventory_ware.rack_id == data.rack_id
+    ).first()
+>>>>>>> development
 
 @router.post("/inventory", status_code=status.HTTP_200_OK)
 def update_inventory(data: InventoryUpdate, db: Session = Depends(get_db)):
@@ -81,9 +124,49 @@ def update_inventory(data: InventoryUpdate, db: Session = Depends(get_db)):
         db.refresh(inventory)
         return {"message": "Stock updated", "quantity": inventory.quantity}
 
+<<<<<<< HEAD
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Stock update failed")
+=======
+    if data.type == "IN":
+        inventory.quantity += data.quantity
+
+    elif data.type == "OUT":
+        if inventory.quantity < data.quantity:
+            raise HTTPException(status_code=400, detail="Not enough stock")
+        inventory.quantity -= data.quantity
+
+    else:
+        raise HTTPException(status_code=400, detail="Invalid type")
+
+    db.commit()
+    db.refresh(inventory)
+
+    return {
+        "message": "Stock updated",
+        "product_id": inventory.product_id,
+        "rack_id": inventory.rack_id,
+        "quantity": inventory.quantity
+    }
+@router.get("/inventory")
+def get_inventory(db: session = Depends(get_tenant_db)):
+    return db.query(Inventory_ware).all()
+
+
+@router.post("/racks",response_model=RackOut)
+def create_rack(data: RackCreate, db: session = Depends(get_tenant_db)):
+    rack = Rack(**data.dict())
+    db.add(rack)
+    db.commit()
+    db.refresh(rack)
+    return rack
+
+@router.get("/racks",response_model=List[RackOut])
+def get_racks(db: session = Depends(get_tenant_db)):
+    return db.query(Rack).all()
+
+>>>>>>> development
 
 
 @router.get("/inventory", response_model=List[InventoryOut], status_code=status.HTTP_200_OK)

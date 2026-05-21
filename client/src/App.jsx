@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import BusinessManagerLayout from './features/business_manager/layouts/BusinessManagerLayout';
@@ -53,35 +52,32 @@ import InviteAcceptPage from './features/auth/pages/invitation';
 
 import LogisticsLayout from './features/logistics_manager/LogisticsLayout';
 import LogisticsDashboard from './features/logistics_manager/LogisticsDashboard';
+import LogisticsFleetPage from './features/logistics_manager/pages/LogisticsFleetPage';
 
 import ProtectedRoute from './protectedroutes/authenticate_protector';
 import PublicRoute from './protectedroutes/block_public_pages';
-import KorvexLanding from './components/layout/landing_page';
+import KorvexLanding, { ContactSalesPage, SubscriptionsPage } from './components/layout/landing_page';
 
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
-
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
+<<<<<<< HEAD
 
       <div className="absolute top-4 right-4 z-50">
      
       </div>
 
+=======
+>>>>>>> development
       <Router>
 
         <Routes>
 
           <Route path="/" element={<KorvexLanding />} />
+          <Route path="/pricing" element={<SubscriptionsPage />} />
+          <Route path="/subscriptions" element={<Navigate to="/pricing" replace />} />
+          <Route path="/contact-sales" element={<ContactSalesPage />} />
 
           {/* PUBLIC ROUTES */}
           <Route >
@@ -201,6 +197,7 @@ function App() {
           >
             <Route element={<LogisticsLayout />}>
               <Route path="/logistics_dashboard" element={<LogisticsDashboard />} />
+              <Route path="/logistics_fleet" element={<LogisticsFleetPage />} />
             </Route>
           </Route>
 
