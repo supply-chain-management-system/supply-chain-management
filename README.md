@@ -54,7 +54,7 @@ supply-chain-management
 │  │  │  ├─ common
 │  │  │  │  └─ button.jsx
 │  │  │  └─ layout
-│  │  │     └─ add.jsx
+│  │  │     └─ landing_page.jsx
 │  │  ├─ features
 │  │  │  ├─ admin_front
 │  │  │  │  ├─ admin_layout
@@ -65,6 +65,7 @@ supply-chain-management
 │  │  │  │     ├─ Admin_dashboard.jsx
 │  │  │  │     ├─ Admin_managers.jsx
 │  │  │  │     ├─ Admin_Navbar.jsx
+│  │  │  │     ├─ BusinessManagerDetails.jsx
 │  │  │  │     ├─ business_card.jsx
 │  │  │  │     ├─ container-model.jsx
 │  │  │  │     ├─ CreateWarehouse.jsx
@@ -114,6 +115,11 @@ supply-chain-management
 │  │  │  │     ├─ factory_team.jsx
 │  │  │  │     ├─ outputlogs.jsx
 │  │  │  │     └─ production_page.jsx
+│  │  │  ├─ logistics_manager
+│  │  │  │  ├─ logistics.css
+│  │  │  │  ├─ LogisticsDashboard.jsx
+│  │  │  │  ├─ LogisticsLayout.jsx
+│  │  │  │  └─ LogisticsSidebar.jsx
 │  │  │  ├─ users
 │  │  │  │  └─ user.jsx
 │  │  │  └─ warehouse_manager
@@ -140,6 +146,27 @@ supply-chain-management
 │  │     └─ warehouseManagerSlice.js
 │  └─ vite.config.js
 ├─ docker-compose.yml
+├─ elt_pipeline
+│  ├─ consumer
+│  │  ├─ config.py
+│  │  ├─ event_parse.py
+│  │  └─ kafka_consumer.py
+│  ├─ core
+│  │  ├─ clickhouse.py
+│  │  ├─ db.py
+│  │  ├─ schema_resolver.py
+│  │  └─ tenant_repository.py
+│  ├─ Dockerfile
+│  ├─ main.py
+│  ├─ requirements.txt
+│  ├─ router
+│  │  ├─ registry.py
+│  │  └─ table_router.py
+│  ├─ transformers
+│  │  └─ production.py
+│  └─ utils
+│     ├─ loader.py
+│     └─ logger.py
 ├─ nginx
 │  └─ nginx.conf
 ├─ package-lock.json
@@ -282,6 +309,8 @@ supply-chain-management
    │  │  │  ├─ company_service.py
    │  │  │  └─ schema_service.py
    │  │  ├─ email_service.py
+   │  │  ├─ managers
+   │  │  │  └─ manager_services.py
    │  │  ├─ sub_managers
    │  │  │  └─ factory_manager
    │  │  │     └─ factory_machine.py
@@ -291,6 +320,7 @@ supply-chain-management
    │  └─ __init__.py
    ├─ client
    ├─ Dockerfile
-   └─ requirements.txt
+   ├─ requirements.txt
+   └─ test_query.py
 
 ```

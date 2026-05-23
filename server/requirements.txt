@@ -50,3 +50,4 @@ celery
 redis
 
 httpx
+clickhouse-driver

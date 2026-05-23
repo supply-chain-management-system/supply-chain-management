@@ -1,3 +1,5 @@
+from requests import get
+
 from app.db.database import engine, Base
 
 from app.models.auth import user
@@ -44,7 +46,7 @@ from app.api.v1.routes.sub_managers import request
 
 from app.api.v1.routes.sub_managers.factory_manager import production, team,factory_machine
 from app.api.v1.routes.sub_managers.factory_manager import analytics    
-
+from app.api.v1.routes.elt import production_elt 
 
 
 
@@ -92,6 +94,7 @@ app.include_router(supply_manager.router, prefix="/api/v1")
 
 app.include_router(factory_machine.router,prefix='/api/v1/factory_machine')
 app.include_router(analytics.router,prefix='/api/v1/factory_analytics')
+app.include_router(production_elt.router,prefix='/api/v1/elt')
 
 
 

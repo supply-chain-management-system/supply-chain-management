@@ -19,7 +19,7 @@ const menuItems = [
   { icon: Package, label: 'Materials', active: false },
   { icon: ClipboardList, label: 'Requests', active: false },
   { icon: FileOutput, label: 'Output Logs',path:'/outputlogs', active: false },
-  { icon: Settings, label: 'Settings', active: false },
+  { icon: Settings, label: 'Settings',path:'/elt_production'  ,active: false },
 ];
 
 const Sidebar = () => {

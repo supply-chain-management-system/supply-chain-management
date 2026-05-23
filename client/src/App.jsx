@@ -26,7 +26,7 @@ import ProductionManagement from './features/factory_manager/pages/production_pa
 import Team from './features/factory_manager/pages/factory_team';
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 import Dashboardfactory from './features/factory_manager/pages/dashboard';
-
+import ProductionELT from './features/elt/factory_elt';
 import ProductionOutputHistory from './features/factory_manager/pages/outputlogs';
 
 
@@ -206,6 +206,8 @@ function App() {
               <Route path="factoryteam" element={<Team />} />
                  <Route path='/factory_machine' element={<Machine/>}/>
             <Route path='/outputlogs' element={<ProductionOutputHistory/>}/>
+            <Route path='/elt_production' element={<ProductionELT/>}/>
+            
             </Route>
           </Route>
 
