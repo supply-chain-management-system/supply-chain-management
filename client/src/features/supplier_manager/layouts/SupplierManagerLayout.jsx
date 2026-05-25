@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useState } from 'react';
 import { logoutUser } from '../../../redux/authSlice';
@@ -11,7 +11,9 @@ import {
   LogOut, 
   Menu, 
   X,
-  Gem
+  Gem,
+  MessageSquare,
+  User
 } from 'lucide-react';
 
 const SupplierManagerLayout = () => {
@@ -26,6 +28,7 @@ const SupplierManagerLayout = () => {
     { name: 'Inventory', path: '/supplier-manager/inventory', icon: Package },
     { name: 'Orders', path: '/supplier-manager/orders', icon: ShoppingCart },
     { name: 'Requests', path: '/supplier-manager/requests', icon: BellRing },
+    { name: 'Chat', path: '/supplier-manager/chat', icon: MessageSquare },
   ];
 
   const handleLogout = () => {
@@ -88,26 +91,22 @@ const SupplierManagerLayout = () => {
             </button>
 
             {/* User Profile */}
-            <div className="flex items-center gap-4 pl-6 border-l border-white/10">
+            <Link 
+              to="/supplier-manager/profile"
+              className="flex items-center gap-4 pl-6 border-l border-white/10 group cursor-pointer"
+            >
               <div className="flex flex-col items-end hidden sm:flex">
-                <p className="text-white text-sm font-bold tracking-tight leading-none">{user?.name || 'Manager'}</p>
+                <p className="text-white text-sm font-bold tracking-tight leading-none group-hover:text-red-500 transition-colors">{user?.name || 'Manager'}</p>
                 <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest mt-1">Korvex Manager</p>
               </div>
-              <div className="relative group">
+              <div className="relative">
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 p-[2px] transition-transform group-hover:rotate-6">
                   <div className="w-full h-full rounded-[10px] bg-[#1a1111] flex items-center justify-center text-white font-black text-sm">
                     {user?.name?.charAt(0)?.toUpperCase() || 'R'}
                   </div>
                 </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="p-2.5 rounded-xl bg-white/5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-all border border-white/5"
-                title="Logout"
-              >
-                <LogOut size={18} />
-              </button>
-            </div>
+            </Link>
 
             {/* Mobile hamburger */}
             <button

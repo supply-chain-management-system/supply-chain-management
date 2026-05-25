@@ -266,7 +266,9 @@ const RequestsPage = () => {
   // Filter requests specifically relevant to the active sub-page manager role
   const targetRole = getRoleForTab();
   const managerRequests = requests.filter(req => {
-    const matchesRole = req.role === targetRole || (targetRole === 'supply_manager' && !req.role);
+    const matchesRole = req.role === targetRole || 
+                        (targetRole === 'supply_manager' && !req.role) ||
+                        (targetRole === 'warehouse_manager' && (req.type === 'Restock Request' || req.role === 'System Agent'));
     const matchesStatus = filter === 'all' ? true : req.status === filter;
     const matchesPriority = priorityFilter === 'all' ? true : req.priority === priorityFilter;
     const matchesSearch = 
@@ -277,7 +279,11 @@ const RequestsPage = () => {
   });
 
   const getStats = (roleStr) => {
-    const filtered = requests.filter(r => r.role === roleStr || (roleStr === 'supply_manager' && !r.role));
+    const filtered = requests.filter(r => 
+      r.role === roleStr || 
+      (roleStr === 'supply_manager' && !r.role) ||
+      (roleStr === 'warehouse_manager' && (r.type === 'Restock Request' || r.role === 'System Agent'))
+    );
     return {
       pending: filtered.filter(r => r.status === 'pending').length,
       approved: filtered.filter(r => r.status === 'approved').length,

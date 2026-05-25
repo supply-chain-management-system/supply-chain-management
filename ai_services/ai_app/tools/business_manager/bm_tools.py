@@ -174,15 +174,16 @@ def invite_team_member(name: str, email: str, role: str, business_name: str) -> 
 
 @tool
 def dispatch_low_stock_alert(
-    product_name: str, current_qty: int, threshold: int
+    product_name: str, current_qty: int, threshold: int, user_id: int
 ) -> str:
-    """Dispatches emergency low stock alert via n8n."""
+    """Dispatches emergency low stock alert via n8n. Remember to pass the user_id."""
     try:
         payload = {
             "product_name": product_name,
             "current_qty": current_qty,
             "threshold": threshold,
             "message": f"⚠️ CRITICAL: {product_name} stock is at {current_qty}",
+            "user_id": user_id
         }
         httpx.post(
             f"{N8N_URL}/low-stock-alert", json=payload, timeout=HTTP_TIMEOUT

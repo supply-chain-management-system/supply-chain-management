@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 import BusinessManagerLayout from './features/business_manager/layouts/BusinessManagerLayout';
@@ -21,6 +20,9 @@ import RequestsPage from './features/business_manager/pages/RequestsPage';
 import OTPVerification from './features/auth/pages/verify-email';
 import ForgotPassword from './features/auth/pages/forgot-password';
 import ResetPassword from './features/auth/pages/reset-password';
+import ChatPage from './features/chat/ChatPage';
+import BM_Profile from './features/business_manager/pages/ProfilePage';
+import SM_Profile from './features/supplier_manager/pages/ProfilePage';
 
 import SupplierManagerLayout from './features/supplier_manager/layouts/SupplierManagerLayout';
 import SM_Dashboard from './features/supplier_manager/pages/DashboardPage';
@@ -61,40 +63,24 @@ import InviteAcceptPage from './features/auth/pages/invitation';
 
 import LogisticsLayout from './features/logistics_manager/LogisticsLayout';
 import LogisticsDashboard from './features/logistics_manager/LogisticsDashboard';
+import LogisticsFleetPage from './features/logistics_manager/pages/LogisticsFleetPage';
 
 import ProtectedRoute from './protectedroutes/authenticate_protector';
 import PublicRoute from './protectedroutes/block_public_pages';
-import KorvexLanding from './components/layout/landing_page';
+import KorvexLanding, { ContactSalesPage, SubscriptionsPage } from './components/layout/landing_page';
 
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
-
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
-
-      <div className="absolute top-4 right-4 z-50">
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className="px-4 py-2 rounded-lg font-semibold shadow-md bg-blue-600 text-white hover:bg-blue-700 dark:bg-yellow-500 dark:text-gray-900 dark:hover:bg-yellow-400 transition-all"
-        >
-          {isDarkMode ? "☀️ Light" : "🌙 Dark"}
-        </button>
-      </div>
-
       <Router>
 
         <Routes>
 
           <Route path="/" element={<KorvexLanding />} />
+          <Route path="/pricing" element={<SubscriptionsPage />} />
+          <Route path="/subscriptions" element={<Navigate to="/pricing" replace />} />
+          <Route path="/contact-sales" element={<ContactSalesPage />} />
 
           {/* PUBLIC ROUTES */}
           <Route >
@@ -115,6 +101,8 @@ function App() {
             <Route path="suppliers" element={<SuppliersPage />} />
             <Route path="supply-managers" element={<SupplyManagerPage />} />
             <Route path="requests" element={<RequestsPage />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="profile" element={<BM_Profile />} />
           </Route>
              
           <Route  element={<A_Layout />}>
@@ -124,6 +112,7 @@ function App() {
             <Route path="/addmanagers" element={<AddManager />} />
 
             <Route path="/createwarehouse" element={<CreateWarehouse/>} />
+            <Route path="/admin-chat" element={<ChatPage />} />
 
           </Route>
 
@@ -168,6 +157,8 @@ function App() {
               <Route path="suppliers" element={<SuppliersPage />} />
               <Route path="supply-managers" element={<SupplyManagerPage />} />
               <Route path="requests" element={<RequestsPage />} />
+              <Route path="chat" element={<ChatPage />} />
+              <Route path="profile" element={<BM_Profile />} />
             </Route>
 
           </Route>
@@ -185,6 +176,7 @@ function App() {
               <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
               <Route path="/addmanagers" element={<AddManager />} />
               <Route path="/createwarehouse" element={<CreateWarehouse />} />
+              <Route path="/admin-chat" element={<ChatPage />} />
             </Route>
 
           </Route>
@@ -201,6 +193,7 @@ function App() {
               <Route path="/Inventory" element={<InventoryPage />} />
               <Route path="/Racks" element={<RackPage />} />
               <Route path="/stockupdate" element={<StockUpdatePage />} />
+              <Route path="/ware-chat" element={<ChatPage />} />
             </Route>
           </Route>
 
@@ -216,6 +209,7 @@ function App() {
               <Route path="factoryteam" element={<Team />} />
                  <Route path='/factory_machine' element={<Machine/>}/>
             <Route path='/outputlogs' element={<ProductionOutputHistory/>}/>
+            <Route path="/factory-chat" element={<ChatPage />} />
             </Route>
           </Route>
 
@@ -231,6 +225,8 @@ function App() {
               <Route path="inventory" element={<SM_Inventory />} />
               <Route path="orders" element={<SM_Orders />} />
               <Route path="requests" element={<SM_Requests />} />
+              <Route path="chat" element={<ChatPage />} />
+              <Route path="profile" element={<SM_Profile />} />
             </Route>
           </Route>
 
@@ -242,6 +238,8 @@ function App() {
           >
             <Route element={<LogisticsLayout />}>
               <Route path="/logistics_dashboard" element={<LogisticsDashboard />} />
+              <Route path="/logistics_fleet" element={<LogisticsFleetPage />} />
+              <Route path="/logistics-chat" element={<ChatPage />} />
             </Route>
           </Route>
 

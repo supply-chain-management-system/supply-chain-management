@@ -23,7 +23,8 @@ import {
   Trash2,
   ArrowUpDown,
   CreditCard,
-  AlertCircle
+  AlertCircle,
+  Check
 } from 'lucide-react';
 
 const GlassCard = ({ children, className = "" }) => (
@@ -107,6 +108,43 @@ const OrdersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
   const [toast, setToast] = useState(null);
+
+  const [editingPriceId, setEditingPriceId] = useState(null);
+  const [negotiatedPrice, setNegotiatedPrice] = useState('');
+
+  const handleStartNegotiation = (order) => {
+    setEditingPriceId(order.id);
+    setNegotiatedPrice(order.unit_price ? order.unit_price.toString() : '');
+  };
+
+  const handleSaveNegotiatedPrice = async (order) => {
+    const newPrice = parseFloat(negotiatedPrice);
+    if (isNaN(newPrice) || newPrice <= 0) {
+      showToast("Please enter a valid price.", "error");
+      return;
+    }
+
+    const calculatedTotal = (order.quantity || 1) * newPrice;
+    const payload = {
+      supplier_id: order.supplier_id,
+      material_name: order.material_name,
+      quantity: order.quantity,
+      unit: order.unit,
+      unit_price: newPrice,
+      total_amount: calculatedTotal,
+      status: order.status,
+      expected_delivery: order.expected_delivery
+    };
+
+    try {
+      await dispatch(updateOrder({ orderId: order.id, data: payload })).unwrap();
+      showToast(`Unit price negotiated to $${newPrice.toFixed(2)}/unit!`, "success");
+      setEditingPriceId(null);
+      dispatch(fetchOrders());
+    } catch (err) {
+      showToast(err || "Failed to update negotiated price.", "error");
+    }
+  };
 
   // Form State
   const [formData, setFormData] = useState({
@@ -408,7 +446,7 @@ const OrdersPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {order.status === 'pending' && (
+                    {(order.status === 'pending' || order.status === 'sent' || order.status === 'received') && (
                       <button 
                         onClick={() => handleOpenEditModal(order)}
                         className="p-1.5 rounded bg-white/5 border border-white/5 text-gray-400 hover:text-white transition-colors"
@@ -444,7 +482,40 @@ const OrdersPage = () => {
                     {order.unit_price && (
                       <div className="flex justify-between items-center text-xs border-t border-white/5 pt-1.5">
                         <span className="text-gray-400 font-bold uppercase text-[9px] tracking-wider">Unit Price</span>
-                        <span className="text-white font-mono font-semibold">${order.unit_price}</span>
+                        {editingPriceId === order.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-gray-500 font-mono text-xs">$</span>
+                            <input 
+                              type="number"
+                              step="0.01"
+                              min="0.01"
+                              className="w-16 bg-[#0a0505] border border-white/20 rounded-md px-1.5 py-0.5 text-xs text-white outline-none focus:border-red-500 font-mono text-right"
+                              value={negotiatedPrice}
+                              onChange={e => setNegotiatedPrice(e.target.value)}
+                              autoFocus
+                            />
+                            <button 
+                              onClick={() => handleSaveNegotiatedPrice(order)}
+                              className="p-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-black transition-all"
+                              title="Save negotiated price"
+                            >
+                              <Check size={10} />
+                            </button>
+                            <button 
+                              onClick={() => setEditingPriceId(null)}
+                              className="p-1 rounded bg-red-900/20 text-red-400 border border-red-500/15 hover:bg-red-650 hover:text-white transition-all"
+                              title="Cancel"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 group/price cursor-pointer" onClick={() => handleStartNegotiation(order)}>
+                            <span className="text-white font-mono font-semibold">${order.unit_price}</span>
+                            <Edit size={11} className="text-gray-500 opacity-0 group-hover/price:opacity-100 transition-opacity" />
+                            <span className="text-[8px] font-black uppercase tracking-wider text-red-500/80 underline decoration-red-500/40 opacity-0 group-hover/price:opacity-100 transition-opacity">Negotiate</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

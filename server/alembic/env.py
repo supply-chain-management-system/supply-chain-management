@@ -32,6 +32,8 @@ from app.models.supplier_manager.order import PurchaseOrder
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse,Product,Inventory_ware,Rack
 from app.models.sub_managers.request import  MaterialRequest
 
+from app.models.sub_managers.logistics_manager.domain import Vehicle, Shipment, LogisticsActivity
+
 
 
 

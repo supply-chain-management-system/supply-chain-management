@@ -8,7 +8,8 @@ import {
   Package, 
   ClipboardList, 
   FileOutput,
-  Settings
+  Settings,
+  MessageSquare
 } from 'lucide-react';
 
 const menuItems = [
@@ -19,6 +20,7 @@ const menuItems = [
   { icon: Package, label: 'Materials', active: false },
   { icon: ClipboardList, label: 'Requests', active: false },
   { icon: FileOutput, label: 'Output Logs',path:'/outputlogs', active: false },
+  { icon: MessageSquare, label: 'Chat', path: '/factory-chat', active: false },
   { icon: Settings, label: 'Settings', active: false },
 ];
 

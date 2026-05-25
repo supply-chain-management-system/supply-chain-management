@@ -11,7 +11,9 @@ from app.models.business_manager.domain import Approval, Inventory
 from app.models.supplier_manager.supplier import Supplier
 # Ensure this model is available in your warehouse domain
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse 
-
+from app.models.auth.user import User
+from app.models.company.company import Company
+from app.db.database import SessionLocal
 router = APIRouter(prefix="/business-manager", tags=["Business Manager Dashboard"])
 
 # ==========================================
@@ -23,6 +25,7 @@ class N8nRestockPayload(BaseModel):
     current_qty: int
     threshold: int
     message: str
+    user_id: Optional[int] = None
 
 class RequestActionPayload(BaseModel):
     action: str  # "APPROVE" or "REJECT"
@@ -377,23 +380,54 @@ def bulk_process_requests(payload: BulkActionPayload, db: Session = Depends(get_
 # ==========================================
 
 @router.post("/webhook/create-restock-request")
-async def create_restock_request_from_n8n(data: N8nRestockPayload, db: Session = Depends(get_tenant_db)):
+async def create_restock_request_from_n8n(data: N8nRestockPayload, db: Session = Depends(get_db)):
     """Automation endpoint for n8n to inject alerts into the Control Tower."""
     try:
-        new_request = Approval(
-            type="Restock Request",
-            payload={
-                "product_name": data.product_name,
-                "current_qty": data.current_qty,
-                "threshold": data.threshold,
-                "alert_message": data.message
-            },
-            status="PENDING_WHM_APPROVAL",
-            requester_id=0 
-        )
-        db.add(new_request)
-        db.commit()
-        return {"status": "success"}
+        user_id = data.user_id
+        if not user_id:
+            first_user = db.query(User).filter(User.company_id.isnot(None)).first()
+            user_id = first_user.id if first_user else 2
+            
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user or not user.company_id:
+            # Fallback directly to the first company in public database
+            first_company = db.query(Company).first()
+            if not first_company or not first_company.schema_name:
+                raise HTTPException(status_code=400, detail="No active company schema found in the system.")
+            schema = first_company.schema_name
+        else:
+            company = db.query(Company).filter(Company.id == user.company_id).first()
+            if not company or not company.schema_name:
+                raise HTTPException(status_code=400, detail="Company or company schema not found")
+            schema = company.schema_name
+            
+        print(f"Webhook resolving schema: {schema} for user {user_id}")
+        
+        tenant_db = SessionLocal()
+        tenant_db.bind = tenant_db.bind.execution_options(schema_translate_map={None: schema})
+        
+        try:
+            new_request = Approval(
+                type="Restock Request",
+                payload={
+                    "product_name": data.product_name,
+                    "current_qty": data.current_qty,
+                    "threshold": data.threshold,
+                    "alert_message": data.message,
+                    "role": "System Agent"
+                },
+                status="PENDING_WHM_APPROVAL",
+                requester_id=0 
+            )
+            tenant_db.add(new_request)
+            tenant_db.commit()
+            tenant_db.refresh(new_request)
+            return {"status": "success", "id": new_request.id}
+        except Exception as e:
+            tenant_db.rollback()
+            raise e
+        finally:
+            tenant_db.close()
+            
     except Exception as e:
-        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))

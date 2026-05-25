@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Zap, Check, X } from "lucide-react";
 import api from "../../../api/api";
@@ -24,6 +24,34 @@ const strengthConfig = [
   { label: "Strong", color: "bg-emerald-400" },
   { label: "Strong", color: "bg-emerald-400" },
 ];
+
+function SocialButton({ onClick, children, icon }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="
+        group flex items-center justify-center gap-3 w-full py-3 px-4 rounded-lg
+        border border-white/10 bg-white/5
+        hover:bg-white/[0.08] hover:border-white/20
+        active:scale-[0.98] transition-all duration-150
+        text-sm font-medium text-white/70 hover:text-white
+      "
+    >
+      {icon}
+      <span className="tracking-wide">{children}</span>
+    </button>
+  );
+}
+
+const GoogleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+    <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+    <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+  </svg>
+);
 
 // ─── Validators ──────────────────────────────────────────────────────────────
 const validators = {
@@ -52,6 +80,7 @@ const validators = {
 
 export default function Signup() {
   const navigate = useNavigate();
+  const googleInitialized = useRef(false);
 
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword]           = useState(false);
@@ -61,6 +90,28 @@ export default function Signup() {
   const [error, setError]                         = useState("");
   const [success, setSuccess]                     = useState("");
   const [agreedToTerms, setAgreedToTerms]         = useState(false);
+
+  useEffect(() => {
+    if (googleInitialized.current) return;
+    googleInitialized.current = true;
+
+    const initGoogle = () => {
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+          use_fedcm_for_prompt: false,
+        });
+      }
+    };
+
+    if (window.google) {
+      initGoogle();
+    } else {
+      window.addEventListener("load", initGoogle);
+      return () => window.removeEventListener("load", initGoogle);
+    }
+  }, []);
 
   const { checks: pwChecks, score: pwScore } = getPasswordStrength(form.password);
   const strength = strengthConfig[pwScore] || strengthConfig[0];
@@ -85,6 +136,52 @@ export default function Signup() {
   };
 
   const handleBlur = (field) => setTouched((t) => ({ ...t, [field]: true }));
+
+  const handleGoogleResponse = () => {
+    const client = window.google.accounts.oauth2.initCodeClient({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      scope: "openid email profile",
+      ux_mode: "popup",
+      callback: async (response) => {
+        if (response.error) {
+          console.error("Google OAuth error:", response.error);
+          return;
+        }
+
+        try {
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/google`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ code: response.code }),
+          });
+          const data = await res.json();
+
+          if (res.ok && data.user.company_verified) {
+            const role = data.user.role;
+            if (role === "admin") {
+              navigate("/admindashboard");
+            } else if (role === "business_manager") {
+              navigate("/business-manager/dashboard");
+            } else if (role === "warehouse_manager") {
+              navigate("/ware_dashboard");
+            } else if (role === "factory_manager") {
+              navigate("/factorydash");
+            } else {
+              navigate("/");
+            }
+          } else {
+            navigate("/company-onboarding");
+          }
+        } catch (err) {
+          console.error("Google signup failed", err);
+          setError("Google signup failed. Please try again.");
+        }
+      },
+    });
+
+    client.requestCode();
+  };
 
   // ── API call unchanged ─────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
@@ -360,6 +457,18 @@ export default function Signup() {
             ) : "Create Account"}
           </button>
         </form>
+
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-white/10" />
+          <span className="text-[11px] text-white/25 tracking-widest uppercase">
+            or continue with
+          </span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
+
+        <SocialButton onClick={handleGoogleResponse} icon={<GoogleIcon />}>
+          Google
+        </SocialButton>
 
         <p className="text-center text-[13px] mt-6" style={{ color: "rgba(255,255,255,0.3)" }}>
           Already have an account?{" "}

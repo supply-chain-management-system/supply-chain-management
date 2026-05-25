@@ -280,13 +280,16 @@ const CardInviteRow = ({ card, onSent }) => {
       setSending(true);
       setMessage(null);
 
-      await api.post('/company/auth/invite/send', {
-        email: email.trim(),
-        role: card.role,
-        business_id: Number(card.business_id || card.business_card_id),
-        manager_card_id: Number(card.id),
-        manager_card_name: card.name,
-      });
+      await api.post(
+        `/business-manager/team/cards/${card.id}/invite`,
+        {
+          email: email.trim(),
+          business_name: card.name,
+        },
+        {
+          params: { role: card.role },
+        }
+      );
 
       setMessage({ type: 'success', text: `Invite sent to ${email.trim()}` });
       setEmail('');
