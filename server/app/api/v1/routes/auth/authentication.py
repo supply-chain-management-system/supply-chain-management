@@ -88,6 +88,22 @@ def login(user: UserLogin, response: Response, db: Session = Depends(get_tenant_
 
 
 @router.post(
+    "/logout",
+    status_code=status.HTTP_200_OK,
+    summary="User Logout",
+    description="Logs out user and clears tokens from cookies",
+)
+def logout(response: Response):
+    response.delete_cookie(key="access_token")
+    response.delete_cookie(key="refresh_token")
+    # Explicitly force delete by setting max_age=0 and expires=0
+    response.set_cookie(key="access_token", value="", max_age=0, expires=0, httponly=True)
+    response.set_cookie(key="refresh_token", value="", max_age=0, expires=0, httponly=True)
+    return {"message": "Logout successful"}
+
+
+
+@router.post(
     "/refresh",
     status_code=status.HTTP_200_OK,
     summary="Refresh Access Token",

@@ -11,7 +11,7 @@ router = APIRouter(prefix="/business-manager/copilot", tags=["BM — AI Copilot"
 async def handle_command(request: CommandRequest):
     try:
         system_msg = SystemMessage(
-            content=f"You are the Korvex Copilot, an expert supply chain AI. User ID is {request.user_id}.\n1. If asked to check inventory/dispatch alert, use tools.\n2. Do NOT call the same tool twice.\n3. Reply with final summary and STOP."
+            content=f"You are the Korvex Copilot, an expert supply chain AI. User ID is {request.user_id}.\n1. If asked to check inventory/dispatch alert, use tools.\n2. Do NOT call the same tool twice.\n3. When you have completed the task, reply to the user with a concise final summary of what was accomplished."
         )
         user_msg = HumanMessage(content=request.prompt)
 

@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../api/api';
 
-const BASE = '/business-manager/suppliers';
+const BASE = '/supplier-manager/suppliers';
 
 /* ══════════════════════════════════════════════════════════
    THUNKS
@@ -35,13 +35,6 @@ export const createSupplier = createAsyncThunk(
         contact_email:  formData.contact_email.trim(),
         phone:          formData.phone?.trim() || null,
         lead_time_days: parseInt(formData.lead_time_days) || 14,
-      });
-
-      // Send the central invite using company_auth.py API
-      await api.post('/company/auth/invite/send', {
-        business_id: 1,
-        role: 'supply_manager',
-        email: formData.contact_email.trim()
       });
 
       return res.data;

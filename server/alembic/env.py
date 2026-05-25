@@ -16,15 +16,17 @@ from app.models.sub_managers.factory_manager.factory_machinery import Machine
 from app.models.sub_managers.factory_manager.production import Factory,Production
 from app.models.sub_managers.factory_manager.teams import Worker,Productionteam
 
-from app.models.business_manager.domain import Inventory, Approval, Supplier
-from app.models.business_manager.business_owners import BusinessOwners
 
 
 
 
-from app.models.business_manager.domain import Inventory, Approval, Supplier
+
+from app.models.business_manager.domain import Inventory, Approval
 from app.models.business_manager.business_owners import BusinessOwners
 from app.models.owner_models.business_card import BusinessCard
+from app.models.supplier_manager.supplier import Supplier
+from app.models.supplier_manager.inventory import RawMaterialInventory
+from app.models.supplier_manager.order import PurchaseOrder
 
 
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse,Product,Inventory_ware,Rack
@@ -52,9 +54,9 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from app.db.database import Base
+from app.db.database import Base, BaseTenant
 
-target_metadata = Base.metadata
+target_metadata = [Base.metadata, BaseTenant.metadata]
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")

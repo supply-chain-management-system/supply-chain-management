@@ -3,6 +3,7 @@
 supply-chain-management
 ├─ ai_services
 │  ├─ ai_app
+│  │  ├─ agents
 │  │  ├─ api
 │  │  │  └─ v1
 │  │  │     └─ routes
@@ -10,26 +11,31 @@ supply-chain-management
 │  │  │        │  └─ bm_routes.py
 │  │  │        └─ factory_manager
 │  │  │           └─ factory_routes.py
+│  │  ├─ core
 │  │  ├─ databases
 │  │  │  └─ database.py
 │  │  ├─ main.py
 │  │  ├─ prompt
 │  │  │  └─ factory_manager
 │  │  │     └─ doc_prompt.py
+│  │  ├─ prompts
 │  │  ├─ schemas
 │  │  │  ├─ business_manager
 │  │  │  │  └─ bm_schemas.py
 │  │  │  └─ factory_manager
 │  │  │     └─ factory_schema.py
+│  │  ├─ services
+│  │  ├─ tests
 │  │  ├─ tools
 │  │  │  ├─ business_manager
 │  │  │  │  └─ bm_tools.py
 │  │  │  └─ factory_manager
 │  │  │     └─ production_doc.py
+│  │  ├─ utils
+│  │  ├─ workers
 │  │  └─ workflows
-│  │     ├─ business_manager
-│  │     │  └─ bm_graph.py
-│  │     └─ factory_manager
+│  │     └─ business_manager
+│  │        └─ bm_graph.py
 │  ├─ Dockerfile
 │  └─ requirements.txt
 ├─ client
@@ -54,7 +60,7 @@ supply-chain-management
 │  │  │  ├─ common
 │  │  │  │  └─ button.jsx
 │  │  │  └─ layout
-│  │  │     └─ add.jsx
+│  │  │     └─ landing_page.jsx
 │  │  ├─ features
 │  │  │  ├─ admin_front
 │  │  │  │  ├─ admin_layout
@@ -65,6 +71,7 @@ supply-chain-management
 │  │  │  │     ├─ Admin_dashboard.jsx
 │  │  │  │     ├─ Admin_managers.jsx
 │  │  │  │     ├─ Admin_Navbar.jsx
+│  │  │  │     ├─ BusinessManagerDetails.jsx
 │  │  │  │     ├─ business_card.jsx
 │  │  │  │     ├─ container-model.jsx
 │  │  │  │     ├─ CreateWarehouse.jsx
@@ -98,6 +105,7 @@ supply-chain-management
 │  │  │  │     ├─ RequestsPage.jsx
 │  │  │  │     ├─ SMAnalyticsPage.jsx
 │  │  │  │     ├─ SuppliersPage.jsx
+│  │  │  │     ├─ SupplyManagerPage.jsx
 │  │  │  │     ├─ WarehousePage.jsx
 │  │  │  │     └─ WMAnalyticsPage.jsx
 │  │  │  ├─ factory_manager
@@ -114,6 +122,22 @@ supply-chain-management
 │  │  │  │     ├─ factory_team.jsx
 │  │  │  │     ├─ outputlogs.jsx
 │  │  │  │     └─ production_page.jsx
+│  │  │  ├─ logistics_manager
+│  │  │  │  ├─ LogisticsDashboard.jsx
+│  │  │  │  ├─ LogisticsLayout.jsx
+│  │  │  │  ├─ LogisticsSidebar.jsx
+│  │  │  │  └─ pages
+│  │  │  │     └─ LogisticsFleetPage.jsx
+│  │  │  ├─ supplier_manager
+│  │  │  │  ├─ layouts
+│  │  │  │  │  └─ SupplierManagerLayout.jsx
+│  │  │  │  └─ pages
+│  │  │  │     ├─ DashboardPage.jsx
+│  │  │  │     ├─ InventoryPage.jsx
+│  │  │  │     ├─ OrdersPage.jsx
+│  │  │  │     ├─ RequestsPage.jsx
+│  │  │  │     ├─ SMAnalyticsPage.jsx
+│  │  │  │     └─ SuppliersPage.jsx
 │  │  │  ├─ users
 │  │  │  │  └─ user.jsx
 │  │  │  └─ warehouse_manager
@@ -133,7 +157,10 @@ supply-chain-management
 │  │     ├─ authprovider.jsx
 │  │     ├─ authslice.jsx
 │  │     ├─ factoryManagerSlice.js
+│  │     ├─ inventorySlice.js
+│  │     ├─ logisticsDashboardSlice.js
 │  │     ├─ logisticsManagerSlice.js
+│  │     ├─ orderSlice.js
 │  │     ├─ requestsSlice.js
 │  │     ├─ store.js
 │  │     ├─ supplierSlice.js
@@ -143,7 +170,6 @@ supply-chain-management
 ├─ nginx
 │  └─ nginx.conf
 ├─ package-lock.json
-├─ README.md
 └─ server
    ├─ .dockerignore
    ├─ alembic
@@ -156,12 +182,16 @@ supply-chain-management
    │     ├─ 199926db8b0e_use_non_native_enum.py
    │     ├─ 1b5a03ee9a45_merge_heads.py
    │     ├─ 1f91c281ece0_sync_factory_base_fix.py
+   │     ├─ 36ce455bf70b_add_base_tenant_models.py
    │     ├─ 48f858af26ee_chage_purchase_date_typo.py
    │     ├─ 4c9bc90e5ef2_msg.py
    │     ├─ 63cd5b206da6_message.py
    │     ├─ 6ade91bf0948_sync_factory_base_fix.py
    │     ├─ 761a9435d4ab_adding_new_tables.py
    │     ├─ 76800d95fee9_message.py
+   │     ├─ 889ed874465c_create_approvals_table.py
+   │     ├─ 8b6a2d4f9c13_vehicle_stand_capacity_fields.py
+   │     ├─ 9893232cafdc_merge_multiple_heads.py
    │     ├─ f0ca61c5e4f4_message.py
    │     └─ f3a12d342ed8_initial.py
    ├─ alembic.ini
@@ -181,24 +211,33 @@ supply-chain-management
    │  │  │  │  │  ├─ dashboard.py
    │  │  │  │  │  ├─ factory_manager.py
    │  │  │  │  │  ├─ logistics_manager.py
-   │  │  │  │  │  ├─ suppliers.py
    │  │  │  │  │  ├─ supply_manager.py
    │  │  │  │  │  ├─ team.py
    │  │  │  │  │  ├─ warehouse_manager.py
    │  │  │  │  │  └─ __init__.py
    │  │  │  │  ├─ company
    │  │  │  │  │  └─ company.py
+   │  │  │  │  ├─ factory_manager
    │  │  │  │  ├─ owner_routes
    │  │  │  │  │  └─ business_card.py
-   │  │  │  │  └─ sub_managers
-   │  │  │  │     ├─ factory_manager
-   │  │  │  │     │  ├─ analytics.py
-   │  │  │  │     │  ├─ factory_machine.py
-   │  │  │  │     │  ├─ production.py
-   │  │  │  │     │  └─ team.py
-   │  │  │  │     ├─ request.py
-   │  │  │  │     └─ warehouse_manager
-   │  │  │  │        └─ api_warehouse.py
+   │  │  │  │  ├─ subscriptions
+   │  │  │  │  │  ├─ subscriptions.py
+   │  │  │  │  │  └─ __init__.py
+   │  │  │  │  ├─ sub_managers
+   │  │  │  │  │  ├─ factory_manager
+   │  │  │  │  │  │  ├─ analytics.py
+   │  │  │  │  │  │  ├─ factory_machine.py
+   │  │  │  │  │  │  ├─ production.py
+   │  │  │  │  │  │  └─ team.py
+   │  │  │  │  │  ├─ logistics_dashboard.py
+   │  │  │  │  │  ├─ request.py
+   │  │  │  │  │  └─ warehouse_manager
+   │  │  │  │  │     └─ api_warehouse.py
+   │  │  │  │  └─ supplier_manager
+   │  │  │  │     ├─ inventory.py
+   │  │  │  │     ├─ orders.py
+   │  │  │  │     ├─ suppliers.py
+   │  │  │  │     └─ __init__.py
    │  │  │  └─ __init__.py
    │  │  └─ __init__.py
    │  ├─ core
@@ -227,17 +266,29 @@ supply-chain-management
    │  │  │  └─ __init__.py
    │  │  ├─ company_auth
    │  │  │  └─ managers.py
+   │  │  ├─ factory_manager
    │  │  ├─ owner_models
    │  │  │  └─ business_card.py
+   │  │  ├─ subscriptions
+   │  │  │  ├─ subscription_plan.py
+   │  │  │  └─ __init__.py
    │  │  ├─ sub_managers
    │  │  │  ├─ factory_manager
    │  │  │  │  ├─ factory_machinery.py
    │  │  │  │  ├─ production.py
    │  │  │  │  ├─ teams.py
    │  │  │  │  └─ __init__.py
+   │  │  │  ├─ logistics_manager
+   │  │  │  │  ├─ domain.py
+   │  │  │  │  └─ __init__.py
    │  │  │  ├─ request.py
    │  │  │  └─ warehouse_manager
    │  │  │     └─ warehouse.py
+   │  │  ├─ supplier_manager
+   │  │  │  ├─ inventory.py
+   │  │  │  ├─ order.py
+   │  │  │  ├─ supplier.py
+   │  │  │  └─ __init__.py
    │  │  └─ __init__.py
    │  ├─ schemas
    │  │  ├─ admin_schemas
@@ -252,8 +303,12 @@ supply-chain-management
    │  │  │  └─ __init__.py
    │  │  ├─ company
    │  │  │  └─ company.py
+   │  │  ├─ factory_manager
    │  │  ├─ owner_schemas
    │  │  │  └─ business_card.py
+   │  │  ├─ subscriptions
+   │  │  │  ├─ subscription_plan.py
+   │  │  │  └─ __init__.py
    │  │  ├─ sub_managers
    │  │  │  ├─ factory_manager
    │  │  │  │  ├─ factory_machine.py
@@ -262,6 +317,11 @@ supply-chain-management
    │  │  │  ├─ request.py
    │  │  │  └─ warehouse_manager
    │  │  │     └─ ware_schemas.py
+   │  │  ├─ supplier_manager
+   │  │  │  ├─ inventory.py
+   │  │  │  ├─ order.py
+   │  │  │  ├─ supplier.py
+   │  │  │  └─ __init__.py
    │  │  └─ __init__.py
    │  ├─ services
    │  │  ├─ ai
@@ -276,12 +336,16 @@ supply-chain-management
    │  │  │  ├─ user_crud.py
    │  │  │  └─ __init__.py
    │  │  ├─ business_manager
-   │  │  │  ├─ agent
    │  │  │  └─ __init__.py
    │  │  ├─ company
    │  │  │  ├─ company_service.py
    │  │  │  └─ schema_service.py
    │  │  ├─ email_service.py
+   │  │  ├─ managers
+   │  │  │  └─ manager_services.py
+   │  │  ├─ subscriptions
+   │  │  │  ├─ subscription_service.py
+   │  │  │  └─ __init__.py
    │  │  ├─ sub_managers
    │  │  │  └─ factory_manager
    │  │  │     └─ factory_machine.py
@@ -289,8 +353,11 @@ supply-chain-management
    │  ├─ tests
    │  │  └─ __init__.py
    │  └─ __init__.py
-   ├─ client
    ├─ Dockerfile
-   └─ requirements.txt
+   ├─ inspect_schemas.py
+   ├─ migrate_po.py
+   ├─ requirements.txt
+   ├─ test_query.py
+   └─ update_db.py
 
 ```
