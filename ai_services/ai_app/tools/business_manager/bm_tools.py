@@ -1,10 +1,14 @@
 import os
 import httpx
+import sys
+import os
 from langchain_core.tools import tool
+BASE_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../../../../")
+)
 
-# ==========================================
-# MICROSERVICE CONFIGURATION
-# ==========================================
+sys.path.append(BASE_DIR)
+
 # Assuming main server routes are prefixed with /api/v1
 MAIN_SERVER_URL = os.getenv("MAIN_SERVER_URL", "http://fastapi:8000/api/v1")
 N8N_URL = os.getenv("N8N_URL", "http://n8n:5678/webhook")

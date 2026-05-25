@@ -1,17 +1,12 @@
-from app.db.database import engine, Base
-
-from app.models.auth import user
-
-
-from app.models.auth.user import User
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.routes.business_manager import dashboard as bm_dashboard
-from fastapi import FastAPI
+from app.db.database import engine, Base
 
-
+from app.models.auth.user import User
 from app.models.company_auth.managers import InviteToken
 from app.models.subscriptions import SubscriptionPlan
+
 
 
 from app.models.business_manager import domain
@@ -20,23 +15,32 @@ from app.models.business_manager.team import (     # noqa — register models wi
 )
 from app.models.supplier_manager import supplier, inventory as inv_model, order as order_model # noqa
 
+from app.middlewares.comapny.company_middleware import TenantMiddleware
+
 from app.api.v1.routes.auth import authentication as auth
+from app.api.v1.routes.auth import company_auth
+
+from app.api.v1.routes.business_manager import dashboard as bm_dashboard
 from app.api.v1.routes.business_manager import team as bm_team
 from app.api.v1.routes.admin import admin_pages as admin_featuers
 from app.api.v1.routes.company import company
 from app.api.v1.routes.owner_routes import business_card
 from app.api.v1.routes.business_manager import factory_manager as bm_factory
-from app.middlewares.comapny.company_middleware import TenantMiddleware
 from app.api.v1.routes.business_manager import logistics_manager
 from app.api.v1.routes.business_manager import warehouse_manager
 from app.api.v1.routes.supplier_manager import suppliers as sm_suppliers
 from app.api.v1.routes.supplier_manager import inventory as sm_inventory
 from app.api.v1.routes.supplier_manager import orders as sm_orders
 from app.api.v1.routes.business_manager import supply_manager
+from app.api.v1.routes.owner_routes import S_center_ai
+
 from app.api.v1.routes import profile as auth_profile
 
 
 
+from app.api.v1.routes.admin import admin_pages as admin_featuers
+from app.api.v1.routes.company import company
+from app.api.v1.routes.owner_routes import business_card
 
 
 
@@ -66,6 +70,7 @@ app = FastAPI(
     redoc_url="/api/v1/redoc",
     openapi_url="/api/v1/openapi.json",
 )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -74,21 +79,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("error")
 app.add_middleware(TenantMiddleware)
-print("error2")
+
 Base.metadata.create_all(bind=engine)
 
 with SessionLocal() as db:
     seed_subscription_plans(db)
 
 app.include_router(auth.router, prefix="/api/v1")
+
 app.include_router(auth_profile.router, prefix="/api/v1")
 app.include_router(bm_dashboard.router, prefix="/api/v1")
 app.include_router(admin_featuers.router, prefix="/api/v1")
 app.include_router(bm_team.router, prefix="/api/v1")
 app.include_router(company.router, prefix="/api/v1/company")
 app.include_router(company_auth.router, prefix="/api/v1/company/auth")
+
+app.include_router(bm_dashboard.router, prefix="/api/v1")
+app.include_router(bm_team.router, prefix="/api/v1")
+app.include_router(bm_factory.router, prefix="/api/v1")
 
 
 app.include_router(production.router, prefix='/api/v1/production')
@@ -108,6 +117,9 @@ app.include_router(factory_machine.router,prefix='/api/v1/factory_machine')
 app.include_router(analytics.router,prefix='/api/v1/factory_analytics')
 
 
+ 
+app.include_router(admin_featuers.router, prefix="/api/v1")
+app.include_router(company.router, prefix="/api/v1/company")
 
 
 app.include_router(api_warehouse.router, prefix='/api/v1')
@@ -122,8 +134,16 @@ app.include_router(logistics_dashboard.router, prefix='/api/v1')
 app.include_router(team.router, prefix='/api/v1/factory_team')
 
 
+
 app.include_router(business_card.router, prefix="/api/v1")
 app.include_router(subscriptions.router, prefix="/api/v1")
+
+app.include_router(production.router, prefix="/api/v1/production")
+app.include_router(team.router, prefix="/api/v1/factory_team")
+
+app.include_router(api_warehouse.router, prefix="/api/v1")
+app.include_router(request.router, prefix="/api/v1")
+app.include_router(S_center_ai.router, prefix="/api/v1")
 
 
 @app.get("/")

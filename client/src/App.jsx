@@ -73,6 +73,12 @@ import KorvexLanding, { ContactSalesPage, SubscriptionsPage } from './components
 function App() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-900 dark:text-gray-100">
+
+      <div className="absolute top-4 right-4 z-50">
+     
+      </div>
+
+
       <Router>
 
         <Routes>
@@ -127,17 +133,6 @@ function App() {
 
 
           </Route>
-
-
-          
-
-
-
-
-
-
-
-        
 
 
           {/* BUSINESS MANAGER */}
