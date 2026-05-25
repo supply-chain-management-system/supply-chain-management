@@ -28,6 +28,7 @@ import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 import Dashboardfactory from './features/factory_manager/pages/dashboard';
 import ProductionELT from './features/elt/factory_elt';
 import ProductionOutputHistory from './features/factory_manager/pages/outputlogs';
+import FactoryMaterial from './features/factory_manager/pages/factory_material';
 
 
 
@@ -90,7 +91,7 @@ function App() {
 
           {/* PUBLIC ROUTES */}
           <Route >
-            <Route path="/login" element={<Login />} /> 
+            <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -99,39 +100,36 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/company-onboarding" element={<CompanyOnboarding />} />
 
-          <Route path="/business-manager" element={<BusinessManagerLayout />}>
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="factory" element={<FactoryPage />} />
-            <Route path="warehouse" element={<WarehousePage />} />
-            <Route path="logistics" element={<LogisticsPage />} />
-            <Route path="suppliers" element={<SuppliersPage />} />
-            <Route path="requests" element={<RequestsPage />} />
+            <Route path="/business-manager" element={<BusinessManagerLayout />}>
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="factory" element={<FactoryPage />} />
+              <Route path="warehouse" element={<WarehousePage />} />
+              <Route path="logistics" element={<LogisticsPage />} />
+              <Route path="suppliers" element={<SuppliersPage />} />
+              <Route path="requests" element={<RequestsPage />} />
+            </Route>
+
+            <Route element={<A_Layout />}>
+              <Route path="/admindashboard" element={<Admin_dashboard />} />
+              <Route path="/managers" element={<ManagerGrid />} />
+              <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
+              <Route path="/addmanagers" element={<AddManager />} />
+
+              <Route path="/createwarehouse" element={<CreateWarehouse />} />
+
+            </Route>
+
+
+            <Route path="/verify-email" element={<OTPVerification />} />
+            <Route path="/invite/accept/:token" element={<InviteAcceptPage />} />
+            <Route path="/invite/register/:token" element={<InviteAcceptPage />} />
+            <Route path="/invite/:token" element={<InviteAcceptPage />} />
+            <Route path="/face-verification" element={<FaceVerification />} />
+            <Route path="/company-onboarding" element={<CompanyOnboarding />} />
+
+
+
           </Route>
-             
-          <Route  element={<A_Layout />}>
-            <Route path="/admindashboard" element={<Admin_dashboard />} />
-            <Route path="/managers" element={<ManagerGrid/>} />
-            <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
-            <Route path="/addmanagers" element={<AddManager />} />
-
-            <Route path="/createwarehouse" element={<CreateWarehouse/>} />
-
-          </Route>
-
-       
-          <Route path="/verify-email" element={<OTPVerification />} />
-          <Route path="/invite/accept/:token" element={<InviteAcceptPage />} />
-          <Route path="/invite/register/:token" element={<InviteAcceptPage />} />
-          <Route path="/invite/:token" element={<InviteAcceptPage />} />
-          <Route path="/face-verification" element={<FaceVerification />} />
-          <Route path="/company-onboarding" element={<CompanyOnboarding />} />
-
-
-
-          </Route>
-
-
-          
 
 
 
@@ -139,14 +137,17 @@ function App() {
 
 
 
-        
+
+
+
+
 
 
           {/* BUSINESS MANAGER */}
           <Route
-            // element={
-            //   <ProtectedRoute allowedRoles={['business_manager']} />
-            // }
+          // element={
+          //   <ProtectedRoute allowedRoles={['business_manager']} />
+          // }
           >
             <Route
               path="/business-manager"
@@ -164,9 +165,9 @@ function App() {
 
           {/* ADMIN */}
           <Route
-            // element={
-            //   <ProtectedRoute allowedRoles={['admin']} />
-            // }
+          // element={
+          //   <ProtectedRoute allowedRoles={['admin']} />
+          // }
           >
             <Route element={<A_Layout />}>
               <Route path="/admindashboard" element={<Admin_dashboard />} />
@@ -181,9 +182,9 @@ function App() {
 
           {/* WAREHOUSE MANAGER */}
           <Route
-            // element={
-            //   <ProtectedRoute allowedRoles={['warehouse_manager']} />
-            // }
+          // element={
+          //   <ProtectedRoute allowedRoles={['warehouse_manager']} />
+          // }
           >
             <Route element={<Ware_Layout />}>
               <Route path="/ware_dashboard" element={<WarehouseDashboard />} />
@@ -196,26 +197,27 @@ function App() {
 
           {/* FACTORY MANAGER */}
           <Route
-            // element={
-            //   <ProtectedRoute allowedRoles={['factory_manager']} />
-            // }
+          // element={
+          //   <ProtectedRoute allowedRoles={['factory_manager']} />
+          // }
           >
             <Route element={<LayoutFactory />}>
               <Route path="production" element={<ProductionManagement />} />
               <Route path="factorydash" element={<Factorydash />} />
               <Route path="factoryteam" element={<Team />} />
-                 <Route path='/factory_machine' element={<Machine/>}/>
-            <Route path='/outputlogs' element={<ProductionOutputHistory/>}/>
-            <Route path='/elt_production' element={<ProductionELT/>}/>
-            
+              <Route path='/factory_machine' element={<Machine />} />
+              <Route path='/outputlogs' element={<ProductionOutputHistory />} />
+              <Route path='/elt_production' element={<ProductionELT />} />
+              <Route path='/factory_material' element={<FactoryMaterial />} />
+
             </Route>
           </Route>
 
           {/* LOGISTICS MANAGER */}
           <Route
-            // element={
-            //   <ProtectedRoute allowedRoles={['logistics_manager']} />
-            // }
+          // element={
+          //   <ProtectedRoute allowedRoles={['logistics_manager']} />
+          // }
           >
             <Route element={<LogisticsLayout />}>
               <Route path="/logistics_dashboard" element={<LogisticsDashboard />} />
