@@ -6,6 +6,7 @@ import FactoryPage from './features/business_manager/pages/FactoryPage';
 import WarehousePage from './features/business_manager/pages/WarehousePage';
 import LogisticsPage from './features/business_manager/pages/LogisticsPage';
 import SuppliersPage from './features/business_manager/pages/SuppliersPage';
+import SupplyManagerPage from './features/business_manager/pages/SupplyManagerPage';
 import AddManager from './features/admin_front/admin_pages/AddManager';
 import Login from './features/auth/pages/login';
 import Signup from './features/auth/pages/signup';
@@ -19,6 +20,16 @@ import RequestsPage from './features/business_manager/pages/RequestsPage';
 import OTPVerification from './features/auth/pages/verify-email';
 import ForgotPassword from './features/auth/pages/forgot-password';
 import ResetPassword from './features/auth/pages/reset-password';
+import ChatPage from './features/chat/ChatPage';
+import BM_Profile from './features/business_manager/pages/ProfilePage';
+import SM_Profile from './features/supplier_manager/pages/ProfilePage';
+
+import SupplierManagerLayout from './features/supplier_manager/layouts/SupplierManagerLayout';
+import SM_Dashboard from './features/supplier_manager/pages/DashboardPage';
+import SM_Suppliers from './features/supplier_manager/pages/SuppliersPage';
+import SM_Inventory from './features/supplier_manager/pages/InventoryPage';
+import SM_Orders from './features/supplier_manager/pages/OrdersPage';
+import SM_Requests from './features/supplier_manager/pages/RequestsPage';
 
 import Factorydash from './features/factory_manager/pages/dashboard';
 import ProductionManagement from './features/factory_manager/pages/production_page';
@@ -94,7 +105,10 @@ function App() {
             <Route path="warehouse" element={<WarehousePage />} />
             <Route path="logistics" element={<LogisticsPage />} />
             <Route path="suppliers" element={<SuppliersPage />} />
+            <Route path="supply-managers" element={<SupplyManagerPage />} />
             <Route path="requests" element={<RequestsPage />} />
+            <Route path="chat" element={<ChatPage />} />
+            <Route path="profile" element={<BM_Profile />} />
           </Route>
              
           <Route  element={<A_Layout />}>
@@ -104,6 +118,7 @@ function App() {
             <Route path="/addmanagers" element={<AddManager />} />
 
             <Route path="/createwarehouse" element={<CreateWarehouse/>} />
+            <Route path="/admin-chat" element={<ChatPage />} />
 
           </Route>
 
@@ -135,7 +150,10 @@ function App() {
               <Route path="warehouse" element={<WarehousePage />} />
               <Route path="logistics" element={<LogisticsPage />} />
               <Route path="suppliers" element={<SuppliersPage />} />
+              <Route path="supply-managers" element={<SupplyManagerPage />} />
               <Route path="requests" element={<RequestsPage />} />
+              <Route path="chat" element={<ChatPage />} />
+              <Route path="profile" element={<BM_Profile />} />
             </Route>
 
           </Route>
@@ -153,6 +171,7 @@ function App() {
               <Route path="/add/bussiness-card" element={<BusinessCardPage />} />
               <Route path="/addmanagers" element={<AddManager />} />
               <Route path="/createwarehouse" element={<CreateWarehouse />} />
+              <Route path="/admin-chat" element={<ChatPage />} />
             </Route>
 
           </Route>
@@ -169,6 +188,7 @@ function App() {
               <Route path="/Inventory" element={<InventoryPage />} />
               <Route path="/Racks" element={<RackPage />} />
               <Route path="/stockupdate" element={<StockUpdatePage />} />
+              <Route path="/ware-chat" element={<ChatPage />} />
             </Route>
           </Route>
 
@@ -184,6 +204,24 @@ function App() {
               <Route path="factoryteam" element={<Team />} />
                  <Route path='/factory_machine' element={<Machine/>}/>
             <Route path='/outputlogs' element={<ProductionOutputHistory/>}/>
+            <Route path="/factory-chat" element={<ChatPage />} />
+            </Route>
+          </Route>
+
+
+          {/* SUPPLIER MANAGER */}
+          <Route>
+            <Route
+              path="/supplier-manager"
+              element={<SupplierManagerLayout />}
+            >
+              <Route path="dashboard" element={<SM_Dashboard />} />
+              <Route path="suppliers" element={<SM_Suppliers />} />
+              <Route path="inventory" element={<SM_Inventory />} />
+              <Route path="orders" element={<SM_Orders />} />
+              <Route path="requests" element={<SM_Requests />} />
+              <Route path="chat" element={<ChatPage />} />
+              <Route path="profile" element={<SM_Profile />} />
             </Route>
           </Route>
 
@@ -196,6 +234,7 @@ function App() {
             <Route element={<LogisticsLayout />}>
               <Route path="/logistics_dashboard" element={<LogisticsDashboard />} />
               <Route path="/logistics_fleet" element={<LogisticsFleetPage />} />
+              <Route path="/logistics-chat" element={<ChatPage />} />
             </Route>
           </Route>
 

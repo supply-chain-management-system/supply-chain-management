@@ -33,6 +33,12 @@ export const loginUser = createAsyncThunk(
         } else if (role === "factory_manager") {
           navigate("/factorydash");
 
+        } else if (role === "supply_manager") {
+          navigate("/supplier-manager/dashboard");
+
+        } else if (role === "logistics_manager") {
+          navigate("/logistics_dashboard");
+
         } else {
           navigate("/");
         }
@@ -230,7 +236,6 @@ const authSlice = createSlice({
 
       .addCase(logoutUser.fulfilled, (state) => {
         state.loading = false;
-
         state.user = null;
         state.role = null;
         state.isAuthenticated = false;
@@ -240,6 +245,11 @@ const authSlice = createSlice({
 
       .addCase(logoutUser.rejected, (state) => {
         state.loading = false;
+        state.user = null;
+        state.role = null;
+        state.isAuthenticated = false;
+        state.error = null;
+        state.remember = false;
       });
   },
 });

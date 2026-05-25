@@ -105,7 +105,7 @@ class LogisticsManager(BaseTenant):
 # ══════════════════════════════════════════════════════════
 #  SUPPLY MANAGER — Dedicated model for Supplier co-managers
 #  Connected to BusinessCard via business_card_id FK
-#  Different from the Supplier model (domain.py) which is
+#  Different from the Supplier model (supplier_manager/supplier.py) which is
 #  a vendor/company record. SupplyManager represents the
 #  person in YOUR team who manages supplier relationships.
 # ══════════════════════════════════════════════════════════

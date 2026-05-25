@@ -13,6 +13,7 @@ from app.models.business_manager import domain
 from app.models.business_manager.team import (     # noqa — register models with BaseTenant metadata
     FactoryManager, WarehouseManager, LogisticsManager, SupplyManager
 )
+from app.models.supplier_manager import supplier, inventory as inv_model, order as order_model # noqa
 
 from app.middlewares.comapny.company_middleware import TenantMiddleware
 
@@ -27,10 +28,13 @@ from app.api.v1.routes.owner_routes import business_card
 from app.api.v1.routes.business_manager import factory_manager as bm_factory
 from app.api.v1.routes.business_manager import logistics_manager
 from app.api.v1.routes.business_manager import warehouse_manager
-from app.api.v1.routes.business_manager import suppliers
+from app.api.v1.routes.supplier_manager import suppliers as sm_suppliers
+from app.api.v1.routes.supplier_manager import inventory as sm_inventory
+from app.api.v1.routes.supplier_manager import orders as sm_orders
 from app.api.v1.routes.business_manager import supply_manager
 from app.api.v1.routes.owner_routes import S_center_ai
 
+from app.api.v1.routes import profile as auth_profile
 
 
 
@@ -83,6 +87,12 @@ with SessionLocal() as db:
     seed_subscription_plans(db)
 
 app.include_router(auth.router, prefix="/api/v1")
+
+app.include_router(auth_profile.router, prefix="/api/v1")
+app.include_router(bm_dashboard.router, prefix="/api/v1")
+app.include_router(admin_featuers.router, prefix="/api/v1")
+app.include_router(bm_team.router, prefix="/api/v1")
+app.include_router(company.router, prefix="/api/v1/company")
 app.include_router(company_auth.router, prefix="/api/v1/company/auth")
 
 app.include_router(bm_dashboard.router, prefix="/api/v1")
@@ -94,7 +104,9 @@ app.include_router(production.router, prefix='/api/v1/production')
 app.include_router(bm_factory.router, prefix="/api/v1")
 app.include_router(logistics_manager.router, prefix="/api/v1")
 app.include_router(warehouse_manager.router, prefix="/api/v1")
-app.include_router(suppliers.router, prefix="/api/v1")
+app.include_router(sm_suppliers.router, prefix="/api/v1")
+app.include_router(sm_inventory.router, prefix="/api/v1/supplier-manager")
+app.include_router(sm_orders.router, prefix="/api/v1/supplier-manager")
 app.include_router(supply_manager.router, prefix="/api/v1")
 
 

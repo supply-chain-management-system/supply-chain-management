@@ -36,9 +36,9 @@ app = FastAPI(
     description="Dedicated LLM orchestration service for the NexusGrid Supply Chain platform.",
     version="2.0.0",
     openapi_tags=tags_metadata,
-    docs_url="/docs",       # Swagger UI will live here
-    redoc_url="/redoc",
-    root_path="/ai-docs"     # ReDoc will live here
+    docs_url="/api/v1/ai-docs",
+    openapi_url="/api/v1/ai-openapi.json",
+    redoc_url=None,
 )
 
 # ==========================================
@@ -64,12 +64,17 @@ app.include_router(main_routs.router, prefix="/api/v1")
 app.include_router(factory_routes.router, prefix="/api/v1")
 
 @app.get("/health", tags=["System"])
-def health_check():
+async def health_check():
     """
     Ping this endpoint to verify the AI Microservice is online.
     """
+    from ai_app.databases.database import ping_mongo, ping_qdrant
+    mongo_status = await ping_mongo()
+    qdrant_status = ping_qdrant()
     return {
         "status": "online", 
         "service": "ai_microservice",
-        "models_active": ["Groq", "Gemini", "Cohere"]
+        "models_active": ["Groq", "Gemini", "Cohere"],
+        "mongo_connected": mongo_status,
+        "qdrant_connected": qdrant_status
     }

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchSuppliers,
@@ -11,13 +11,15 @@ import {
   toggleForm,
   updateForm,
   clearToast,
-} from '../../../redux/supplierSlice'; // adjust path to match your store
+} from '../../../redux/supplierSlice';
+
+import { createRequest } from '../../../redux/requestsSlice';
 
 import {
   Building2, Star, Clock, AlertTriangle, Plus, X,
   ChevronLeft, ChevronRight, ArrowLeft, Mail, Phone,
   Trash2, BarChart2, PackageSearch, ShieldCheck,
-  TrendingUp, ShoppingCart, BadgeCheck,
+  TrendingUp, ShoppingCart, BadgeCheck, Grid, List
 } from 'lucide-react';
 
 import SMAnalyticsPage from './SMAnalyticsPage';
@@ -33,20 +35,20 @@ const CATEGORIES = [
 
 // Banner color keyed by category
 const CAT_COLOR = {
-  'Electronics':  '#1D4ED8',   // royal blue
-  'Raw Material': '#92400E',   // earthy brown
-  'Hydraulics':   '#065F46',   // deep teal
-  'Plastics':     '#6D28D9',   // violet
-  'Chemicals':    '#B91C1C',   // crimson
-  'Packaging':    '#0369A1',   // sky
-  'Textiles':     '#BE185D',   // rose
-  'Machinery':    '#374151',   // slate
+  'Electronics':  'from-blue-600/30 to-blue-500/10',
+  'Raw Material': 'from-amber-700/30 to-amber-600/10',
+  'Hydraulics':   'from-emerald-700/30 to-emerald-600/10',
+  'Plastics':     'from-violet-700/30 to-violet-600/10',
+  'Chemicals':    'from-red-700/30 to-red-600/10',
+  'Packaging':    'from-sky-700/30 to-sky-600/10',
+  'Textiles':     'from-rose-700/30 to-rose-600/10',
+  'Machinery':    'from-slate-700/30 to-slate-600/10',
 };
 
 const RATING_COLOR = (r) => {
-  if (r >= 4.5) return { dot: 'bg-emerald-400', text: 'text-emerald-600', label: 'Preferred' };
-  if (r >= 3.5) return { dot: 'bg-blue-400',    text: 'text-blue-600',    label: 'Active'    };
-  return              { dot: 'bg-red-400',       text: 'text-red-600',     label: 'At Risk'   };
+  if (r >= 4.5) return { dot: 'bg-emerald-400', text: 'text-emerald-400', label: 'Preferred' };
+  if (r >= 3.5) return { dot: 'bg-cyan-400',    text: 'text-cyan-400',    label: 'Active'    };
+  return              { dot: 'bg-red-400',       text: 'text-red-400',     label: 'At Risk'   };
 };
 
 /* ═══════════════════════════════════════════════
@@ -54,11 +56,11 @@ const RATING_COLOR = (r) => {
 ═══════════════════════════════════════════════ */
 
 const MetaChip = ({ icon: Icon, label, value }) => (
-  <div className="flex items-center gap-2 bg-gray-50 rounded-xl border border-gray-100 px-3 py-2 min-w-0">
-    <Icon size={12} className="text-gray-400 shrink-0" />
+  <div className="flex items-center gap-2 bg-white/[0.01] border border-white/5 rounded-xl px-3 py-2 min-w-0">
+    <Icon size={12} className="text-gray-500 shrink-0" />
     <div className="min-w-0">
-      <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
-      <p className="text-xs font-semibold text-gray-700 truncate">{value || '—'}</p>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-gray-500">{label}</p>
+      <p className="text-xs font-semibold text-white truncate">{value || '—'}</p>
     </div>
   </div>
 );
@@ -69,9 +71,9 @@ const RatingStars = ({ rating }) => {
   return (
     <div className="flex items-center gap-1">
       {[...Array(5)].map((_, i) => (
-        <span key={i} className={`text-[11px] ${i < full ? 'text-amber-400' : (i === full && frac >= 0.5 ? 'text-amber-300' : 'text-gray-200')}`}>★</span>
+        <span key={i} className={`text-[11px] ${i < full ? 'text-amber-400' : (i === full && frac >= 0.5 ? 'text-amber-300' : 'text-gray-700')}`}>★</span>
       ))}
-      <span className="text-xs font-bold text-gray-700 ml-0.5">{rating?.toFixed(1)}</span>
+      <span className="text-xs font-bold text-white ml-0.5">{rating?.toFixed(1)}</span>
     </div>
   );
 };
@@ -95,8 +97,8 @@ const Toast = ({ toast, onClear }) => {
 
   if (!toast) return null;
   return (
-    <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold transition-all
-      ${toast.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
+    <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold border transition-all
+      ${toast.type === 'success' ? 'bg-emerald-950/80 border-emerald-500/30 text-white' : 'bg-red-950/80 border-red-500/30 text-white'}`}>
       {toast.msg}
     </div>
   );
@@ -107,40 +109,39 @@ const Toast = ({ toast, onClear }) => {
 ═══════════════════════════════════════════════ */
 
 const SupplierCard = ({ supplier, onAnalytics, onRemove }) => {
-  const bannerColor = CAT_COLOR[supplier.category] || '#374151';
+  const bannerColor = CAT_COLOR[supplier.category] || 'from-slate-700/30 to-slate-600/10';
   const initial     = supplier.name?.charAt(0)?.toUpperCase() || '?';
 
   return (
     <div
-      className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer group"
+      className="bg-white/[0.02] border border-white/[0.08] rounded-2xl shadow-sm hover:shadow-lg hover:border-cyan-500/30 transition-all duration-200 overflow-hidden cursor-pointer group flex flex-col"
       onClick={() => onAnalytics(supplier)}
     >
       {/* Banner */}
-      <div className="relative h-32 overflow-hidden" style={{ backgroundColor: bannerColor }}>
-        <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/10" />
-        <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/10" />
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/10 to-transparent" />
+      <div className={`relative h-32 overflow-hidden bg-gradient-to-br ${bannerColor} border-b border-white/5 p-4 flex flex-col justify-end`}>
+        <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/[0.01]" />
+        <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/[0.01]" />
 
         {/* Initial avatar */}
-        <div className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+        <div className="absolute top-4 left-4 w-10 h-10 rounded-xl bg-cyan-600/30 border border-cyan-500/40 flex items-center justify-center">
           <span className="text-white font-bold text-lg drop-shadow">{initial}</span>
         </div>
 
         {/* Category badge */}
         <div className="absolute top-4 right-4">
-          <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold bg-white/90 text-gray-700">
+          <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold bg-white/5 border border-white/10 text-gray-300">
             {supplier.category}
           </span>
         </div>
 
         {/* Name */}
-        <div className="absolute bottom-3 left-4 right-4">
+        <div>
           <p className="text-white font-bold text-sm drop-shadow truncate">{supplier.name}</p>
         </div>
       </div>
 
       {/* Body */}
-      <div className="p-4 space-y-3">
+      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
         <div className="flex items-center justify-between">
           <StatusPill rating={supplier.rating} />
           <RatingStars rating={supplier.rating} />
@@ -149,16 +150,16 @@ const SupplierCard = ({ supplier, onAnalytics, onRemove }) => {
           <MetaChip icon={Mail}  label="Contact"   value={supplier.contact_email} />
           <MetaChip icon={Clock} label="Lead Time" value={`${supplier.lead_time_days}d`} />
         </div>
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex items-center justify-between pt-2 border-t border-white/5">
           <button
             onClick={(e) => { e.stopPropagation(); onAnalytics(supplier); }}
-            className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
           >
             <BarChart2 size={12} /> Analytics
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onRemove(supplier.id); }}
-            className="text-[11px] font-semibold text-red-400 hover:text-red-600 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="text-[11px] font-semibold text-red-400 hover:text-red-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <Trash2 size={12} /> Remove
           </button>
@@ -173,16 +174,16 @@ const SupplierCard = ({ supplier, onAnalytics, onRemove }) => {
 ═══════════════════════════════════════════════ */
 
 const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
-    <div className="h-32 bg-gray-200" />
+  <div className="bg-white/[0.02] border border-white/10 shadow-sm overflow-hidden animate-pulse rounded-2xl">
+    <div className="h-32 bg-white/5" />
     <div className="p-4 space-y-3">
       <div className="flex justify-between">
-        <div className="h-3 bg-gray-100 rounded-full w-1/4" />
-        <div className="h-3 bg-gray-100 rounded-full w-1/3" />
+        <div className="h-3 bg-white/5 rounded-full w-1/4" />
+        <div className="h-3 bg-white/5 rounded-full w-1/3" />
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <div className="h-10 bg-gray-100 rounded-xl" />
-        <div className="h-10 bg-gray-100 rounded-xl" />
+        <div className="h-10 bg-white/5 rounded-xl" />
+        <div className="h-10 bg-white/5 rounded-xl" />
       </div>
     </div>
   </div>
@@ -193,31 +194,30 @@ const SkeletonCard = () => (
 ═══════════════════════════════════════════════ */
 
 const LivePreview = ({ form }) => {
-  const bannerColor = CAT_COLOR[form.category] || '#374151';
+  const bannerColor = CAT_COLOR[form.category] || 'from-slate-700/30 to-slate-600/10';
   const initial     = form.name?.charAt(0)?.toUpperCase() || '?';
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-md overflow-hidden w-full max-w-xs mx-auto">
-      <div className="relative h-32 overflow-hidden" style={{ backgroundColor: bannerColor }}>
-        <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/10" />
-        <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/10" />
-        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/10 to-transparent" />
-        <div className="absolute top-4 left-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+    <div className="bg-white/[0.02] rounded-2xl border border-white/10 shadow-md overflow-hidden w-full max-w-xs mx-auto">
+      <div className={`relative h-32 overflow-hidden bg-gradient-to-br ${bannerColor} border-b border-white/5 p-4 flex flex-col justify-end`}>
+        <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/[0.01]" />
+        <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/[0.01]" />
+        <div className="absolute top-4 left-4 w-10 h-10 rounded-xl bg-cyan-600/30 border border-cyan-500/40 flex items-center justify-center">
           <span className="text-white font-bold text-lg">{initial}</span>
         </div>
         <div className="absolute top-4 right-4">
-          <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold bg-white/90 text-gray-700">
+          <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold bg-white/5 border border-white/10 text-gray-300">
             {form.category || 'Category'}
           </span>
         </div>
-        <div className="absolute bottom-3 left-4 right-4">
+        <div>
           <p className="text-white font-bold text-sm drop-shadow truncate">{form.name || 'Supplier Name'}</p>
         </div>
       </div>
       <div className="p-4 space-y-3">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-amber-400" />
-          <span className="text-[10px] font-bold text-amber-600">Pending Onboard</span>
+          <span className="text-[10px] font-bold text-amber-400">Pending Onboard</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <MetaChip icon={Mail}  label="Contact"   value={form.contact_email || 'email@co.com'} />
@@ -232,27 +232,27 @@ const LivePreview = ({ form }) => {
    CREATE FORM MODAL
 ═══════════════════════════════════════════════ */
 
-const inputCls = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white placeholder:text-gray-300";
-const labelCls = "block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1.5";
+const inputCls = "w-full border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-cyan-500/10 focus:border-cyan-500 bg-white/5 text-white placeholder:text-gray-600";
+const labelCls = "block text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-1.5";
 
 const CreateForm = ({ form, onUpdate, onSubmit, onClose, loading }) => (
-  <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+    <div className="bg-[#0b1329]/95 border border-white/15 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div>
-          <h2 className="font-bold text-gray-800">Onboard New Supplier</h2>
-          <p className="text-[11px] text-gray-400 mt-0.5">Add a vendor to your procurement network</p>
+          <h2 className="font-bold text-white">Onboard New Supplier</h2>
+          <p className="text-[11px] text-gray-500 mt-0.5">Add a vendor to your procurement network</p>
         </div>
-        <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
-          <X size={16} className="text-gray-500" />
+        <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 transition-colors">
+          <X size={16} className="text-gray-400" />
         </button>
       </div>
 
       {/* Body */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         {/* Left — fields */}
-        <div className="p-6 space-y-4 border-r border-gray-100">
+        <div className="p-6 space-y-4 border-r border-white/5">
           <div>
             <label className={labelCls}>Company Name</label>
             <input className={inputCls} placeholder="Apex MetalWorks Inc." value={form.name}
@@ -273,7 +273,7 @@ const CreateForm = ({ form, onUpdate, onSubmit, onClose, loading }) => (
               <label className={labelCls}>Category</label>
               <select className={inputCls} value={form.category}
                 onChange={e => onUpdate({ category: e.target.value })}>
-                {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                {CATEGORIES.map(c => <option key={c} className="bg-[#0b1329]">{c}</option>)}
               </select>
             </div>
             <div>
@@ -285,22 +285,22 @@ const CreateForm = ({ form, onUpdate, onSubmit, onClose, loading }) => (
         </div>
 
         {/* Right — live preview */}
-        <div className="p-6 bg-gray-50/50 flex flex-col items-center justify-center gap-4">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Live Preview</p>
+        <div className="p-6 bg-white/[0.01] flex flex-col items-center justify-center gap-4">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-500">Live Preview</p>
           <LivePreview form={form} />
         </div>
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+      <div className="px-6 py-4 border-t border-white/5 flex justify-end gap-3">
         <button onClick={onClose}
-          className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-800 transition-colors">
+          className="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-white transition-colors">
           Cancel
         </button>
         <button
           onClick={onSubmit}
           disabled={loading || !form.name || !form.contact_email}
-          className="px-5 py-2 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+          className="px-5 py-2 bg-cyan-600 text-white text-sm font-semibold rounded-xl hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 shadow-md shadow-cyan-600/10"
         >
           {loading
             ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -313,94 +313,86 @@ const CreateForm = ({ form, onUpdate, onSubmit, onClose, loading }) => (
 );
 
 /* ═══════════════════════════════════════════════
-   ANALYTICS VIEW
+   LIST VIEW TABLE
 ═══════════════════════════════════════════════ */
-
-const AnalyticsView = ({ supplier, analytics, loading, onBack, onRemove }) => {
-  const bannerColor = CAT_COLOR[supplier.category] || '#374151';
-
-  const kpis = analytics ? [
-    { label: 'Current Rating',       value: analytics.current_rating,          icon: Star,         color: 'text-amber-500'   },
-    { label: 'Lead Time',            value: analytics.lead_time,               icon: Clock,        color: 'text-slate-600'   },
-    { label: 'On-Time Delivery',     value: analytics.on_time_delivery_rate,   icon: TrendingUp,   color: 'text-emerald-600' },
-    { label: 'Active PO\'s',         value: analytics.active_purchase_orders,  icon: ShoppingCart, color: 'text-blue-600'    },
-    { label: 'Defect Rate',          value: analytics.defect_rate,             icon: AlertTriangle,color: 'text-red-500'     },
-    { label: 'Reliability',          value: analytics.reliability_status,      icon: BadgeCheck,   color: 'text-violet-600'  },
-  ] : [];
-
+const SuppliersTable = ({ suppliers, onRowClick, onRemove }) => {
   return (
-    <div className="space-y-6">
-      <button onClick={onBack}
-        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors">
-        <ArrowLeft size={16} /> Back to Directory
-      </button>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Card preview */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="relative h-36 overflow-hidden" style={{ backgroundColor: bannerColor }}>
-            <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/10" />
-            <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full bg-white/10" />
-            <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/10 to-transparent" />
-            <div className="absolute top-4 left-4 w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">{supplier.name?.charAt(0)?.toUpperCase()}</span>
-            </div>
-            <div className="absolute top-4 right-4">
-              <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold bg-white/90 text-gray-700">
-                {supplier.category}
-              </span>
-            </div>
-            <div className="absolute bottom-3 left-4 right-4">
-              <p className="text-white font-bold drop-shadow truncate">{supplier.name}</p>
-            </div>
-          </div>
-          <div className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <StatusPill rating={supplier.rating} />
-              <RatingStars rating={supplier.rating} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <MetaChip icon={Mail}  label="Contact"   value={supplier.contact_email} />
-              <MetaChip icon={Phone} label="Phone"     value={supplier.phone} />
-            </div>
-            <button onClick={() => onRemove(supplier.id)}
-              className="w-full mt-2 text-xs font-semibold text-red-500 hover:text-red-700 flex items-center justify-center gap-1.5 py-2 border border-red-100 rounded-xl hover:bg-red-50 transition-colors">
-              <Trash2 size={12} /> Remove Supplier
-            </button>
-          </div>
-        </div>
-
-        {/* KPIs */}
-        <div className="lg:col-span-2">
-          {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 animate-pulse">
-                  <div className="h-4 w-4 bg-gray-200 rounded mb-3" />
-                  <div className="h-6 bg-gray-200 rounded w-1/2 mb-2" />
-                  <div className="h-3 bg-gray-100 rounded w-2/3" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {kpis.map((k, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                  <k.icon size={18} className={`mb-3 ${k.color}`} />
-                  <p className="text-xl font-bold text-gray-800 leading-tight">{k.value ?? '—'}</p>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mt-1">{k.label}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5">
-        <p className="text-xs text-slate-500 leading-relaxed">
-          Procurement KPIs are sourced from the <span className="font-mono font-semibold text-slate-700">suppliers</span> table.
-          On-time delivery and defect rate will auto-update once linked to <span className="font-mono font-semibold text-slate-700">PurchaseOrders</span> and <span className="font-mono font-semibold text-slate-700">InboundShipments</span>.
-        </p>
+    <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm text-white">
+          <thead className="bg-white/[0.01] text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 border-b border-white/5">
+            <tr>
+              <th className="px-6 py-4">Supplier Name</th>
+              <th className="px-6 py-4">Category</th>
+              <th className="px-6 py-4">Lead Time</th>
+              <th className="px-6 py-4">Rating & Status</th>
+              <th className="px-6 py-4">Contact info</th>
+              <th className="px-6 py-4 text-right">Operations</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {suppliers.map(s => {
+              return (
+                <tr
+                  key={s.id}
+                  onClick={() => onRowClick(s)}
+                  className="hover:bg-white/[0.02] cursor-pointer transition-colors group"
+                >
+                  <td className="px-6 py-4 font-bold text-white flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-lg bg-cyan-600/30 border border-cyan-500/40 flex items-center justify-center text-white text-xs font-bold">
+                      {s.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    {s.name}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="rounded-full px-2.5 py-0.5 text-[9px] font-bold bg-white/5 border border-white/10 text-gray-300">
+                      {s.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-gray-300">
+                    {s.lead_time_days} days
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-4">
+                      <StatusPill rating={s.rating} />
+                      <RatingStars rating={s.rating} />
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-xs space-y-0.5">
+                      <div className="flex items-center gap-1.5 text-gray-300">
+                        <Mail size={10} className="text-gray-500" />
+                        {s.contact_email}
+                      </div>
+                      {s.phone && (
+                        <div className="flex items-center gap-1.5 text-gray-400">
+                          <Phone size={10} className="text-gray-500" />
+                          {s.phone}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRowClick(s); }}
+                      className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/20 text-cyan-400 hover:text-white transition-all"
+                      title="Analytics"
+                    >
+                      <BarChart2 size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onRemove(s.id); }}
+                      className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-red-500/20 text-gray-500 hover:text-red-400 transition-all"
+                      title="Remove Supplier"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -422,7 +414,52 @@ const SuppliersPage = () => {
     toast,
   } = useSelector(s => s.supplier);
 
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [requestForm, setRequestForm] = useState({
+    name: '',
+    category: 'Electronics',
+    contact_email: '',
+    phone: '',
+    lead_time_days: 7,
+    project: 'Business Onboard'
+  });
+  const [requestSubmitLoading, setRequestSubmitLoading] = useState(false);
+
+  const handleRequestSubmit = async () => {
+    if (!requestForm.name || !requestForm.contact_email) return;
+    setRequestSubmitLoading(true);
+    try {
+      await dispatch(createRequest({
+        type: 'Supplier Request',
+        description: `BM proposed onboarding of supplier "${requestForm.name}" (${requestForm.contact_email}) under category ${requestForm.category}.`,
+        category: requestForm.category,
+        project: requestForm.project || 'Business Onboard',
+        role: 'supply_manager',
+        priority: 'high',
+        name: requestForm.name,
+        contact_email: requestForm.contact_email,
+        phone: requestForm.phone || '',
+        lead_time_days: parseInt(requestForm.lead_time_days || 7)
+      })).unwrap();
+      alert('Supplier onboarding proposal submitted to Supplier Manager successfully!');
+      setIsRequestModalOpen(false);
+      setRequestForm({
+        name: '',
+        category: 'Electronics',
+        contact_email: '',
+        phone: '',
+        lead_time_days: 7,
+        project: 'Business Onboard'
+      });
+    } catch (err) {
+      alert(err?.detail || 'Failed to submit proposal.');
+    } finally {
+      setRequestSubmitLoading(false);
+    }
+  };
 
   useEffect(() => {
     dispatch(fetchSuppliers({ page: 1, size: PAGE_SIZE }));
@@ -470,62 +507,80 @@ const SuppliersPage = () => {
   const preferred  = suppliers.filter(s => s.rating >= 4.5).length;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-700">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Supplier Directory</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            {total > 0 ? `${total} vendor${total !== 1 ? 's' : ''} in your procurement network` : 'No suppliers onboarded yet'}
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-1.5 h-6 bg-cyan-500 rounded-full" />
+            <h1 className="text-2xl font-bold text-white tracking-tight">Supplier Directory</h1>
+          </div>
+          <p className="text-gray-500 text-sm ml-4">
+            {total > 0 ? `${total} vendor${total !== 1 ? 's' : ''} active in enterprise network` : 'No suppliers onboarded yet'}
           </p>
         </div>
-        <button
-          onClick={() => dispatch(toggleForm())}
-          className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm self-start sm:self-auto"
-        >
-          <Plus size={16} /> Onboard Supplier
-        </button>
+        
+        <div className="flex items-center gap-3">
+          {/* Toggle View mode */}
+          <div className="flex bg-white/5 border border-white/10 p-1 rounded-xl">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-600/20' : 'text-gray-400 hover:text-white'}`}
+              title="Grid Cards"
+            >
+              <Grid size={15} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-600/20' : 'text-gray-400 hover:text-white'}`}
+              title="Tabular List"
+            >
+              <List size={15} />
+            </button>
+          </div>
+
+          <button
+            onClick={() => setIsRequestModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 text-white text-xs font-bold uppercase rounded-xl hover:bg-cyan-500 transition-colors shadow-md shadow-cyan-600/10"
+          >
+            <Plus size={16} /> Request Onboarding
+          </button>
+        </div>
       </div>
 
       {/* KPI summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Total Vendors',    value: total,     icon: Building2,    color: 'text-blue-600'    },
-          { label: 'Preferred',        value: preferred, icon: ShieldCheck,  color: 'text-emerald-600' },
+          { label: 'Total Vendors',    value: total,     icon: Building2,    color: 'text-cyan-400'    },
+          { label: 'Preferred',        value: preferred, icon: ShieldCheck,  color: 'text-emerald-400' },
           { label: 'Categories',       value: [...new Set(suppliers.map(s => s.category))].length || CATEGORIES.length,
-                                                         icon: PackageSearch, color: 'text-violet-600'  },
-          { label: 'At Risk',          value: atRisk,    icon: AlertTriangle, color: atRisk > 0 ? 'text-red-500' : 'text-slate-400' },
+                                                         icon: PackageSearch, color: 'text-violet-400'  },
+          { label: 'At Risk',          value: atRisk,    icon: AlertTriangle, color: atRisk > 0 ? 'text-red-400' : 'text-gray-500' },
         ].map((s, i) => (
-          <div key={i} className={`bg-white rounded-2xl p-5 shadow-sm border ${s.label === 'At Risk' && atRisk > 0 ? 'border-red-200 bg-red-50/30' : 'border-slate-100'}`}>
+          <div key={i} className={`bg-white/[0.02] rounded-2xl p-5 border ${s.label === 'At Risk' && atRisk > 0 ? 'border-red-500/20 bg-red-500/[0.02]' : 'border-white/[0.08]'}`}>
             <s.icon size={18} className={`mb-3 ${s.color}`} />
-            <p className="text-2xl font-bold text-slate-800">{s.value}</p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">{s.label}</p>
+            <p className="text-2xl font-bold text-white">{s.value}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mt-1">{s.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Grid */}
+      {/* Grid or List */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {[...Array(9)].map((_, i) => <SkeletonCard key={i} />)}
         </div>
       ) : suppliers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-            <Building2 size={28} className="text-slate-400" />
+        <div className="flex flex-col items-center justify-center py-24 text-center bg-white/[0.01] border border-dashed border-white/10 rounded-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4">
+            <Building2 size={28} className="text-cyan-400" />
           </div>
-          <h3 className="font-bold text-slate-700 text-lg">No suppliers yet</h3>
-          <p className="text-slate-400 text-sm mt-1 max-w-xs">
-            Onboard your first vendor to start building your procurement network.
+          <h3 className="font-bold text-white text-lg">No suppliers onboarded yet</h3>
+          <p className="text-gray-500 text-sm mt-1 max-w-xs">
+            Suppliers can be added by your registered Supplier Managers inside their respective dashboard portal.
           </p>
-          <button
-            onClick={() => dispatch(toggleForm())}
-            className="mt-5 flex items-center gap-2 bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-colors"
-          >
-            <Plus size={14} /> Onboard First Supplier
-          </button>
         </div>
-      ) : (
+      ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {suppliers.map(s => (
             <SupplierCard
@@ -536,6 +591,12 @@ const SuppliersPage = () => {
             />
           ))}
         </div>
+      ) : (
+        <SuppliersTable
+          suppliers={suppliers}
+          onRowClick={handleAnalytics}
+          onRemove={handleRemove}
+        />
       )}
 
       {/* Pagination */}
@@ -544,9 +605,9 @@ const SuppliersPage = () => {
           <button
             onClick={() => dispatch(setCurrentPage(currentPage - 1))}
             disabled={currentPage <= 1}
-            className="p-2 rounded-xl border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 disabled:opacity-30 hover:border-cyan-500 hover:text-cyan-400 transition-colors"
           >
-            <ChevronLeft size={16} className="text-gray-600" />
+            <ChevronLeft size={16} />
           </button>
           <span className="text-sm text-gray-500 font-medium">
             Page {currentPage} of {totalPages}
@@ -554,25 +615,24 @@ const SuppliersPage = () => {
           <button
             onClick={() => dispatch(setCurrentPage(currentPage + 1))}
             disabled={currentPage >= totalPages}
-            className="p-2 rounded-xl border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 disabled:opacity-30 hover:border-cyan-500 hover:text-cyan-400 transition-colors"
           >
-            <ChevronRight size={16} className="text-gray-600" />
+            <ChevronRight size={16} />
           </button>
         </div>
       )}
 
-      {/* Create modal */}
-      {isFormOpen && (
+      <Toast toast={toast} onClear={() => dispatch(clearToast())} />
+
+      {isRequestModalOpen && (
         <CreateForm
-          form={form}
-          onUpdate={(patch) => dispatch(updateForm(patch))}
-          onSubmit={handleSubmit}
-          onClose={() => dispatch(toggleForm())}
-          loading={createLoading}
+          form={requestForm}
+          onUpdate={(fields) => setRequestForm(prev => ({ ...prev, ...fields }))}
+          onSubmit={handleRequestSubmit}
+          onClose={() => setIsRequestModalOpen(false)}
+          loading={requestSubmitLoading}
         />
       )}
-
-      <Toast toast={toast} onClear={() => dispatch(clearToast())} />
     </div>
   );
 };

@@ -169,6 +169,10 @@ const handleGoogleResponse = () => {
             navigate("/ware_dashboard");
           } else if (role === "factory_manager") {
             navigate("/factorydash");
+          } else if (role === "supply_manager") {
+            navigate("/supplier-manager/dashboard");
+          } else if (role === "logistics_manager") {
+            navigate("/logistics_dashboard");
           } else {
             navigate("/");
           }
