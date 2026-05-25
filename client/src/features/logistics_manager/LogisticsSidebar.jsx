@@ -9,6 +9,7 @@ import {
   Settings,
   BarChart3,
   ChevronRight,
+  MessageSquare,
 } from 'lucide-react';
 
 const NavItem = ({ label, to, icon: Icon, badge, badgeAlert }) => (
@@ -70,6 +71,7 @@ const LogisticsSidebar = () => {
       items: [
         { label: 'Dashboard', to: '/logistics_dashboard', icon: LayoutDashboard },
         { label: 'Shipments', to: '/logistics_shipments', icon: Package, badge: '14' },
+        { label: 'Chat', to: '/logistics-chat', icon: MessageSquare },
       ],
     },
     {

@@ -13,14 +13,9 @@ python-dotenv
 langgraph
 langchain-core
 langchain-groq
-
 langchain-google-genai
 langchain-cohere
 
-
-# Database Access
-sqlalchemy
-psycopg2-binary
-
+# Database & Vector DB Access
+qdrant-client
 motor
-

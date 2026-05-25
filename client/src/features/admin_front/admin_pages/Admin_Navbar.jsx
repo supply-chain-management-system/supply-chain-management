@@ -8,6 +8,7 @@ import {
   Wallet, 
   ChevronRight,
   LayoutDashboard,
+  MessageSquare,
 } from 'lucide-react';
 
 const AdminNavbar = () => {
@@ -19,6 +20,7 @@ const AdminNavbar = () => {
     { name: 'Sub-Managers', path: '/admin/sub-managers', icon: <UserPlus size={20} /> },
     { name: 'Factory', path: '/admin/factory', icon: <Factory size={20} /> },
     { name: 'Financial', path: '/admin/financial', icon: <Wallet size={20} /> },
+    { name: 'Chat', path: '/admin-chat', icon: <MessageSquare size={20} /> },
   ];
 
   return (

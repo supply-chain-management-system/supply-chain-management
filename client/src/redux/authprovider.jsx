@@ -15,6 +15,13 @@ const AuthProvider = ({ children }) => {
 
     dispatch(fetchMe());
 
+    // Setup periodic real-time session validation checks
+    const interval = setInterval(() => {
+      dispatch(fetchMe());
+    }, 10000);
+
+    return () => clearInterval(interval);
+
   }, [dispatch]);
 
   return children;

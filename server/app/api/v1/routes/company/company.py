@@ -55,3 +55,28 @@ def get_owners(db: Session = Depends(get_tenant_db)):
         "count": len(owners),
         "data": [{"id": o.id, "name": o.name, "email": o.email} for o in owners],
     }
+
+
+from typing import List
+from app.services.auth.dependancy import get_current_user
+
+@router.get("/users", response_model=List[dict])
+def get_company_users(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not current_user.company_id:
+        return []
+    # Query all users in the same company
+    users = db.query(User).filter(User.company_id == current_user.company_id).all()
+    return [
+        {
+            "id": u.id,
+            "name": u.name,
+            "email": u.email,
+            "role": u.role.value if u.role else None,
+            "is_active": u.is_active
+        }
+        for u in users
+    ]
+
