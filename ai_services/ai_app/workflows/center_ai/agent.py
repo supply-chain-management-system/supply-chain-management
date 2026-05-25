@@ -13,10 +13,10 @@ from groq import GroqError
 import openai  # 🎯 Used to catch OpenAI's quota/rate limit errors
 
 # 📥 IMPORT THE SECURE TOOLS FROM YOUR CORRECTED TOOLS PATH
-from ai_app.tools.center_ai.tools import query_business_database, search_corporate_knowledge_base
-
+# ✅ CHANGE IT TO THIS:
+from ai_app.tools.center_ai.tools import get_stock_level, search_warehouse_manuals
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongodb:27017")
-central_tools = [query_business_database, search_corporate_knowledge_base]
+central_tools = [get_stock_level, search_warehouse_manuals]
 
 CENTRAL_AI_PROMPT = (
     "You are the Korvex Centralized Enterprise Supervisor Copilot.\n"

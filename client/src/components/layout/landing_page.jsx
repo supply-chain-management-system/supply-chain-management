@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import api from "../../api/api";
 
-/* ─── Data ─── */
 const navLinks = ["Platform", "Solutions", "Pricing", "Resources"];
 
 const planIcons = {

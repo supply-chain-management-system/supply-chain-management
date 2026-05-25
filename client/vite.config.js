@@ -6,10 +6,7 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-<<<<<<< HEAD
   ],
   
-=======
-  ]
->>>>>>> development
+  
 })

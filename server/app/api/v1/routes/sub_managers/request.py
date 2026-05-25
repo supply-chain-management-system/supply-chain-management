@@ -1,24 +1,19 @@
-from fastapi import APIRouter, Depends,HTTPException,status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-<<<<<<< HEAD
+from sqlalchemy.exc import SQLAlchemyError
 from typing import List
-from app.db.deps import get_db,get_tenant_db
-=======
-from app.db.deps import get_tenant_db
->>>>>>> development
+
+from app.db.deps import get_db, get_tenant_db
 from app.models.sub_managers.request import MaterialRequest
 from app.models.sub_managers.factory_manager.production import Factory
-
 from app.schemas.sub_managers.request import (
     MaterialRequestCreate,
     MaterialRequestOut,
-    
 )
 
 router = APIRouter()
 
 
-<<<<<<< HEAD
 @router.post("/request", response_model=MaterialRequestOut, status_code=status.HTTP_201_CREATED)
 def create_material_request(data: MaterialRequestCreate, db: Session = Depends(get_tenant_db)):
     try:
@@ -30,14 +25,6 @@ def create_material_request(data: MaterialRequestCreate, db: Session = Depends(g
             receiver_id=data.receiver_id,
             quantity=data.quantity,
         )
-=======
-@router.post("/request", response_model=MaterialRequestOut)
-def create_material_request(
-    data: MaterialRequestCreate,
-    db: Session = Depends(get_tenant_db),
-):
->>>>>>> development
-
         db.add(new_request)
         db.commit()
         db.refresh(new_request)
@@ -50,6 +37,7 @@ def create_material_request(
             detail="Failed to create material request"
         )
 
+
 @router.get("/request", response_model=List[MaterialRequestOut], status_code=status.HTTP_200_OK)
 def get_material_requests(db: Session = Depends(get_tenant_db)):
     try:
@@ -61,21 +49,6 @@ def get_material_requests(db: Session = Depends(get_tenant_db)):
         )
 
 
-<<<<<<< HEAD
-=======
-@router.get("/request", response_model=list[MaterialRequestOut])
-def get_material_requests(
-    db: Session = Depends(get_tenant_db)
-):
-    return db.query(MaterialRequest).all()
-
-@router.get("/Factory_deatils" )
-
-def get_comapny(db:Session=Depends(get_tenant_db)):
-    return db.query(Factory).all()
-
->>>>>>> development
-
 @router.get("/factory_details", status_code=status.HTTP_200_OK)
 def get_factory_info(db: Session = Depends(get_tenant_db)):
     try:
@@ -86,10 +59,3 @@ def get_factory_info(db: Session = Depends(get_tenant_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             detail="Failed to retrieve factory data"
         )
-
-
-
-
-
-
-

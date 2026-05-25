@@ -29,6 +29,8 @@ from app.api.v1.routes.business_manager import logistics_manager
 from app.api.v1.routes.business_manager import warehouse_manager
 from app.api.v1.routes.business_manager import suppliers
 from app.api.v1.routes.business_manager import supply_manager
+from app.api.v1.routes.owner_routes import S_center_ai
+
 
 
 
@@ -129,6 +131,7 @@ app.include_router(team.router, prefix="/api/v1/factory_team")
 
 app.include_router(api_warehouse.router, prefix="/api/v1")
 app.include_router(request.router, prefix="/api/v1")
+app.include_router(S_center_ai.router, prefix="/api/v1")
 
 
 @app.get("/")

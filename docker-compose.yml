@@ -49,14 +49,13 @@ services:
     environment:
       - PYTHONPATH=/app:/server_code
     volumes:
-      # Only mount the specific code folders you are actively editing.
-      # This prevents the local folders from overwriting the pre-installed libraries.
       - ./ai_services/ai_app:/app/ai_app
       - ./server:/server_code
     ports:
       - "8001:8001"
-    command: uvicorn ai_app.main:app --host 0.0.0.0 --port 8001
-      
+    command: uvicorn ai_app.main:app --host 0.0.0.0 --port 8001 --workers 1
+
+
   nginx:
     image: nginx:latest
     container_name: api-gateway
@@ -124,10 +123,7 @@ services:
       - PYTHONPATH=/app
     volumes:
       - ./ai_services/ai_app:/app/ai_app
-    # 🤫 Added '--uid=nobody' at the end to keep the startup logs perfectly quiet and secure
-    command: python -m celery -A ai_app.core.celery_config.ai_celery_app worker --loglevel=info --uid=nobody
-
-
+    command: celery -A ai_app.tasks.agent_tasks worker --loglevel=info
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:

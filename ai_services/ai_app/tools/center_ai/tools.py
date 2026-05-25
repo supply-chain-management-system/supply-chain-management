@@ -1,51 +1,82 @@
 import psycopg2
 from langchain_core.tools import tool
 from langchain_core.runnables import RunnableConfig
-
+import httpx
+from langchain_mongodb import MongoDBAtlasVectorSearch
+from langchain_openai import OpenAIEmbeddings
 # 🔒 Centralized Role Permissions
-ROLE_TABLE_PERMISSIONS = {
-    "owner": ["warehouse_inventory", "shipping_status", "payroll_records", "company_revenues"],
-    "warehouse_manager": ["warehouse_inventory", "shipping_status"],
-    "finance_manager": ["payroll_records", "company_revenues"],
-    "hr_manager": ["employee_directory", "performance_reviews"]
-}
+import os
+from pymongo import MongoClient
 
+# Define it at the top of the file!
+MONGO_URI = os.getenv("MONGO_URL","mongodb://localhost:27017")
+mongodb_client = MongoClient(MONGO_URI)
 @tool
-def query_business_database(target_table: str, sql_query: str, config: RunnableConfig) -> str:
-    """Executes an operational database lookup for metrics, inventory, or reports.
-    Args:
-        target_table: The raw name of the table to read (e.g. 'warehouse_inventory')
-        sql_query: The specific SELECT statement to evaluate.
-    """
+def get_stock_level(product_name: str, config: RunnableConfig):
+    """Check current stock level for a product from the inventory server."""
+    
+    # 1. Extract the secret credentials
     tenant_schema = config["configurable"].get("tenant_schema")
     user_role = config["configurable"].get("user_role")
-    
-    # 1. Role Guardrail Check
-    allowed_tables = ROLE_TABLE_PERMISSIONS.get(user_role, [])
-    if target_table not in allowed_tables:
-        return f"Access Denied: Your role account '{user_role}' is unauthorized to query the '{target_table}' table."
-        
+
+    # 2. ROLE-BASED ACCESS CONTROL (RBAC)
+    # Only allow managers who actually need stock data
+    allowed_roles = ["main_manager", "warehouse_manager", "owner"]
+    if user_role not in allowed_roles:
+        return f"Access Denied: As a '{user_role}', you are not authorized to view warehouse stock levels."
+
+    # 3. TENANT INJECTION
+    # We pass the schema as a custom header to your internal API!
+    url = f"http://fastapi:8000/api/v1/internal/stock/{product_name}"
+    headers = {"X-Tenant-Schema": tenant_schema} if tenant_schema else {}
+
     try:
-        # (Assuming your global postgres connection setup lives here)
-        conn = postgres_connection_pool.getconn()
-        cursor = conn.cursor()
-        
-        # 2. Multi-Tenant Schema Separation
-        cursor.execute(f"SET search_path TO {tenant_schema};")
-        
-        cursor.execute(sql_query)
-        records = cursor.fetchall()
-        
-        cursor.close()
-        postgres_connection_pool.putconn(conn)
-        
-        if not records:
-            return f"Query successful, but returned 0 results inside schema '{tenant_schema}'."
-        return f"Results from {tenant_schema}.{target_table}:\n{str(records)}"
+        # Notice we added headers=headers here!
+        response = httpx.get(url, headers=headers, timeout=5.0)
+        if response.status_code == 200:
+            data = response.json()
+            return f"Stock for '{data['product_name']}': {data['quantity']} units."
+        return f"Inventory server unreachable or item not found. Status: {response.status_code}"
     except Exception as e:
-        return f"Database Query Execution Error: {str(e)}"
+        return f"Tool Error: {str(e)}"
+    
 
 @tool
-def search_corporate_knowledge_base(query: str, config: RunnableConfig) -> str:
-    """Search internal corporate operational manuals, guidelines, and safety policies."""
-    return "RAG Search placeholder: Successfully matching system documentation chunks."
+def search_warehouse_manuals(query: str, config: RunnableConfig) -> str:
+    """Search internal warehouse operational manuals, guidelines, and safety policies."""
+    
+    # 1. Extract the secret credentials
+    tenant_schema = config["configurable"].get("tenant_schema")
+    user_role = config["configurable"].get("user_role")
+
+    # 2. ROLE-BASED ACCESS CONTROL (RBAC)
+    # Maybe factory managers are allowed to read warehouse safety rules too?
+    allowed_roles = ["main_manager", "warehouse_manager", "factory_manager", "owner"]
+    if user_role not in allowed_roles:
+        return "Access Denied: You do not have clearance to read warehouse operational manuals."
+
+    # 3. TENANT-SECURE VECTOR SEARCH
+    vector_store = MongoDBAtlasVectorSearch(
+        collection=mongodb_client["korvex_ai_db"]["knowledge_base"],
+        embedding=OpenAIEmbeddings(model="text-embedding-3-small"),
+        index_name="vector_index"
+    )
+    
+    # 🚀 The Magic Filter: This ensures the AI ONLY retrieves documents 
+    # where the 'tenant_schema' metadata matches the user's company!
+    search_filter = {"tenant_schema": {"$eq": tenant_schema}}
+    
+    try:
+        docs = vector_store.similarity_search(
+            query, 
+            k=3, 
+            pre_filter=search_filter  # Applied here!
+        )
+        
+        if not docs:
+            return "No manuals found for your company's workspace."
+            
+        return "\n\n".join([d.page_content for d in docs])
+        
+    except Exception as e:
+        return f"Database Search Error: {str(e)}"
