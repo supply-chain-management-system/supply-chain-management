@@ -45,6 +45,7 @@ class Production(BaseTenant):
     created_at=Column(DateTime(timezone=True),server_default=func.now())
 
     factory=relationship('Factory',back_populates='productions')
+    material_transactions = relationship("Factory_MaterialTransaction", back_populates="production", cascade="all, delete")
     
 
     doc=Column(Text,nullable=True)

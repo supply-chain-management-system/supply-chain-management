@@ -31,8 +31,14 @@ from typing import Optional
 class production_update(BaseModel):
     product_name: Optional[str] = None
     target_qty: Optional[int] = None
+    output_qty: Optional[int] = None
     factory_id: Optional[int] = None
     created_by: Optional[str] = None
     status: str = "pending"
+
+
+class production_complete(BaseModel):
+    output_qty: int
+
 
 
