@@ -1,38 +1,50 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from clickhouse_driver import Client
-
+from typing import Generator
 
 router = APIRouter(prefix='/elt_production', tags=['elt_production'])
 
-
-
-
-@router.get("/production/{tenant_id}")
-def get_production(tenant_id: str):
-    print(f"Fetching production data for tenant: {tenant_id}")
-    client = Client(
+ch_client = Client(
     host='clickhouse',
     user='default',
     password='mypassword',
     port=9000
+)
 
-) 
-    print(client.execute("SHOW TABLES"))
-    table = f"analytics.{tenant_id}_production"
+def get_clickhouse_client() -> Generator[Client, None, None]:
+    try:
+        yield ch_client
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database connection error: {str(e)}")
+
+
+@router.get("/production/{tenant_id}")
+def get_production(tenant_id: str, client: Client = Depends(get_clickhouse_client)):
+    print(f"Fetching production data for tenant: {tenant_id}")
+    
+    safe_tenant = "".join(c for c in tenant_id if c.isalnum() or c == '_')
     
     query = f"""
-SELECT
-    product_name,
-    argMax(target_qty, id) AS target_qty,
-    argMax(output_qty, id) AS output_qty,
-    argMax(status, id) AS status,
-    argMax(efficiency, id) AS efficiency
-FROM analytics.{tenant_id}_production
-GROUP BY product_name
-ORDER BY product_name
-"""
+    SELECT
+        product_name,
+        argMax(target_qty, id) AS target_qty,
+        argMax(output_qty, id) AS output_qty,
+        argMax(status, id) AS status,
+        argMax(efficiency, id) AS efficiency
+    FROM analytics.{safe_tenant}_production
+    GROUP BY product_name
+    ORDER BY product_name
+    """
     
-    result = client.execute(query)
+    try:
+        result = client.execute(query)
+    except Exception as e:
+        print(f"🔥 CLICKHOUSE EXECUTION ERROR: {repr(e)}")
+        
+        if "Code: 60" in str(e) or "Unknown table" in str(e):
+            return []
+            
+        raise HTTPException(status_code=500, detail=f"ClickHouse Failed: {str(e)}")
 
     return [
         {
@@ -47,13 +59,8 @@ ORDER BY product_name
 
 
 @router.get("/production/{tenant_id}/history/{product_name}")
-def get_product_history(tenant_id: str, product_name: str):
-    client = Client(
-        host="clickhouse",
-        user="default",
-        password="mypassword",
-        port=9000
-    )
+def get_product_history(tenant_id: str, product_name: str, client: Client = Depends(get_clickhouse_client)):
+    safe_tenant = "".join(c for c in tenant_id if c.isalnum() or c == '_')
 
     query = f"""
     SELECT
@@ -63,12 +70,17 @@ def get_product_history(tenant_id: str, product_name: str):
         status,
         efficiency,
         created_at
-    FROM analytics.{tenant_id}_production
-    WHERE product_name = '{product_name}'
+    FROM analytics.{safe_tenant}_production
+    WHERE product_name = %(prod_name)s
     ORDER BY created_at ASC
     """
 
-    result = client.execute(query)
+    try:
+        result = client.execute(query, params={"prod_name": product_name})
+    except Exception as e:
+        if "Code: 60" in str(e) or "Unknown table" in str(e):
+            return []
+        raise e
 
     return [
         {

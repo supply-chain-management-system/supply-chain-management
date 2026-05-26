@@ -37,6 +37,7 @@ class User(Base):
     is_approved_company = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 
 class Invitation(Base):
@@ -75,3 +76,32 @@ class UserAssignment(Base):
     role = Column(Enum(RoleEnum), nullable=False)
     category = Column(String, nullable=False)
     category_id = Column(String, nullable=False)
+
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    
+    # Common fields
+    phone = Column(String, nullable=True)
+    job_title = Column(String, nullable=True)
+    department = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    bio = Column(String, nullable=True)
+    avatar_url = Column(String, nullable=True)
+    
+    # Business Manager specific fields
+    budget_authority = Column(String, nullable=True)
+    focus_area = Column(String, nullable=True)
+    
+    # Supplier Manager specific fields
+    categories_managed = Column(String, nullable=True)
+    supplier_target_score = Column(String, nullable=True)
+    office_extension = Column(String, nullable=True)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User", back_populates="profile")

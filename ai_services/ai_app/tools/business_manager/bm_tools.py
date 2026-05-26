@@ -1,10 +1,14 @@
 import os
 import httpx
+import sys
+import os
 from langchain_core.tools import tool
+BASE_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../../../../")
+)
 
-# ==========================================
-# MICROSERVICE CONFIGURATION
-# ==========================================
+sys.path.append(BASE_DIR)
+
 # Assuming main server routes are prefixed with /api/v1
 MAIN_SERVER_URL = os.getenv("MAIN_SERVER_URL", "http://fastapi:8000/api/v1")
 N8N_URL = os.getenv("N8N_URL", "http://n8n:5678/webhook")
@@ -30,7 +34,7 @@ def create_factory_production_draft(
 
         # Hitting the real POST /factory/product_create endpoint
         response = httpx.post(
-            f"{MAIN_SERVER_URL}/factory/product_create",
+            f"{MAIN_SERVER_URL}/production/factory/product_create",
             json=payload,
             timeout=HTTP_TIMEOUT,
         )
@@ -124,7 +128,7 @@ def check_supplier_status(max_rating: float, min_lead_time_days: int) -> str:
     try:
         # Note: Your teammate still needs to build this supplier endpoint!
         response = httpx.get(
-            f"{MAIN_SERVER_URL}/business-manager/suppliers", timeout=HTTP_TIMEOUT
+            f"{MAIN_SERVER_URL}/supplier-manager/suppliers", timeout=HTTP_TIMEOUT
         )
         response.raise_for_status()
 
@@ -174,15 +178,16 @@ def invite_team_member(name: str, email: str, role: str, business_name: str) -> 
 
 @tool
 def dispatch_low_stock_alert(
-    product_name: str, current_qty: int, threshold: int
+    product_name: str, current_qty: int, threshold: int, user_id: int
 ) -> str:
-    """Dispatches emergency low stock alert via n8n."""
+    """Dispatches emergency low stock alert via n8n. Remember to pass the user_id."""
     try:
         payload = {
             "product_name": product_name,
             "current_qty": current_qty,
             "threshold": threshold,
             "message": f"⚠️ CRITICAL: {product_name} stock is at {current_qty}",
+            "user_id": user_id
         }
         httpx.post(
             f"{N8N_URL}/low-stock-alert", json=payload, timeout=HTTP_TIMEOUT

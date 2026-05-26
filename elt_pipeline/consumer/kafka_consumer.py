@@ -19,24 +19,24 @@ logger = get_logger("ELT_CONSUMER")
 def create_consumer():
     while True:
         try:
-            logger.info("⏳ Connecting to Kafka...")
+            logger.info(" Connecting to Kafka")
 
             consumer = KafkaConsumer(
                 bootstrap_servers=KAFKA_BROKER,
                 group_id=GROUP_ID,
                 auto_offset_reset="earliest",
                 enable_auto_commit=True,
-                value_deserializer=lambda x: json.loads(x.decode("utf-8")),
+                value_deserializer=lambda x: json.loads(x.decode("utf-8")) if x is not None else None,
             )
 
-            # Capture ALL Debezium tables
+           
             consumer.subscribe(pattern=r"dbserver1\..*\..*")
 
-            logger.info("✅ Connected to Kafka!")
+            logger.info("Connected to Kafka!")
             return consumer
 
         except NoBrokersAvailable:
-            logger.error("❌ Kafka not ready, retrying in 5 seconds...")
+            logger.error(" Kafka not ready, retrying in 5 seconds")
             time.sleep(5)
 
 
@@ -58,19 +58,19 @@ class KafkaELTConsumer:
                 return None
 
             if not hasattr(transformer, "transform"):
-                logger.error(f"❌ Transformer missing 'transform()': {type(transformer)}")
+                logger.error(f" Transformer missing 'transform()': {type(transformer)}")
                 return None
 
             return transformer.transform(event)
 
         except Exception as e:
-            logger.error(f"❌ Transform failed: {str(e)}")
+            logger.error(f" Transform failed: {str(e)}")
             return None
 
   
     def start(self):
 
-        logger.info("🚀 ELT Consumer Started...")
+        logger.info(" ELT Consumer Started...")
 
         for message in self.consumer:
 
@@ -78,60 +78,60 @@ class KafkaELTConsumer:
                 raw_event = message.value
                 topic = message.topic
 
-                logger.info(f"📩 Topic: {topic}")
-                logger.info(f"📩 Raw Event Received")
+                logger.info(f"Topic: {topic}")
+                logger.info(f" Raw Event Received")
 
-                # STEP 1: Parse event
+            
                 event = parse_event(raw_event)
 
                 if not event:
-                    logger.warning("⚠️ Skipping invalid event")
+                    logger.warning(" Skipping invalid event")
                     continue
 
-                # STEP 2: Extract schema + table from topic
+                
                 schema, table = self.schema_resolver.extract(topic)
 
                 if not schema or not table:
-                    logger.warning(f"⚠️ Invalid topic format: {topic}")
+                    logger.warning(f"Invalid topic format: {topic}")
                     continue
 
                 if not self.schema_resolver.is_valid_tenant(schema):
-                    logger.warning(f"⚠️ Unregistered or invalid tenant schema: {schema}")
+                    logger.warning(f" Unregistered or invalid tenant schema: {schema}")
                     continue
 
                 event["schema"] = schema
                 event["table"] = table
 
-                logger.info(f"🧹 Parsed Event: {event}")
+                logger.info(f" Parsed Event: {event}")
 
-                # STEP 3: Route transformer
+                
                 transformer = self.router.route(event)
 
                 if not transformer:
-                    logger.warning(f"⚠️ No transformer found for {table}")
+                    logger.warning(f" No transformer found for {table}")
                     continue
 
-                # STEP 4: Transform safely
+                
                 transformed = self.safe_transform(transformer, event)
 
                 if not transformed:
-                    logger.warning("⚠️ Transformation returned empty result")
+                    logger.warning("Transformation returned empty result")
                     continue
 
                 logger.info(f"⚡ Transformed Data: {transformed}")
 
-                # STEP 5: Load (tenant-aware)
+                
                 load_to_target(event["schema"], event["table"], transformed)
 
                 print("\nFINAL OUTPUT →", transformed)
 
             except Exception as e:
-                logger.error(f"❌ Consumer loop error: {str(e)}")
+                logger.error(f" Consumer loop error: {str(e)}")
                 continue
 
 
 if __name__ == "__main__":
-    print("🚀 Starting ELT Consumer...")
+    print("Starting ELT Consumer...")
 
     consumer = KafkaELTConsumer()
     consumer.start()

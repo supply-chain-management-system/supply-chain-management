@@ -8,13 +8,13 @@ logger = get_logger("LOADER")
 def load_to_target(schema, table, data):
     logger.info("🚀 Loading: %s.%s → %s", schema, table, data)
 
-    # 🔑 flatten table name
+  
     target_table = f"{schema}_{table}"
 
-    # STEP 1: ensure table exists
+   
     create_table_if_not_exists(target_table, data)
 
-    # STEP 2: insert data
+
     insert_into_clickhouse(target_table, data)
 
     logger.info("✅ Data loaded into: %s", target_table)

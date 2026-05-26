@@ -8,10 +8,12 @@ import {
   Package,
   ClipboardList,
   FileOutput,
-  Settings
+  Settings,
+  MessageSquare
 } from 'lucide-react';
 
 const menuItems = [
+
   { icon: LayoutDashboard, label: 'Dashboard', path: '/factorydash' },
   { icon: Factory, label: 'Production', path: '/production' },
   { icon: Users, label: 'Teams', path: '/factoryteam' },
@@ -20,6 +22,9 @@ const menuItems = [
   { icon: ClipboardList, label: 'Requests', path: '#' },
   { icon: FileOutput, label: 'Output Logs', path: '/outputlogs' },
   { icon: Settings, label: 'Settings', path: '/elt_production' },
+
+
+
 ];
 
 const Sidebar = () => {

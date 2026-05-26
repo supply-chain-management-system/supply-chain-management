@@ -225,6 +225,20 @@ def remove_supply_manager(manager_id: int, db: Session = Depends(get_tenant_db))
     if not manager:
         raise HTTPException(status_code=404, detail="Manager card not found.")
 
+    # 1. Delete associated User if exists (frees up email for testing)
+    user = db.query(User).filter(User.email == manager.email).first()
+    if user:
+        db.delete(user)
+
+    # 2. Delete any invitations matching this email
+    from app.models.auth.user import Invitation
+    db.query(Invitation).filter(Invitation.email == manager.email).delete(synchronize_session=False)
+
+    # 3. Delete suppliers managed by this specific manager
+    from app.models.supplier_manager.supplier import Supplier
+    db.query(Supplier).filter(Supplier.manager_id == manager.id).delete(synchronize_session=False)
+
+    # 4. Finally, delete the SupplyManager card
     db.delete(manager)
     db.commit()
-    return {"status": "success", "message": f"Supply Manager {manager_id} removed."}
+    return {"status": "success", "message": f"Supply Manager {manager_id} and all related records removed."}

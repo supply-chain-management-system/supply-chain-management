@@ -1,7 +1,5 @@
 def parse_event(message: dict):
-    """
-    Convert raw Debezium Kafka event → clean structure
-    """
+ 
     if not message or not isinstance(message, dict):
         return None
 
@@ -17,5 +15,5 @@ def parse_event(message: dict):
         "op": payload.get("op"),
         "schema": source.get("schema"),
         "table": source.get("table"),
-        "data": payload.get("after")  # INSERT/UPDATE data
+        "data": payload.get("after") 
     }

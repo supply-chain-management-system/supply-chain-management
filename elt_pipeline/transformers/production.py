@@ -12,21 +12,21 @@ class ProductionTransformer:
         output_qty = int(data.get("output_qty") or 0)
         status = (data.get("status") or "").lower()
         
-        # Parse created_at defensively
+        
         created_at_raw = data.get("created_at")
         created_at = None
         if created_at_raw:
             try:
                 if isinstance(created_at_raw, (int, float)):
-                    # Handle epoch timestamps (seconds, milliseconds, or microseconds)
-                    if created_at_raw > 1e12:  # microseconds
+                    
+                    if created_at_raw > 1e12: 
                         created_at = datetime.fromtimestamp(created_at_raw / 1e6)
-                    elif created_at_raw > 1e9:  # milliseconds
+                    elif created_at_raw > 1e9:  
                         created_at = datetime.fromtimestamp(created_at_raw / 1e3)
-                    else:  # seconds
+                    else:  
                         created_at = datetime.fromtimestamp(created_at_raw)
                 else:
-                    # Clean trailing 'Z' and parse ISO 8601 string
+                   
                     val = str(created_at_raw).strip()
                     if val.endswith("Z"):
                         val = val[:-1] + "+00:00"

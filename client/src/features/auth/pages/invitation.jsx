@@ -159,7 +159,6 @@ export default function InviteRegisterPage() {
         email: form.email.trim(),
         password: form.password,
       });
-
       const registeredEmail = response.data?.user?.email || form.email.trim();
       localStorage.setItem("email", registeredEmail);
       navigate("/verify-email", {

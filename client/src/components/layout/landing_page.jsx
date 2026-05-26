@@ -1,584 +1,745 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-const NAV_LINKS = ["Solutions", "Platform", "Industries", "Pricing", "Resources"];
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  BarChart3,
+  Boxes,
+  Building2,
+  Check,
+  ChevronRight,
+  Moon,
+  Network,
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  Truck,
+  Warehouse,
+  Zap,
+} from "lucide-react";
+import api from "../../api/api";
 
-const STATS = [
-  { value: "99.8%", label: "Uptime Reliability" },
-  { value: "3.2x", label: "Faster Fulfillment" },
-  { value: "40%", label: "Cost Reduction" },
-  { value: "150+", label: "Countries Supported" },
+const navLinks = ["Platform", "Solutions", "Pricing", "Resources"];
+
+const planIcons = {
+  warehouse: Warehouse,
+  boxes: Boxes,
+  "bar-chart": BarChart3,
+  network: Network,
+};
+
+const metrics = [
+  { label: "Shipment visibility", value: "99.9%" },
+  { label: "Faster planning cycles", value: "42%" },
+  { label: "Active warehouse sites", value: "1.8k" },
 ];
 
-const FEATURES = [
-  {
-    icon: (
-      <svg width="28" height="28" fill="none" viewBox="0 0 28 28">
-        <rect x="3" y="3" width="22" height="22" rx="4" stroke="currentColor" strokeWidth="1.8"/>
-        <path d="M9 14h10M14 9v10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-      </svg>
-    ),
-    title: "Inventory Intelligence",
-    desc: "Real-time stock tracking across all warehouses with predictive restocking alerts and automated reorder workflows.",
-  },
-  {
-    icon: (
-      <svg width="28" height="28" fill="none" viewBox="0 0 28 28">
-        <circle cx="14" cy="14" r="10" stroke="currentColor" strokeWidth="1.8"/>
-        <path d="M14 8v6l4 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-      </svg>
-    ),
-    title: "Order Lifecycle Management",
-    desc: "End-to-end order visibility from purchase to delivery. Automate approvals, track exceptions, and resolve delays instantly.",
-  },
-  {
-    icon: (
-      <svg width="28" height="28" fill="none" viewBox="0 0 28 28">
-        <path d="M4 20l7-7 4 4 9-10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
-    title: "Demand Forecasting",
-    desc: "AI-powered forecasting engine that analyzes historical trends, seasonality, and market signals to prevent over/under-stocking.",
-  },
-  {
-    icon: (
-      <svg width="28" height="28" fill="none" viewBox="0 0 28 28">
-        <path d="M5 14c0-5 4-9 9-9s9 4 9 9-4 9-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-        <path d="M5 14h6l2 3 2-6 2 3h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-      </svg>
-    ),
-    title: "Supplier Network",
-    desc: "Centralized supplier portal for RFQ management, contract tracking, performance scoring, and compliance monitoring.",
-  },
-  {
-    icon: (
-      <svg width="28" height="28" fill="none" viewBox="0 0 28 28">
-        <path d="M4 8h20M4 14h14M4 20h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-      </svg>
-    ),
-    title: "Logistics & Routing",
-    desc: "Optimize shipment routes across carriers, automate freight booking, and reduce last-mile delivery costs with smart routing.",
-  },
-  {
-    icon: (
-      <svg width="28" height="28" fill="none" viewBox="0 0 28 28">
-        <rect x="4" y="4" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8"/>
-        <rect x="16" y="4" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8"/>
-        <rect x="4" y="16" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8"/>
-        <rect x="16" y="16" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.8"/>
-      </svg>
-    ),
-    title: "Analytics Dashboard",
-    desc: "Executive-grade reporting with drill-down capabilities. KPIs, SLAs, and financial metrics — all in one control center.",
-  },
-];
+const cardMotion = {
+  hidden: { opacity: 0, y: 28 },
+  visible: (index) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, delay: index * 0.12, ease: "easeOut" },
+  }),
+};
 
-const INDUSTRIES = [
-  { name: "Manufacturing", icon: "🏭" },
-  { name: "Retail & E-Commerce", icon: "🛒" },
-  { name: "Pharmaceuticals", icon: "💊" },
-  { name: "Food & Beverage", icon: "🥤" },
-  { name: "Automotive", icon: "🚗" },
-  { name: "Aerospace", icon: "✈️" },
-];
-
-const TESTIMONIALS = [
-  {
-    quote: "Korvex cut our procurement cycle from 12 days to under 3. The supplier visibility alone justified the investment in month one.",
-    name: "Priya Nair",
-    role: "VP Supply Chain, Neltex Industries",
-    avatar: "PN",
-  },
-  {
-    quote: "We manage 6 distribution centers across Southeast Asia. Korvex gave us the single-pane-of-glass we'd been looking for for years.",
-    name: "James Whitfield",
-    role: "COO, Meridian Logistics",
-    avatar: "JW",
-  },
-  {
-    quote: "The forecasting engine reduced our overstock by 38% in the first quarter. The ROI was immediate and measurable.",
-    name: "Aisha Kamara",
-    role: "Head of Operations, VivaTrade",
-    avatar: "AK",
-  },
-];
-
-const PLANS = [
-  {
-    name: "Starter",
-    price: "$299",
-    period: "/mo",
-    desc: "For growing businesses getting supply chain visibility.",
-    features: ["Up to 3 warehouses", "500 SKUs", "Order management", "Basic reporting", "Email support"],
-    cta: "Start Free Trial",
-    highlight: false,
-  },
-  {
-    name: "Business",
-    price: "$899",
-    period: "/mo",
-    desc: "Full-scale operations for mid-market companies.",
-    features: ["Unlimited warehouses", "50,000 SKUs", "Demand forecasting", "Supplier portal", "Advanced analytics", "Priority support"],
-    cta: "Start Free Trial",
-    highlight: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "",
-    desc: "Tailored for global supply chains at scale.",
-    features: ["Unlimited everything", "Custom integrations", "Dedicated CSM", "SLA guarantees", "On-premise option", "24/7 support"],
-    cta: "Contact Sales",
-    highlight: false,
-  },
-];
-
-export default function KorvexLanding() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const navigate = useNavigate();
-
+/* ─── Navbar ─── */
+function Navbar({ isDark, onThemeToggle }) {
   return (
-    <div className="bg-[#0A0C10] text-[#E8EAF0] font-sans min-h-screen">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
-        * { font-family: 'DM Sans', sans-serif; }
-        .font-display { font-family: 'Syne', sans-serif; }
-        .glow-border { box-shadow: 0 0 0 1px rgba(56,189,248,0.15), inset 0 0 0 1px rgba(56,189,248,0.05); }
-        .card-hover { transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s; }
-        .card-hover:hover { box-shadow: 0 0 0 1px rgba(56,189,248,0.35); transform: translateY(-2px); }
-        .tag-pill { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.18); }
-        .grid-bg {
-          background-image: 
-            linear-gradient(rgba(56,189,248,0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(56,189,248,0.04) 1px, transparent 1px);
-          background-size: 48px 48px;
-        }
-      `}</style>
-
-      {/* ── NAV ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#0A0C10]/90 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center">
-              <svg width="18" height="18" fill="none" viewBox="0 0 18 18">
-                <path d="M3 9l6-6 6 6-6 6-6-6z" fill="white"/>
-              </svg>
-            </div>
-            <span className="font-display font-800 text-xl tracking-tight text-white">KORVEX</span>
+    <nav className="sticky top-0 z-50 border-b border-gray-200/60 bg-white/85 backdrop-blur-xl dark:border-gray-800/60 dark:bg-gray-950/85">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
+        {/* Logo */}
+        <a href="/" className="flex items-center gap-2.5">
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900">
+            <Truck size={18} />
           </div>
-
-          {/* Desktop Links */}
-          <div className="hidden md:flex items-center gap-8">
-            {NAV_LINKS.map((l) => (
-              <a key={l} href="#" className="text-sm text-[#8A9BB0] hover:text-white transition-colors">{l}</a>
-            ))}
+          <div>
+            <p className="text-[15px] font-bold tracking-tight text-gray-900 dark:text-white">
+              FlowChain
+            </p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
+              SCM Cloud
+            </p>
           </div>
+        </a>
 
-          {/* CTA */}
-          <div className="flex items-center gap-3">
-            <button onClick={()=>navigate("/request-demo")} className="hidden md:block text-sm text-[#8A9BB0] hover:text-white transition-colors px-3 py-1.5">
-              Request Demo
-            </button>
-            <button onClick={()=>navigate("/login")} className="bg-sky-500 hover:bg-sky-400 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
-              Login
-            </button>
-            {/* Mobile menu */}
-            <button className="md:hidden p-2 text-[#8A9BB0]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
-                <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-              </svg>
-            </button>
-          </div>
+        {/* Nav Links */}
+        <div className="hidden items-center gap-7 lg:flex">
+          {navLinks.map((link) => (
+            <a
+              key={link}
+              href={link === "Pricing" ? "/pricing" : "#"}
+              className="text-[13px] font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            >
+              {link}
+            </a>
+          ))}
         </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/[0.06] px-6 py-4 flex flex-col gap-4 bg-[#0A0C10]">
-            {NAV_LINKS.map((l) => (
-              <a key={l} href="#" className="text-sm text-[#8A9BB0] hover:text-white transition-colors">{l}</a>
-            ))}
-            <button className="bg-sky-500 text-white text-sm font-medium px-5 py-2 rounded-lg w-full">Login</button>
-          </div>
-        )}
-      </nav>
+        {/* Actions */}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={onThemeToggle}
+            aria-label="Toggle color theme"
+            className="grid h-9 w-9 place-items-center rounded-lg border border-gray-200 text-gray-500 transition-all hover:border-gray-300 hover:text-gray-700 dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200"
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <a
+            href="/pricing"
+            className="hidden rounded-lg bg-gray-900 px-4 py-2 text-[13px] font-semibold text-white transition-all hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100 sm:inline-flex"
+          >
+            View Plans
+          </a>
+        </div>
+      </div>
+    </nav>
+  );
+}
 
-      {/* ── HERO ── */}
-      <section className="relative pt-32 pb-24 px-6 overflow-hidden grid-bg">
-        {/* Background glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] bg-sky-500/[0.06] rounded-full blur-3xl pointer-events-none" />
+/* ─── Hero Section ─── */
+function HeroSection() {
+  return (
+    <section className="relative overflow-hidden">
+      {/* Subtle grid background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:48px_48px] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)]" />
+      {/* Top gradient wash */}
+      <div className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-gray-100/60 to-transparent dark:from-gray-900/40" />
 
-        <div className="max-w-7xl mx-auto relative">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 tag-pill rounded-full px-4 py-1.5 text-xs text-sky-400 font-medium mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-400 inline-block"></span>
-              Now with AI-Powered Demand Forecasting
-            </div>
-
-            <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold text-white leading-[1.08] tracking-tight mb-6">
-              Supply Chain,<br />
-              <span className="text-sky-400">Unified.</span><br />
-              Optimized.
-            </h1>
-
-            <p className="text-lg text-[#6B7F96] max-w-xl leading-relaxed mb-10">
-              Korvex brings your entire supply chain onto one intelligent platform — from supplier onboarding to last-mile delivery. Reduce costs, eliminate delays, and gain full operational visibility.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button className="bg-sky-500 hover:bg-sky-400 text-white font-medium px-8 py-3.5 rounded-lg transition-colors text-sm">
-                Start Free Trial
-              </button>
-              <button className="border border-white/10 hover:border-white/20 text-white font-medium px-8 py-3.5 rounded-lg transition-colors text-sm flex items-center gap-2 justify-center">
-                <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4"/>
-                  <path d="M6.5 5.5l4 2.5-4 2.5V5.5z" fill="currentColor"/>
-                </svg>
-                Watch Product Tour
-              </button>
-            </div>
+      <div className="relative mx-auto grid max-w-7xl gap-14 px-6 py-16 md:py-24 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          {/* Badge */}
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+            <Sparkles size={13} className="text-gray-400" />
+            Smart pricing for connected operations
           </div>
 
-          {/* Dashboard preview */}
-          <div className="mt-16 rounded-2xl border border-white/[0.08] bg-[#0E1117] overflow-hidden glow-border">
-            {/* Browser chrome */}
-            <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/[0.06] bg-[#0C0E14]">
-              <div className="w-3 h-3 rounded-full bg-[#FF5F57]" />
-              <div className="w-3 h-3 rounded-full bg-[#FEBC2E]" />
-              <div className="w-3 h-3 rounded-full bg-[#28C840]" />
-              <div className="flex-1 mx-4">
-                <div className="bg-[#161922] rounded-md px-4 py-1.5 text-xs text-[#3A4A5C] w-64">
-                  app.korvex.io/dashboard
-                </div>
-              </div>
-            </div>
+          {/* Heading */}
+          <h1 className="max-w-xl text-[2.75rem] font-extrabold leading-[1.08] tracking-tight text-gray-900 dark:text-white sm:text-5xl lg:text-[3.5rem]">
+            Scale Your Supply Chain{" "}
+            <span className="text-gray-400 dark:text-gray-500">Efficiently</span>
+          </h1>
 
-            {/* Dashboard body */}
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-5">
+          {/* Subtext */}
+          <p className="mt-5 max-w-lg text-base leading-7 text-gray-500 dark:text-gray-400">
+            Choose the plan that fits your warehouses, suppliers, fleet
+            workflows, and analytics needs. Built for teams that need cleaner
+            operations without heavyweight implementation.
+          </p>
+
+          {/* CTAs */}
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a
+              href="/pricing"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-gray-800 hover:shadow-md dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
+            >
+              Start Free Trial <ArrowRight size={15} />
+            </a>
+            <a
+              href="/pricing"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:border-gray-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-gray-600"
+            >
+              Compare Plans <ChevronRight size={15} />
+            </a>
+          </div>
+        </motion.div>
+
+        {/* Dashboard Preview Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.12, ease: "easeOut" }}
+          className="relative"
+        >
+          <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-xl shadow-gray-200/50 dark:border-gray-800 dark:bg-gray-900 dark:shadow-black/20">
+            <div className="rounded-xl bg-gray-900 p-5 text-white dark:bg-gray-800">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div>
-                  <p className="text-xs text-[#4A5F74] mb-1">Operations Overview</p>
-                  <p className="font-display text-lg font-semibold text-white">May 2026</p>
+                  <p className="text-xs text-gray-400">Operations Health</p>
+                  <p className="text-lg font-bold">Live Control Center</p>
                 </div>
-                <div className="flex gap-2">
-                  {["1W","1M","3M","1Y"].map(t => (
-                    <button key={t} className={`text-xs px-3 py-1.5 rounded-md ${t==="1M" ? "bg-sky-500/20 text-sky-400 border border-sky-500/30" : "text-[#4A5F74] hover:text-white"}`}>{t}</button>
-                  ))}
+                <div className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-400">
+                  Synced
                 </div>
               </div>
 
-              {/* Stat cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                {[
-                  { label: "Active Orders", value: "2,847", delta: "+12%", up: true },
-                  { label: "On-Time Delivery", value: "96.4%", delta: "+1.2%", up: true },
-                  { label: "Inventory Value", value: "$4.2M", delta: "-3%", up: false },
-                  { label: "Pending Shipments", value: "134", delta: "+8", up: false },
-                ].map((s) => (
-                  <div key={s.label} className="bg-[#0C0E14] rounded-xl p-4 border border-white/[0.05]">
-                    <p className="text-xs text-[#4A5F74] mb-2">{s.label}</p>
-                    <p className="font-display text-xl font-bold text-white">{s.value}</p>
-                    <p className={`text-xs mt-1 font-medium ${s.up ? "text-emerald-400" : "text-rose-400"}`}>{s.delta} vs last month</p>
+              {/* Metrics */}
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {metrics.map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-xl bg-white/[0.06] p-3.5"
+                  >
+                    <p className="text-xl font-bold">{item.value}</p>
+                    <p className="mt-1.5 text-[11px] leading-4 text-gray-400">
+                      {item.label}
+                    </p>
                   </div>
                 ))}
               </div>
 
-              {/* Bar chart mockup */}
-              <div className="bg-[#0C0E14] rounded-xl p-5 border border-white/[0.05]">
-                <div className="flex items-end justify-between h-24 gap-2">
-                  {[60,80,55,90,70,85,95,75,88,65,78,92].map((h,i) => (
-                    <div key={i} className="flex-1 flex flex-col justify-end">
-                      <div
-                        className={`rounded-sm ${i===11 ? "bg-sky-500" : "bg-[#1E2A38]"}`}
-                        style={{height: `${h}%`}}
-                      />
+              {/* Bottom Cards */}
+              <div className="mt-4 grid gap-3 md:grid-cols-[1fr_0.8fr]">
+                <div className="rounded-xl bg-white/[0.05] p-4">
+                  <div className="mb-5 flex items-center gap-2.5">
+                    <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-gray-300">
+                      <Boxes size={18} />
                     </div>
-                  ))}
-                </div>
-                <div className="flex justify-between mt-2">
-                  {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map(m => (
-                    <span key={m} className="text-[10px] text-[#2A3A4A] flex-1 text-center">{m}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── STATS ── */}
-      <section className="border-y border-white/[0.06] bg-[#0C0E14]">
-        <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-2 md:grid-cols-4 gap-8">
-          {STATS.map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="font-display text-4xl font-bold text-sky-400">{s.value}</p>
-              <p className="text-sm text-[#5A7080] mt-1">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FEATURES ── */}
-      <section className="py-24 px-6" id="solutions">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-14">
-            <div className="tag-pill inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs text-sky-400 font-medium mb-4">
-              Core Platform
-            </div>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-4">
-              Everything your supply chain needs
-            </h2>
-            <p className="text-[#6B7F96] max-w-xl text-base leading-relaxed">
-              A modular, deeply integrated platform that grows with your operations — from single-site to global enterprise.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="bg-[#0C0E14] border border-white/[0.07] rounded-2xl p-6 card-hover">
-                <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-5">
-                  {f.icon}
-                </div>
-                <h3 className="font-display text-base font-semibold text-white mb-2">{f.title}</h3>
-                <p className="text-sm text-[#5A7080] leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section className="py-24 px-6 bg-[#0C0E14] border-y border-white/[0.06]">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-14 text-center">
-            <div className="tag-pill inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs text-sky-400 font-medium mb-4">
-              How It Works
-            </div>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-4">Up and running in days, not months</h2>
-            <p className="text-[#6B7F96] max-w-lg mx-auto text-base">
-              Korvex's onboarding is designed for operations teams, not IT departments.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
-            {/* Connecting line */}
-            <div className="hidden md:block absolute top-8 left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-sky-500/30 to-transparent" />
-
-            {[
-              { step: "01", title: "Connect Your Data", desc: "Integrate ERP, WMS, or spreadsheets via 200+ pre-built connectors in minutes." },
-              { step: "02", title: "Map Your Workflows", desc: "Configure approval flows, reorder rules, and alert thresholds to match your processes." },
-              { step: "03", title: "Onboard Suppliers", desc: "Invite suppliers to the portal — they get visibility, you get compliance and performance data." },
-              { step: "04", title: "Go Live", desc: "Start managing orders, monitoring inventory, and optimizing shipments from day one." },
-            ].map((s) => (
-              <div key={s.step} className="relative text-center px-4">
-                <div className="w-16 h-16 rounded-2xl bg-[#0A0C10] border border-sky-500/25 flex items-center justify-center mx-auto mb-5 relative z-10">
-                  <span className="font-display text-sky-400 font-bold text-lg">{s.step}</span>
-                </div>
-                <h3 className="font-display font-semibold text-white mb-2 text-sm">{s.title}</h3>
-                <p className="text-xs text-[#5A7080] leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── INDUSTRIES ── */}
-      <section className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-12">
-            <div className="tag-pill inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs text-sky-400 font-medium mb-4">
-              Industries
-            </div>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-4">Built for your sector</h2>
-            <p className="text-[#6B7F96] max-w-xl text-base">
-              Industry-specific modules, compliance templates, and pre-built KPI dashboards for six verticals.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {INDUSTRIES.map((ind) => (
-              <div key={ind.name} className="bg-[#0C0E14] border border-white/[0.07] rounded-xl p-5 text-center card-hover cursor-pointer">
-                <div className="text-3xl mb-3">{ind.icon}</div>
-                <p className="text-xs font-medium text-[#8A9BB0]">{ind.name}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS ── */}
-      <section className="py-24 px-6 bg-[#0C0E14] border-y border-white/[0.06]">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-14 text-center">
-            <div className="tag-pill inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs text-sky-400 font-medium mb-4">
-              Customer Stories
-            </div>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-4">Trusted by operations leaders</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="bg-[#0A0C10] border border-white/[0.07] rounded-2xl p-7 card-hover flex flex-col gap-5">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} width="14" height="14" fill="#38BDF8" viewBox="0 0 16 16">
-                      <path d="M8 1l1.85 3.75L14 5.5l-3 2.92.71 4.08L8 10.25l-3.71 2.25L5 8.42 2 5.5l4.15-.75L8 1z"/>
-                    </svg>
-                  ))}
-                </div>
-                <p className="text-sm text-[#8A9BB0] leading-relaxed flex-1">"{t.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-sky-500/20 border border-sky-500/30 flex items-center justify-center">
-                    <span className="text-xs font-bold text-sky-400">{t.avatar}</span>
+                    <div>
+                      <p className="text-sm font-semibold">Inventory Flow</p>
+                      <p className="text-xs text-gray-400">All warehouses</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">{t.name}</p>
-                    <p className="text-xs text-[#4A5F74]">{t.role}</p>
+                  <div className="space-y-2.5">
+                    {["Mumbai DC", "Delhi Hub", "Bengaluru Fulfillment"].map(
+                      (hub, index) => (
+                        <div key={hub}>
+                          <div className="mb-1 flex justify-between text-[11px] text-gray-400">
+                            <span>{hub}</span>
+                            <span>{88 - index * 13}%</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-white/10">
+                            <div
+                              className="h-1.5 rounded-full bg-gray-300"
+                              style={{ width: `${88 - index * 13}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    )}
                   </div>
                 </div>
+                <div className="rounded-xl bg-white/[0.05] p-4">
+                  <ShieldCheck className="text-emerald-400" size={22} />
+                  <p className="mt-3 text-sm font-bold">Supplier SLA</p>
+                  <p className="mt-1.5 text-xs leading-5 text-gray-400">
+                    Track approvals, delays, roles, and supplier performance
+                    from one clean workspace.
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── PRICING ── */}
-      <section className="py-24 px-6" id="pricing">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-14 text-center">
-            <div className="tag-pill inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs text-sky-400 font-medium mb-4">
-              Pricing
             </div>
-            <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-4">Simple, transparent pricing</h2>
-            <p className="text-[#6B7F96] text-base">All plans include a 14-day free trial. No credit card required.</p>
           </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-            {PLANS.map((p) => (
-              <div
-                key={p.name}
-                className={`relative rounded-2xl p-8 border flex flex-col ${
-                  p.highlight
-                    ? "bg-sky-500/10 border-sky-500/40 ring-1 ring-sky-500/30"
-                    : "bg-[#0C0E14] border-white/[0.07]"
+/* ─── Pricing Card ─── */
+function formatPrice(value) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function getPlanPricing(plan, billingCycle) {
+  if (!plan.monthly_price) {
+    return {
+      price: plan.price_label,
+      period: plan.period,
+      note: plan.billing_note,
+    };
+  }
+
+  if (billingCycle === "yearly") {
+    return {
+      price: formatPrice(plan.yearly_price),
+      period: "/year",
+      note: `Save ${formatPrice(plan.monthly_price * 12 - plan.yearly_price)} yearly`,
+    };
+  }
+
+  return {
+    price: formatPrice(plan.monthly_price),
+    period: "/month",
+    note: "Billed monthly",
+  };
+}
+
+function PricingCard({ plan, index, billingCycle }) {
+  const Icon = planIcons[plan.icon_key] || Warehouse;
+  const pricing = getPlanPricing(plan, billingCycle);
+
+  return (
+    <motion.article
+      custom={index}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.25 }}
+      variants={cardMotion}
+      whileHover={{ y: -6 }}
+      className={`relative flex h-full flex-col rounded-2xl border p-6 transition-shadow ${
+        plan.is_popular
+          ? "border-gray-900 bg-gray-900 text-white shadow-lg dark:border-gray-600 dark:bg-gray-800"
+          : "border-gray-200 bg-white text-gray-900 shadow-sm hover:shadow-lg dark:border-gray-800 dark:bg-gray-900 dark:text-white"
+      }`}
+    >
+      {plan.is_popular && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-gray-900 shadow-sm dark:bg-gray-200">
+          Most Popular
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p
+            className={`text-xs font-medium ${
+              plan.is_popular
+                ? "text-gray-400"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+          >
+            {plan.audience}
+          </p>
+          <h3 className="mt-1.5 text-2xl font-bold tracking-tight">
+            {plan.name}
+          </h3>
+        </div>
+        <div
+          className={`grid h-10 w-10 place-items-center rounded-xl ${
+            plan.is_popular
+              ? "bg-white/10 text-gray-300"
+              : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+          }`}
+        >
+          <Icon size={20} />
+        </div>
+      </div>
+
+      {/* Price */}
+      <div className="mt-6">
+        <div className="flex items-end gap-1.5">
+          <span className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {pricing.price}
+          </span>
+          <span
+            className={`pb-1 text-sm ${
+              plan.is_popular
+                ? "text-gray-400"
+                : "text-gray-400 dark:text-gray-500"
+            }`}
+          >
+            {pricing.period}
+          </span>
+        </div>
+        {pricing.note && (
+          <p
+            className={`mt-2 text-xs font-medium ${
+              plan.is_popular
+                ? "text-gray-400"
+                : "text-gray-500 dark:text-gray-400"
+            }`}
+          >
+            {pricing.note}
+          </p>
+        )}
+      </div>
+
+      {/* Features */}
+      <ul className="mt-7 flex-1 space-y-3">
+        {plan.features.map((feature) => (
+          <li
+            key={feature}
+            className="flex items-start gap-2.5 text-[13px] font-medium"
+          >
+            <span
+              className={`mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full ${
+                plan.is_popular
+                  ? "bg-white/15 text-white"
+                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+              }`}
+            >
+              <Check size={11} strokeWidth={3} />
+            </span>
+            <span
+              className={
+                plan.is_popular
+                  ? "text-gray-300"
+                  : "text-gray-600 dark:text-gray-400"
+              }
+            >
+              {feature}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      {/* CTA */}
+      <a
+        href={plan.href}
+        className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 ${
+          plan.is_popular
+            ? "bg-white text-gray-900 shadow-sm hover:bg-gray-100"
+            : "bg-gray-900 text-white shadow-sm hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
+        }`}
+      >
+        {plan.cta} <ArrowRight size={14} />
+      </a>
+    </motion.article>
+  );
+}
+
+/* ─── Pricing Section ─── */
+function PricingSection() {
+  const [billingCycle, setBillingCycle] = useState("monthly");
+  const [plans, setPlans] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [plansError, setPlansError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchPlans = async () => {
+      try {
+        setLoadingPlans(true);
+        setPlansError("");
+        const res = await api.get("/subscriptions/plans");
+
+        if (isMounted) {
+          setPlans(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to load subscription plans", err);
+        if (isMounted) {
+          setPlansError("Unable to load subscription plans.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingPlans(false);
+        }
+      }
+    };
+
+    fetchPlans();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  return (
+    <section id="pricing" className="px-6 py-20 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Section Header */}
+        <div className="mx-auto max-w-2xl text-center">
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500"
+          >
+            Subscription Plans
+          </motion.p>
+          <motion.h2
+            initial={{ opacity: 0, y: 14 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.06 }}
+            className="mt-3 text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl"
+          >
+            Free, premium, and custom plans for every stage
+          </motion.h2>
+          <p className="mt-4 text-base leading-7 text-gray-500 dark:text-gray-400">
+            Start free with one workspace in every module, then scale warehouses,
+            factories, suppliers, logistics, and employees as your team grows.
+          </p>
+
+          {/* Toggle */}
+          <div className="mt-7 inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 dark:border-gray-700 dark:bg-gray-800">
+            {["monthly", "yearly"].map((cycle) => (
+              <button
+                key={cycle}
+                type="button"
+                onClick={() => setBillingCycle(cycle)}
+                className={`rounded-md px-4 py-2 text-xs font-semibold capitalize transition-all ${
+                  billingCycle === cycle
+                    ? "bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white"
+                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                 }`}
               >
-                {p.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-sky-500 text-white text-xs font-bold px-4 py-1 rounded-full">Most Popular</span>
-                  </div>
+                {cycle}
+                {cycle === "yearly" && (
+                  <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+                    Save 2 months
+                  </span>
                 )}
-                <div className="mb-6">
-                  <p className="font-display text-sm font-semibold text-[#8A9BB0] mb-2 uppercase tracking-wider">{p.name}</p>
-                  <div className="flex items-end gap-1 mb-2">
-                    <span className="font-display text-4xl font-bold text-white">{p.price}</span>
-                    <span className="text-[#5A7080] mb-1">{p.period}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Cards Grid */}
+        {loadingPlans && (
+          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={item}
+                className="h-[31rem] animate-pulse rounded-2xl border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-900"
+              />
+            ))}
+          </div>
+        )}
+
+        {!loadingPlans && plansError && (
+          <div className="mx-auto mt-12 max-w-lg rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-center text-sm font-medium text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+            {plansError}
+          </div>
+        )}
+
+        {!loadingPlans && !plansError && (
+          <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4 xl:items-stretch">
+            {plans.map((plan, index) => (
+              <PricingCard
+                key={plan.slug}
+                plan={plan}
+                index={index}
+                billingCycle={billingCycle}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ─── Footer ─── */
+function Footer() {
+  return (
+    <footer className="border-t border-gray-200 px-6 py-10 dark:border-gray-800 lg:px-8">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900">
+            <Truck size={16} />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">
+              FlowChain
+            </p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Supply chain management made measurable.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs font-medium text-gray-400 dark:text-gray-500">
+          <a href="#" className="transition-colors hover:text-gray-600 dark:hover:text-gray-300">
+            Security
+          </a>
+          <a href="#" className="transition-colors hover:text-gray-600 dark:hover:text-gray-300">
+            Privacy
+          </a>
+          <a href="#" className="transition-colors hover:text-gray-600 dark:hover:text-gray-300">
+            Terms
+          </a>
+          <span>{"\u00A9"} 2026 FlowChain SCM</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ─── Landing Page (Main Export) ─── */
+export default function KorvexLanding() {
+  const isDark = true;
+
+  return (
+    <div className={isDark ? "dark" : ""}>
+      <div className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-gray-950 dark:text-white">
+        <main>
+          <HeroSection />
+
+          {/* Feature Strip */}
+          <section className="border-y border-gray-200/60 bg-gray-50/60 px-6 py-6 dark:border-gray-800/60 dark:bg-gray-900/40 lg:px-8">
+            <div className="mx-auto grid max-w-7xl gap-4 sm:grid-cols-3">
+              {[
+                { icon: Zap, text: "Fast onboarding for growing teams" },
+                {
+                  icon: Building2,
+                  text: "Warehouse, supplier, and fleet workflows",
+                },
+                {
+                  icon: ShieldCheck,
+                  text: "Enterprise-grade access and support",
+                },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.text}
+                    className="flex items-center gap-2.5 text-[13px] font-medium text-gray-500 dark:text-gray-400"
+                  >
+                    <span className="grid h-8 w-8 place-items-center rounded-lg bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                      <Icon size={16} />
+                    </span>
+                    {item.text}
                   </div>
-                  <p className="text-sm text-[#5A7080]">{p.desc}</p>
-                </div>
+                );
+              })}
+            </div>
+          </section>
 
-                <ul className="flex-1 space-y-3 mb-8">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-sm text-[#8A9BB0]">
-                      <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-                        <path d="M3 8l3.5 3.5 6.5-7" stroke="#38BDF8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
+          <PricingSection />
+        </main>
+        <Footer />
+      </div>
+    </div>
+  );
+}
 
-                <button
-                  className={`w-full py-3 rounded-lg text-sm font-medium transition-colors ${
-                    p.highlight
-                      ? "bg-sky-500 hover:bg-sky-400 text-white"
-                      : "border border-white/10 hover:border-white/20 text-white"
-                  }`}
-                >
-                  {p.cta}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+/* ─── Subscriptions / Pricing Page ─── */
+export function SubscriptionsPage() {
+  const isDark = true;
 
-      {/* ── INTEGRATIONS ── */}
-      <section className="py-20 px-6 border-t border-white/[0.06] bg-[#0C0E14]">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-sm text-[#4A5F74] mb-8 uppercase tracking-widest font-medium">Integrates with your existing stack</p>
-          <div className="flex flex-wrap justify-center gap-4 items-center">
-            {["SAP", "Oracle ERP", "NetSuite", "Salesforce", "Shopify", "QuickBooks", "Stripe", "FedEx API", "DHL Connect", "Amazon MCF"].map((name) => (
-              <div key={name} className="bg-[#0A0C10] border border-white/[0.06] rounded-lg px-5 py-2.5 text-sm text-[#4A5F74]">
-                {name}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+  return (
+    <div className={isDark ? "dark" : ""}>
+      <div className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-gray-950 dark:text-white">
+        <main>
+          {/* Page Hero */}
+          <section className="relative overflow-hidden px-6 pt-14 md:pt-20 lg:px-8">
+            {/* Subtle grid */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:48px_48px] dark:bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)]" />
+            {/* Glow */}
+            <div className="absolute left-1/2 top-0 h-60 w-[36rem] -translate-x-1/2 rounded-full bg-gray-200/40 blur-3xl dark:bg-gray-800/30" />
 
-      {/* ── CTA ── */}
-      <section className="py-28 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 grid-bg opacity-50" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-sky-500/[0.07] rounded-full blur-3xl pointer-events-none" />
-        <div className="max-w-3xl mx-auto text-center relative">
-          <h2 className="font-display text-4xl md:text-5xl font-bold text-white mb-5">
-            Ready to transform your supply chain?
-          </h2>
-          <p className="text-[#6B7F96] text-base mb-10 max-w-lg mx-auto">
-            Join thousands of operations teams who use Korvex to reduce costs, increase speed, and eliminate surprises.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button className="bg-sky-500 hover:bg-sky-400 text-white font-medium px-10 py-3.5 rounded-lg transition-colors text-sm">
-              Start Free Trial
-            </button>
-            <button className="border border-white/10 hover:border-white/20 text-white font-medium px-10 py-3.5 rounded-lg transition-colors text-sm">
-              Schedule a Demo
-            </button>
-          </div>
-          <p className="text-xs text-[#3A4A5C] mt-5">No credit card required · 14-day free trial · Cancel anytime</p>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer className="border-t border-white/[0.06] bg-[#0A0C10] px-6 py-14">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-            <div className="col-span-2">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center">
-                  <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-                    <path d="M2 8l6-6 6 6-6 6-6-6z" fill="white"/>
-                  </svg>
-                </div>
-                <span className="font-display font-bold text-white text-lg tracking-tight">KORVEX</span>
-              </div>
-              <p className="text-sm text-[#4A5F74] max-w-xs leading-relaxed">
-                The intelligent supply chain platform for modern operations teams.
+            <div className="relative mx-auto max-w-3xl text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              >
+                <Sparkles size={13} className="text-gray-400" />
+                Choose your subscription
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.06, ease: "easeOut" }}
+                className="mt-5 text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl"
+              >
+                Pick the right plan for your operations team
+              </motion.h1>
+              <p className="mx-auto mt-4 max-w-xl text-base leading-7 text-gray-500 dark:text-gray-400">
+                Compare Free, Starter, Premium, and Custom plans in one place,
+                with clear limits for employees, warehouses, factories,
+                suppliers, and logistics.
               </p>
             </div>
+          </section>
 
-            {[
-              { heading: "Product", links: ["Features", "Pricing", "Integrations", "Changelog", "Roadmap"] },
-              { heading: "Company", links: ["About", "Blog", "Careers", "Press", "Contact"] },
-              { heading: "Legal", links: ["Privacy", "Terms", "Security", "GDPR"] },
-            ].map((col) => (
-              <div key={col.heading}>
-                <p className="text-xs font-semibold text-white uppercase tracking-widest mb-4">{col.heading}</p>
-                <ul className="space-y-2.5">
-                  {col.links.map((l) => (
-                    <li key={l}><a href="#" className="text-sm text-[#4A5F74] hover:text-white transition-colors">{l}</a></li>
-                  ))}
-                </ul>
+          <PricingSection />
+        </main>
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+export function ContactSalesPage() {
+  const [isDark, setIsDark] = useState(true);
+
+  return (
+    <div className={isDark ? "dark" : ""}>
+      <div className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-gray-950 dark:text-white">
+        <Navbar
+          isDark={isDark}
+          onThemeToggle={() => setIsDark((value) => !value)}
+        />
+        <main className="px-6 py-16 lg:px-8">
+          <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+            <motion.section
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: "easeOut" }}
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3.5 py-1.5 text-xs font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                <Sparkles size={13} className="text-gray-400" />
+                Custom plan
               </div>
-            ))}
-          </div>
+              <h1 className="mt-5 text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
+                Build a plan around your operation
+              </h1>
+              <p className="mt-4 max-w-xl text-base leading-7 text-gray-500 dark:text-gray-400">
+                Tell us your warehouse, factory, supplier, logistics, business,
+                and employee needs. Our team will prepare a custom subscription
+                for your company.
+              </p>
 
-          <div className="border-t border-white/[0.06] pt-6 flex flex-col md:flex-row justify-between items-center gap-3">
-            <p className="text-xs text-[#2A3A4A]">© 2026 Korvex Technologies. All rights reserved.</p>
-            <p className="text-xs text-[#2A3A4A]">Built for the world's most demanding supply chains.</p>
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                {[
+                  "Custom module limits",
+                  "Custom employee limits",
+                  "Dedicated onboarding",
+                  "Priority support",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 text-sm font-medium text-gray-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                  >
+                    <Check size={15} className="text-gray-400" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </motion.section>
+
+            <motion.form
+              initial={{ opacity: 0, y: 22 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.08, ease: "easeOut" }}
+              className="rounded-3xl border border-gray-200 bg-white p-6 shadow-xl shadow-gray-200/60 dark:border-gray-800 dark:bg-gray-900 dark:shadow-black/20 sm:p-8"
+            >
+              <div className="grid gap-5 sm:grid-cols-2">
+                {[
+                  { label: "Full name", type: "text", placeholder: "Your name" },
+                  { label: "Work email", type: "email", placeholder: "you@company.com" },
+                  { label: "Company", type: "text", placeholder: "Company name" },
+                  { label: "Phone", type: "tel", placeholder: "+91 98765 43210" },
+                ].map((field) => (
+                  <label key={field.label} className="block">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      {field.label}
+                    </span>
+                    <input
+                      type={field.type}
+                      placeholder={field.placeholder}
+                      className="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:bg-white dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:border-gray-500"
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <label className="mt-5 block">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                  What do you need?
+                </span>
+                <textarea
+                  rows="5"
+                  placeholder="Example: 8 warehouses, 4 factories, 20 suppliers, 6 logistics teams, 5 businesses, 100 employees..."
+                  className="mt-2 w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 outline-none transition focus:border-gray-400 focus:bg-white dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:border-gray-500"
+                />
+              </label>
+
+              <button
+                type="button"
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
+              >
+                Send Request <ArrowRight size={14} />
+              </button>
+            </motion.form>
           </div>
-        </div>
-      </footer>
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 }

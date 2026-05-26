@@ -12,10 +12,18 @@ ALGORITHM = "HS256"
 class TenantMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         print(f"Processing request for path: {request.url.path}")
+
+        if "internal" in request.url.path or "webhook" in request.url.path:
+          print(f"Bypassing tenant middleware for internal path: {request.url.path}")
+          return await call_next(request)
+
+
+
         if "webhook" in request.url.path:
             return await call_next(request)
 
         request.state.schema = None
+        request.state.role = None
 
         public_paths = [
             "/api/v1/signup",
@@ -28,11 +36,9 @@ class TenantMiddleware(BaseHTTPMiddleware):
         if request.url.path in public_paths:
             print(f"Allowing access to public path: {request.url.path}")
             return await call_next(request)
-
         token = request.cookies.get("access_token")
 
         if not token:
-            print("Access token not found in cookies.")
             return await call_next(request)
 
         try:
@@ -59,6 +65,7 @@ class TenantMiddleware(BaseHTTPMiddleware):
                         f"Setting tenant schema for company: {company.name} (ID: {company.id})"
                     )
                     request.state.schema = company.schema_name
+                    request.state.role = user.role
 
             db.close()
 

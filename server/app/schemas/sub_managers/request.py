@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel,ConfigDict
 
 
 class MaterialRequestCreate(BaseModel):
@@ -19,9 +19,7 @@ class MaterialRequestOut(BaseModel):
     receiver_id: int
     quantity: int
     status: str
-    class Config:
-        orm_mode = True
-
+    model_config = ConfigDict(from_attributes=True)
 
 
    

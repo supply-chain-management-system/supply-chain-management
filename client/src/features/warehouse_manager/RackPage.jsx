@@ -7,11 +7,13 @@ import {
   Search, 
   MoreHorizontal, 
   Trash2,
-  BoxSelect
+  BoxSelect,
+  MessageSquare // 🚀 Imported for the float trigger
 } from "lucide-react";
 import api from "../../api/api";
-
+import KorvexCopilot from "../KorvexCopilot";
 function RackPage() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [racks, setRacks] = useState([]);
   const [warehouses, setWarehouses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,7 +59,8 @@ function RackPage() {
   );
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen p-6 md:p-10">
+    // 🚀 Added relative positioning to handle the fixed window boundary layout
+    <div className="bg-[#f8fafc] min-h-screen p-6 md:p-10 relative">
       <div className="max-w-6xl mx-auto">
         
         {/* HEADER SECTION */}
@@ -200,6 +203,25 @@ function RackPage() {
 
         </div>
       </div>
+
+      {/* ─── 🚀 STANDALONE FLOATING ICON BUTTON ─── */}
+      {/* This only shows up if the chat window is closed */}
+      {!isChatOpen && (
+        <button
+          onClick={() => setIsChatOpen(true)}
+          className="fixed bottom-6 right-6 z-[9998] w-14 h-14 flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+          style={{ background: "linear-gradient(135deg, #00c88c 0%, #00a06e 100%)" }}
+        >
+          <MessageSquare size={24} color="#ffffff" strokeWidth={2.5} />
+        </button>
+      )}
+
+      {/* ─── 🚀 THE DECOUPLED CHAT BOX WINDOW ─── */}
+      <KorvexCopilot 
+        isOpen={isChatOpen} 
+        onClose={() => setIsChatOpen(false)} 
+      />
+
     </div>
   );
 }

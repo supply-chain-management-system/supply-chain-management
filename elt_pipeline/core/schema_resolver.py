@@ -3,7 +3,7 @@ class SchemaResolver:
         self.tenant_repo = tenant_repo
 
     def extract(self, topic: str):
-        # dbserver1.schema.table
+        
         parts = topic.split(".")
         if len(parts) != 3:
             return None, None
