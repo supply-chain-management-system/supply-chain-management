@@ -2,7 +2,7 @@
 services:
 
   postgres:
-    image: postgres:latest
+    image: postgres:15
     container_name: postgres
     restart: always
     env_file:
@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-       - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -48,7 +48,6 @@ services:
       - ./ai_services/.env
     environment:
       - PYTHONPATH=/app:/server_code
-      - PYTHONPATH=/app
       - QDRANT_URL=http://qdrant:6333
     volumes:
       - ./ai_services/ai_app:/app/ai_app

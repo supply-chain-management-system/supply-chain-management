@@ -32,8 +32,8 @@ openai_base = ChatOpenAI(model="gpt-4o-mini")
 cohere_base = ChatCohere(model="command-r-plus-08-2024")
 
 # 2️⃣ Combine Prompts and Tools
-groq_chain = groq_base.bind_tools(central_tools, system_prompt=CENTRAL_AI_PROMPT)
-openai_chain = openai_base.bind_tools(central_tools, system_prompt=CENTRAL_AI_PROMPT)
+groq_chain = groq_base.bind_tools(central_tools)
+openai_chain = openai_base.bind_tools(central_tools)
 cohere_chain = cohere_base.bind_tools(central_tools)
 
 # 3️⃣ Build the Redundant Smart Chain (Now catching BOTH Groq and OpenAI errors)
@@ -50,5 +50,6 @@ memory = _stack.enter_context(MongoDBSaver.from_conn_string(MONGO_URL, db_name="
 agent_executor = create_react_agent(
     model=smart_llm_chain,
     tools=central_tools,
+    prompt=CENTRAL_AI_PROMPT,
     checkpointer=memory
 )

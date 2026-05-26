@@ -100,6 +100,15 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, token: str = Qu
                             }
                             await broker.publish(room_id, broadcast_payload)
                             
+                elif msg_type == "edit":
+                    message_id = payload.get("message_id")
+                    content = payload.get("content")
+                    if message_id and content:
+                        await MessageService.edit_message(
+                            message_id=message_id,
+                            new_content=content,
+                            sender_id=user["id"]
+                        )
                 else:
                     # Normal message
                     content = payload.get("content")

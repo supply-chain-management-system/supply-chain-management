@@ -214,7 +214,7 @@ def get_stock_proxy(product_name: str, db: Session = Depends(get_tenant_db)):
     
 
 @router.get("/Factory_deatils", response_model=List[FactoryOut], status_code=status.HTTP_200_OK)
-def get_factory_details(db: Session = Depends(get_db)):
+def get_factory_details(db: Session = Depends(get_tenant_db)):
     try:
         return db.query(Factory).all()
         

@@ -199,6 +199,7 @@ const ChatPage = () => {
   const [wsStatus, setWsStatus] = useState("disconnected");
   const [errorMsg, setErrorMsg] = useState("");
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState(null);
 
   // Typing states
   const [typingUsers, setTypingUsers] = useState({});
@@ -654,6 +655,14 @@ const ChatPage = () => {
                 : msg
             )
           );
+        } else if (data.type === "message_edit") {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === data.id
+                ? { ...msg, content: data.content, edited: true }
+                : msg
+            )
+          );
         } else {
           if (data.room_id === activeRoomIdRef.current) {
             setMessages((prev) => {
@@ -758,6 +767,33 @@ const ChatPage = () => {
         content: newMessage.trim(),
       })
     );
+    setNewMessage("");
+  };
+
+  // Save edited message
+  const handleSaveEdit = (e) => {
+    e?.preventDefault();
+    if (!newMessage.trim() || !socketRef.current || wsStatus !== "connected" || !editingMessageId) return;
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    socketRef.current.send(
+      JSON.stringify({
+        type: "typing",
+        is_typing: false,
+      })
+    );
+    setIsTypingSent(false);
+
+    socketRef.current.send(
+      JSON.stringify({
+        type: "edit",
+        message_id: editingMessageId,
+        content: newMessage.trim(),
+      })
+    );
+    setEditingMessageId(null);
     setNewMessage("");
   };
 
@@ -1501,9 +1537,23 @@ const ChatPage = () => {
 
                     <div className="flex items-end gap-2 max-w-[75%] relative">
                       {isMe && (
-                        <span className={`text-[8px] font-semibold mb-1 ${tTextMuted}`}>
-                          {formatTime(msg.timestamp)}
-                        </span>
+                        <div className="flex items-center gap-1.5 mb-1 shrink-0">
+                          {isHovered && wsStatus === "connected" && (
+                            <button
+                              onClick={() => {
+                                setEditingMessageId(msg.id);
+                                setNewMessage(msg.content);
+                              }}
+                              className={`p-1 rounded-lg transition-all text-xs opacity-60 hover:opacity-100 hover:bg-slate-200/50 dark:hover:bg-white/10`}
+                              title="Edit message"
+                            >
+                              <Edit3 size={10} className={tTextMuted} />
+                            </button>
+                          )}
+                          <span className={`text-[8px] font-semibold ${tTextMuted}`}>
+                            {formatTime(msg.timestamp)}
+                          </span>
+                        </div>
                       )}
 
                       {/* Reaction bar popover */}
@@ -1536,7 +1586,12 @@ const ChatPage = () => {
                           ? `${theme.bubbleOutgoing} rounded-br-none border-transparent`
                           : `${theme.bubbleIncoming} rounded-bl-none`
                       }`}>
-                        {highlightText(msg.content, msgSearchQuery)}
+                        <div>{highlightText(msg.content, msgSearchQuery)}</div>
+                        {msg.edited && (
+                          <div className={`text-[8px] mt-0.5 opacity-60 font-semibold select-none ${isMe ? "text-right" : "text-left"}`}>
+                            edited
+                          </div>
+                        )}
                       </div>
 
                       {!isMe && (
@@ -1608,7 +1663,22 @@ const ChatPage = () => {
 
             {/* Input form */}
             <div className={`p-4 border-t transition-all duration-300 ${isLight ? "bg-slate-50" : "bg-black/30"} ${tBorder}`}>
-              <form onSubmit={handleSendMessage} className="flex gap-3 max-w-4xl mx-auto w-full">
+              {editingMessageId && (
+                <div className="flex items-center justify-between max-w-4xl mx-auto w-full mb-2 text-[10px] font-bold">
+                  <span className={`${tTextMuted}`}>Editing message...</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingMessageId(null);
+                      setNewMessage("");
+                    }}
+                    className="text-violet-400 hover:text-violet-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+              <form onSubmit={editingMessageId ? handleSaveEdit : handleSendMessage} className="flex gap-3 max-w-4xl mx-auto w-full">
                 <div className={`flex-1 flex items-center gap-2 px-4 py-1.5 rounded-2xl border transition-all ${tCardBg} focus-within:ring-2 ${
                   isLight ? "focus-within:ring-slate-900/10 focus-within:border-slate-500" : "focus-within:ring-white/10 focus-within:border-white/20"
                 }`}>
