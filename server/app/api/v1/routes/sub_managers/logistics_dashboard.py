@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
+from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.db.deps import get_db, get_tenant_db
@@ -33,6 +34,26 @@ class VehicleUpdate(BaseModel):
     driver_name: Optional[str] = None
     status: Optional[str] = None
 
+class ShipmentCreate(BaseModel):
+    tracking_number: str
+    destination: str
+    driver_name: str
+    weight_kg: float
+    status: str = "Pending"
+    eta: Optional[datetime] = None
+
+class ShipmentUpdate(BaseModel):
+    tracking_number: Optional[str] = None
+    destination: Optional[str] = None
+    driver_name: Optional[str] = None
+    weight_kg: Optional[float] = None
+    status: Optional[str] = None
+    eta: Optional[datetime] = None
+
+class ActivityCreate(BaseModel):
+    event_text: str
+    status_type: str = "info"
+
 def serialize_vehicle(vehicle: Vehicle):
     return {
         "id": vehicle.fleet_id,
@@ -56,7 +77,7 @@ def serialize_warehouse_stand(warehouse_id, name, location=None, source="warehou
 def get_dashboard_stats(db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
     active_vehicles = db.query(Vehicle).filter(Vehicle.status == "Active").count()
     deliveries_today = db.query(Shipment).filter(Shipment.status == "Delivered").count()
-    pending_shipments = db.query(Shipment).filter(Shipment.status == "Pending").count()
+    pending_shipments = db.query(Shipment).filter(Shipment.status.in_(["Pending", "In Transit", "Delayed"])).count()
     critical_alerts = db.query(LogisticsActivity).filter(LogisticsActivity.status_type == "error").count()
 
     # Create dummy data if table is completely empty to match UI on first run
@@ -218,7 +239,7 @@ def get_warehouse_stands(
 
 @router.get("/vehicles")
 def get_vehicles(db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
-    vehicles = db.query(Vehicle).limit(4).all()
+    vehicles = db.query(Vehicle).limit(100).all()
     if not vehicles:
         return [
             { "id": 'TRK-001', "stop_warehouse_id": 1, "stop_warehouse_name": 'Main Warehouse', "capacity_kg": 2400, "vehicle_type": 'Box Truck', "driver_name": 'James K.', "status": 'Active' },
@@ -265,3 +286,89 @@ def update_vehicle(fleet_id: str, data: VehicleUpdate, db: Session = Depends(get
     db.commit()
     db.refresh(vehicle)
     return serialize_vehicle(vehicle)
+
+@router.delete("/vehicles/{fleet_id}")
+def delete_vehicle(fleet_id: str, db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
+    vehicle = db.query(Vehicle).filter(Vehicle.fleet_id == fleet_id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found.")
+    
+    db.delete(vehicle)
+    db.commit()
+    return {"status": "success", "message": f"Vehicle {fleet_id} deleted."}
+
+@router.post("/shipments", status_code=status.HTTP_201_CREATED)
+def create_shipment(data: ShipmentCreate, db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
+    existing = db.query(Shipment).filter(Shipment.tracking_number == data.tracking_number).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Shipment with this tracking number already exists.")
+    
+    new_shipment = Shipment(
+        tracking_number=data.tracking_number,
+        destination=data.destination,
+        driver_name=data.driver_name,
+        weight_kg=data.weight_kg,
+        status=data.status,
+        eta=data.eta
+    )
+    db.add(new_shipment)
+    db.commit()
+    db.refresh(new_shipment)
+    return {
+        "id": f"#SHP-1{new_shipment.id:03d}",
+        "destination": new_shipment.destination,
+        "driver": new_shipment.driver_name,
+        "weight": f"{new_shipment.weight_kg} kg",
+        "status": new_shipment.status,
+        "eta": new_shipment.eta.strftime("%b %d, %H:%M") if new_shipment.eta else "N/A"
+    }
+
+@router.put("/shipments/{shipment_id}")
+def update_shipment(shipment_id: int, data: ShipmentUpdate, db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
+    shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()
+    if not shipment:
+        raise HTTPException(status_code=404, detail="Shipment not found.")
+    
+    if data.tracking_number is not None: shipment.tracking_number = data.tracking_number
+    if data.destination is not None: shipment.destination = data.destination
+    if data.driver_name is not None: shipment.driver_name = data.driver_name
+    if data.weight_kg is not None: shipment.weight_kg = data.weight_kg
+    if data.status is not None: shipment.status = data.status
+    if data.eta is not None: shipment.eta = data.eta
+    
+    db.commit()
+    db.refresh(shipment)
+    return {
+        "id": f"#SHP-1{shipment.id:03d}",
+        "destination": shipment.destination,
+        "driver": shipment.driver_name,
+        "weight": f"{shipment.weight_kg} kg",
+        "status": shipment.status,
+        "eta": shipment.eta.strftime("%b %d, %H:%M") if shipment.eta else "N/A"
+    }
+
+@router.delete("/shipments/{shipment_id}")
+def delete_shipment(shipment_id: int, db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
+    shipment = db.query(Shipment).filter(Shipment.id == shipment_id).first()
+    if not shipment:
+        raise HTTPException(status_code=404, detail="Shipment not found.")
+    
+    db.delete(shipment)
+    db.commit()
+    return {"status": "success", "message": f"Shipment {shipment_id} deleted."}
+
+@router.post("/activities", status_code=status.HTTP_201_CREATED)
+def create_activity(data: ActivityCreate, db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
+    new_activity = LogisticsActivity(
+        event_text=data.event_text,
+        status_type=data.status_type
+    )
+    db.add(new_activity)
+    db.commit()
+    db.refresh(new_activity)
+    return {
+        "icon": "Circle",
+        "green": new_activity.status_type == "success",
+        "text": new_activity.event_text,
+        "time": new_activity.event_time.strftime("%H:%M %p")
+    }

@@ -11,6 +11,7 @@ from app.db.deps import get_db, get_tenant_db
 from app.models.business_manager.team import LogisticsManager
 from app.models.auth.user import User, RoleEnum
 from app.services.auth.dependancy import get_current_user
+from app.models.sub_managers.logistics_manager.domain import Vehicle, Shipment
 
 router = APIRouter(
     prefix="/business-manager/logistics-managers",
@@ -176,10 +177,10 @@ def get_logistics_manager_analytics(manager_id: int, db: Session = Depends(get_t
     
     # Initialize defaults for unregistered managers
     total_deliveries = 0
-    on_time_rate = 0
-    fleet_utilization = 0
+    on_time_rate = 0.0
+    fleet_utilization = 0.0
     pending_shipments = 0
-    avg_transit_days = 0
+    avg_transit_days = 0.0
     reliability = "Pending Setup"
 
     if user:
@@ -189,14 +190,35 @@ def get_logistics_manager_analytics(manager_id: int, db: Session = Depends(get_t
             card.is_used = True
             db.commit()
 
-        # User is registered! 
-        # (Replace these mocks with real db.query(Shipment) logic later)
-        total_deliveries = 24
-        on_time_rate = 96.4
-        fleet_utilization = 82.0
-        pending_shipments = 3
-        avg_transit_days = 2.5
-        reliability = "Excellent"
+        # User is registered! Calculate real analytics
+        total_deliveries = db.query(Shipment).filter(Shipment.status == "Delivered").count()
+        pending_shipments = db.query(Shipment).filter(Shipment.status.in_(["Pending", "In Transit"])).count()
+        
+        total_shipments = db.query(Shipment).count()
+        delayed_shipments = db.query(Shipment).filter(Shipment.status == "Delayed").count()
+        
+        if total_shipments > 0:
+            on_time_rate = round(((total_shipments - delayed_shipments) / total_shipments) * 100, 1)
+        else:
+            on_time_rate = 100.0
+            
+        total_vehicles = db.query(Vehicle).count()
+        active_vehicles = db.query(Vehicle).filter(Vehicle.status == "Active").count()
+        if total_vehicles > 0:
+            fleet_utilization = round((active_vehicles / total_vehicles) * 100, 1)
+        else:
+            fleet_utilization = 0.0
+            
+        avg_transit_days = 2.5 # default/fallback
+        
+        if on_time_rate >= 95.0:
+            reliability = "Excellent"
+        elif on_time_rate >= 85.0:
+            reliability = "Good"
+        elif on_time_rate >= 70.0:
+            reliability = "Average"
+        else:
+            reliability = "Needs Improvement"
 
     return {
         "manager_id": card.id,

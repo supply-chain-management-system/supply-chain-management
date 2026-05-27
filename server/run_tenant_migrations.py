@@ -7,11 +7,14 @@ from app.models.sub_managers.factory_manager.factory_material import Factory_Mat
 from app.models.sub_managers.factory_manager.production import Factory, Production
 from app.models.sub_managers.factory_manager.teams import Worker, Productionteam
 from app.models.sub_managers.factory_manager.factory_machinery import Machine
-from app.models.business_manager.domain import Inventory, Approval, Supplier
+from app.models.business_manager.domain import Inventory, Approval
+from app.models.supplier_manager.supplier import Supplier
 from app.models.business_manager.business_owners import BusinessOwners
 from app.models.owner_models.business_card import BusinessCard
 from app.models.sub_managers.warehouse_manager.warehouse import Warehouse, Product, Inventory_ware, Rack
 from app.models.sub_managers.request import MaterialRequest
+from app.models.sub_managers.logistics_manager.domain import Vehicle, Shipment, LogisticsActivity
+from app.models.business_manager.team import FactoryManager, WarehouseManager, LogisticsManager, SupplyManager
 
 def run_migrations():
     print(f"Connecting to database...")
