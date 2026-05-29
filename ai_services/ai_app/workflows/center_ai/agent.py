@@ -8,15 +8,58 @@ from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from langchain_cohere import ChatCohere
 
-# 🚀 IMPORT ALL PROVIDER ERROR CLASSES
+#  IMPORT ALL PROVIDER ERROR CLASSES
 from groq import GroqError
-import openai  # 🎯 Used to catch OpenAI's quota/rate limit errors
+import openai  
 
-# 📥 IMPORT THE SECURE TOOLS FROM YOUR CORRECTED TOOLS PATH
-# ✅ CHANGE IT TO THIS:
-from ai_app.tools.center_ai.tools import get_stock_level, search_warehouse_manuals
+#  IMPORT THE SECURE TOOLS FROM YOUR CORRECTED TOOLS PATH
+# CHANGE IT TO THIS:
+from ai_app.tools.warehouse_manager.tools import get_stock_level, search_warehouse_manuals,update_inventory_tool,create_product_tool
+
+# Warehouse Tools
+from ai_app.tools.warehouse_manager.tools import (
+    get_stock_level,
+    search_warehouse_manuals,
+    update_inventory_tool,
+    create_product_tool
+)
+
+# Factory Tools
+from ai_app.tools.factory_manager.tools import (
+    create_worker_tool,
+    get_available_workers_tool,
+    assign_team_tool,
+    get_all_teams_tool,
+    remove_team_member_tool,
+    create_production_tool,
+    get_factory_products_tool,
+    complete_product_tool,
+    create_machine_tool,
+    get_machines_tool,
+    get_production_report_tool
+)
+
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongodb:27017")
-central_tools = [get_stock_level, search_warehouse_manuals]
+central_tools = [
+     # Warehouse
+    get_stock_level, 
+    search_warehouse_manuals,
+    update_inventory_tool,
+    create_product_tool,
+    # Factory
+    create_worker_tool,
+    get_available_workers_tool,
+    assign_team_tool,
+    get_all_teams_tool,
+    remove_team_member_tool,
+    create_production_tool,
+    get_factory_products_tool,
+    complete_product_tool,
+    create_machine_tool,
+    get_machines_tool,
+    get_production_report_tool
+
+    ]
 
 CENTRAL_AI_PROMPT = (
     "You are the Korvex Centralized Enterprise Supervisor Copilot.\n"
@@ -26,29 +69,30 @@ CENTRAL_AI_PROMPT = (
     "CRITICAL: When calling tools, you MUST output perfectly valid, well-formed JSON arguments."
 )
 
-# 1️⃣ Bind Base Models
+# 1️ Bind Base Models
 groq_base = ChatGroq(model="llama-3.3-70b-versatile")
 openai_base = ChatOpenAI(model="gpt-4o-mini")
 cohere_base = ChatCohere(model="command-r-plus-08-2024")
 
-# 2️⃣ Combine Prompts and Tools
+# 2️ Combine Prompts and Tools
 groq_chain = groq_base.bind_tools(central_tools, system_prompt=CENTRAL_AI_PROMPT)
 openai_chain = openai_base.bind_tools(central_tools, system_prompt=CENTRAL_AI_PROMPT)
 cohere_chain = cohere_base.bind_tools(central_tools)
 
-# 3️⃣ Build the Redundant Smart Chain (Now catching BOTH Groq and OpenAI errors)
+# 3️ Build the Redundant Smart Chain (Now catching BOTH Groq and OpenAI errors)
 smart_llm_chain = groq_chain.with_fallbacks(
     fallbacks=[openai_chain, cohere_chain],
-    exceptions_to_handle=(GroqError, openai.OpenAIError)  # 🎯 Catch Groq limits AND OpenAI quota issues!
+    exceptions_to_handle=(GroqError, openai.OpenAIError)  #  Catch Groq limits AND OpenAI quota issues!
 )
 
-# 4️⃣ Global MongoDB Connection Checkpointer
+# 4️ Global MongoDB Connection Checkpointer
 _stack = contextlib.ExitStack()
 memory = _stack.enter_context(MongoDBSaver.from_conn_string(MONGO_URL, db_name="korvex_ai_db"))
 
-# 5️⃣ Export the master engine
+# 5️ Export the master engine
 agent_executor = create_react_agent(
     model=smart_llm_chain,
     tools=central_tools,
     checkpointer=memory
 )
+
