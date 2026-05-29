@@ -1,7 +1,7 @@
 
 
 from fastapi import APIRouter,Depends,HTTPException
-from app.schemas.sub_managers.factory_manager.production import productget,production_create,production_update
+from app.schemas.sub_managers.factory_manager.production import productget,production_create,production_update,production_complete
 
 from sqlalchemy.orm  import session
 
@@ -69,7 +69,7 @@ def update_product(product_id: int, data: production_update, db: session = Depen
     }
 
 @router.patch('/products/{product_id}/complete')
-def complete_product(product_id: int,request: Request,db: session = Depends(get_tenant_db)):
+def complete_product(product_id: int,data: production_complete,request: Request,db: session = Depends(get_tenant_db)):
     product = db.query(Production).filter(
         Production.id == product_id
     ).first()
@@ -82,6 +82,7 @@ def complete_product(product_id: int,request: Request,db: session = Depends(get_
             detail="Product not found"
         )
 
+    product.output_qty = data.output_qty
     product.status = "completed"
 
     db.commit()

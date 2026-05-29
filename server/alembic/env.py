@@ -16,6 +16,9 @@ from app.models.sub_managers.factory_manager.factory_machinery import Machine
 from app.models.sub_managers.factory_manager.production import Factory,Production
 from app.models.sub_managers.factory_manager.teams import Worker,Productionteam
 
+from app.models.sub_managers.factory_manager.factory_material import Factory_Material,Factory_MaterialTransaction,TransactionType
+from app.models.business_manager.domain import Inventory, Approval, Supplier
+from app.models.business_manager.business_owners import BusinessOwners
 
 
 
@@ -33,7 +36,6 @@ from app.models.sub_managers.warehouse_manager.warehouse import Warehouse,Produc
 from app.models.sub_managers.request import  MaterialRequest
 
 from app.models.sub_managers.logistics_manager.domain import Vehicle, Shipment, LogisticsActivity
-
 
 
 
