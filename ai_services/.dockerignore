@@ -1,0 +1,11 @@
+# Ignore local environment and cache
+env/
+venv/
+__pycache__/
+.env
+.git/
+.vscode/
+.idea/
+*.pyc
+*.pyo
+*.pyd
