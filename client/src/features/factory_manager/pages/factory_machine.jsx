@@ -144,11 +144,15 @@ const MachineCard = ({ machine, isSelected, onSelect }) => {
   );
 };
 
-const HeaderTabs = ({ activeTab, setActiveTab }) => {
+const HeaderTabs = ({ activeTab, setActiveTab, machines }) => {
+  const allCount = machines.length;
+  const availableCount = machines.filter(m => m.status === 'available').length;
+  const maintenanceCount = machines.filter(m => m.status === 'maintenance').length;
+
   const tabs = [
-    { id: 'all', label: 'All Machines', count: 6 },
-    { id: 'available', label: 'Available', count: 2 },
-    { id: 'maintenance', label: 'In Maintenance', count: 1 }
+    { id: 'all', label: 'All Machines', count: allCount },
+    { id: 'available', label: 'Available', count: availableCount },
+    { id: 'maintenance', label: 'In Maintenance', count: maintenanceCount }
   ];
 
   return (
@@ -321,6 +325,19 @@ export default function Machine() {
 
   const[model,showmodel]=useState(false)
 
+  const fetchMachines = async () => {
+    try {
+      const res = await api.get('/factory_machine/machines/');
+      setMachines(res.data);
+    } catch (err) {
+      console.error("Failed to fetch machines:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMachines();
+  }, []);
+
  const filteredMachines = machines.filter(machine => {
   if (activeTab === 'all') return true;
   if (activeTab === 'available') return machine.status === 'available';
@@ -383,7 +400,7 @@ const handleAddMachine = async (data) => {
           </div>
           
           <div className="mt-6">
-            <HeaderTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+            <HeaderTabs activeTab={activeTab} setActiveTab={setActiveTab} machines={machines} />
           </div>
         </div>
       </header>

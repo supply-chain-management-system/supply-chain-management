@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
 import {
   ArrowRight,
   BarChart3,
@@ -230,7 +231,6 @@ function HeroSection() {
     </section>
   );
 }
-
 /* ─── Pricing Card ─── */
 function formatPrice(value) {
   return new Intl.NumberFormat("en-IN", {
@@ -265,8 +265,44 @@ function getPlanPricing(plan, billingCycle) {
 }
 
 function PricingCard({ plan, index, billingCycle }) {
+  // 1. Add a loading state for the payment generation
+  const [isLoading, setIsLoading] = useState(false);
+  const currentUser = useSelector((state) => state.auth.user);
   const Icon = planIcons[plan.icon_key] || Warehouse;
   const pricing = getPlanPricing(plan, billingCycle);
+
+  // 2. Handle the click event to trigger the PhonePe API
+  const handleUpgradeClick = async (e) => {
+    e.preventDefault();
+
+    // If it's a Free or Custom plan (no price), act like a normal link
+    if (!plan.monthly_price) {
+      window.location.href = plan.href;
+      return;
+    }
+
+    // For Starter and Premium plans, trigger the payment gateway
+    setIsLoading(true);
+    try {
+      // Hit your FastAPI backend endpoint
+      const res = await api.post("/subscriptions/create-payment", {
+        plan_slug: plan.slug,
+        user_id: String(currentUser?.id || "unknown_user"),
+      });
+
+      // Redirect to the PhonePe Sandbox Simulator URL
+      if (res.data && res.data.payment_url) {
+        if (res.data.transaction_id) {
+          localStorage.setItem("pending_payment_txn_id", res.data.transaction_id);
+        }
+        window.location.href = res.data.payment_url;
+      }
+    } catch (error) {
+      console.error("Payment initialization failed:", error);
+      alert("Failed to initialize payment. Please try again.");
+      setIsLoading(false);
+    }
+  };
 
   return (
     <motion.article
@@ -373,21 +409,22 @@ function PricingCard({ plan, index, billingCycle }) {
         ))}
       </ul>
 
-      {/* CTA */}
-      <a
-        href={plan.href}
-        className={`mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 ${
+      {/* 3. Replaced <a> tag with <button> to handle the API call and loading state */}
+      <button
+        onClick={handleUpgradeClick}
+        disabled={isLoading}
+        className={`mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all ${
           plan.is_popular
             ? "bg-white text-gray-900 shadow-sm hover:bg-gray-100"
             : "bg-gray-900 text-white shadow-sm hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
-        }`}
+        } ${isLoading ? "cursor-not-allowed opacity-70" : "hover:-translate-y-0.5"}`}
       >
-        {plan.cta} <ArrowRight size={14} />
-      </a>
+        {isLoading ? "Securely Connecting..." : plan.cta} 
+        {!isLoading && <ArrowRight size={14} />}
+      </button>
     </motion.article>
   );
 }
-
 /* ─── Pricing Section ─── */
 function PricingSection() {
   const [billingCycle, setBillingCycle] = useState("monthly");

@@ -57,6 +57,7 @@ import LogisticsDashboard from './features/logistics_manager/LogisticsDashboard'
 import LogisticsFleetPage from './features/logistics_manager/pages/LogisticsFleetPage';
 
 import KorvexLanding, { ContactSalesPage, SubscriptionsPage } from './components/layout/landing_page';
+import PaymentSuccess from './features/auth/pages/PaymentSuccess';
 
 function App() {
   return (
@@ -68,6 +69,7 @@ function App() {
           <Route path="/pricing" element={<SubscriptionsPage />} />
           <Route path="/subscriptions" element={<Navigate to="/pricing" replace />} />
           <Route path="/contact-sales" element={<ContactSalesPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
 
           {/* AUTHENTICATION / ONBOARDING */}
           <Route path="/login" element={<Login />} />

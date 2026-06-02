@@ -15,24 +15,28 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from collections import defaultdict
 
+from app.services.auth.dependancy import get_current_user
+from app.models.auth.user import User
+from app.services.subscriptions.limit_checker import check_employee_limit
+
 router = APIRouter(prefix='/factory', tags=['factory'])
 
 
 @router.post('/create_worker')
-
-def create_worker(data: worker_create, db: Session = Depends(get_tenant_db)):
+def create_worker(
+    data: worker_create, 
+    db: Session = Depends(get_tenant_db),
+    app_db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.company_id:
+        check_employee_limit(app_db, db, current_user.company_id, module="factory")
 
     work=Worker(
         name=data.name,
         role=data.role,
         factory_id=data.factory_id
-
     )
-
-
-
-
-
 
     db.add(work)
     db.commit()

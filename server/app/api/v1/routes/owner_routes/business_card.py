@@ -21,6 +21,8 @@ from app.services.managers.manager_services import (
     query_business_managers,
 )
 
+from app.services.subscriptions.limit_checker import check_business_limit
+
 router = APIRouter(prefix="/business-cards", tags=["Business Cards"])
 
 
@@ -28,8 +30,12 @@ router = APIRouter(prefix="/business-cards", tags=["Business Cards"])
 def create_business_card(
     payload: BusinessCardCreate,
     db: Session = Depends(get_tenant_db),
+    app_db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     dependencies=[Depends(require_role(["owner"]))],
 ):
+    if current_user.company_id:
+        check_business_limit(app_db, db, current_user.company_id)
 
     business_card = BusinessCard(**payload.model_dump())
 

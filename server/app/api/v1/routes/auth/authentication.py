@@ -353,6 +353,7 @@ def get_me(
             "email": current_user.email,
             "role": current_user.role.value if current_user.role else None,
             "company_id": current_user.company_id,
+            "schema_name": current_user.company.schema_name if current_user.company else None,
             "company_verified": current_user.is_approved_company,
             "is_verified": current_user.is_verified,
             "is_active": current_user.is_active,

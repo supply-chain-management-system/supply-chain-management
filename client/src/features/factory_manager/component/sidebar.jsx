@@ -9,7 +9,8 @@ import {
   ClipboardList,
   FileOutput,
   Settings,
-  MessageSquare
+  MessageSquare,
+  Activity
 } from 'lucide-react';
 
 const menuItems = [
@@ -21,7 +22,7 @@ const menuItems = [
   { icon: Package, label: 'Materials', path: '/factory_material' },
   { icon: ClipboardList, label: 'Requests', path: '#' },
   { icon: FileOutput, label: 'Output Logs', path: '/outputlogs' },
-  { icon: Settings, label: 'Settings', path: '/elt_production' },
+  { icon: Activity, label: 'ELT Analytics', path: '/elt_production' },
 
 
 
