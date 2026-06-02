@@ -625,8 +625,6 @@ const ProductionManagement = () => {
           </div>
         </div>
       )}
-<<<<<<< HEAD
-=======
 
 
       {/* Animation Styles */}
@@ -654,7 +652,6 @@ const ProductionManagement = () => {
                 onClose={() => setIsChatOpen(false)} 
               />
 
->>>>>>> c4bc49048cbd0b388a79f7d35db55518c9968944
     </div>
   );
 };
