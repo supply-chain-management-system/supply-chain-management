@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
+import KorvexCopilot from '../../KorvexCopilot';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -13,7 +14,8 @@ import {
   Box,
   ShoppingCart,
   Users,
-  ShieldCheck
+  ShieldCheck,
+  MessageSquare
 } from 'lucide-react';
 
 const GlassCard = ({ children, className = "" }) => (
@@ -43,6 +45,7 @@ const MetricCard = ({ label, value, trend, icon: Icon, color, delay }) => (
 const DashboardPage = () => {
   const { total: totalSuppliers } = useSelector(s => s.supplier);
   const { items: inventoryItems } = useSelector(s => s.inventory);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const { orders } = useSelector(s => s.order);
 
   return (
@@ -188,7 +191,20 @@ const DashboardPage = () => {
            </GlassCard>
         </div>
       </div>
-
+       {!isChatOpen && (
+                       <button
+                         onClick={() => setIsChatOpen(true)}
+                         className="fixed bottom-6 right-6 z-[9998] w-14 h-14 flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+                         style={{ background: "linear-gradient(135deg, #00c88c 0%, #00a06e 100%)" }}
+                       >
+                         <MessageSquare size={24} color="#ffffff" strokeWidth={2.5} />
+                       </button>
+                     )}
+               
+                     <KorvexCopilot 
+                       isOpen={isChatOpen} 
+                       onClose={() => setIsChatOpen(false)} 
+                     />
     </div>
   );
 };
