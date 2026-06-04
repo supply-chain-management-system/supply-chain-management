@@ -8,7 +8,8 @@ celery_app = Celery(
     backend="redis://redis:6379/0",
     include=[
         "app.services.ai.documentation_service",
-        "app.services.ai.task" 
+        "app.services.ai.task",
+        "app.services.subscriptions.tasks"
     ]
   
 )

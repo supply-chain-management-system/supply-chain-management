@@ -14,7 +14,8 @@ from app.services.subscriptions.subscription_service import (
     generate_phonepe_payment,
     verify_phonepe_checksum,
     process_webhook_callback,
-    check_and_update_transaction_status
+    check_and_update_transaction_status,
+    check_and_expire_subscriptions
 )
 
 
@@ -57,3 +58,18 @@ def get_transaction_status(txn_id: str, db: Session = Depends(get_db)):
         "plan_slug": txn.plan_slug,
         "success": txn.status == "SUCCESS"
     }
+
+
+@router.post("/cron/expire-check")
+async def run_expiration_check(db: Session = Depends(get_db)):
+    """
+    Cron endpoint to run subscription expiration check.
+    Usually triggered by an external scheduler.
+    """
+    results = await check_and_expire_subscriptions(db)
+    return {
+        "status": "success",
+        "expired_count": len(results),
+        "processed": results
+    }
+

@@ -358,3 +358,60 @@ def check_and_update_transaction_status(db: Session, merchant_transaction_id: st
         db.commit()
         
     return txn
+
+
+async def check_and_expire_subscriptions(db: Session) -> list[dict]:
+    from datetime import datetime
+    from app.models.company.company import Company
+    from app.services.email_service import send_subscription_expired_email
+
+    now = datetime.utcnow()
+    expired_subs = (
+        db.query(CompanySubscription)
+        .filter(
+            CompanySubscription.status == "ACTIVE",
+            CompanySubscription.plan_slug != "free",
+            CompanySubscription.end_date <= now
+        )
+        .all()
+    )
+
+    results = []
+    for sub in expired_subs:
+        old_plan = sub.plan_slug
+        sub.plan_slug = "free"
+        sub.end_date = None
+        sub.updated_at = now
+        
+        company = db.query(Company).filter(Company.id == sub.company_id).first()
+        company_name = company.name if company else "Your Company"
+        email_to = company.owner_email if company else None
+        
+        if not email_to:
+            # Fallback: check users table
+            user = db.query(User).filter(User.company_id == sub.company_id, User.role == "owner").first()
+            if user:
+                email_to = user.email
+
+        notified = False
+        if email_to:
+            try:
+                await send_subscription_expired_email(
+                    email_to=email_to,
+                    company_name=company_name,
+                    expired_plan=old_plan
+                )
+                notified = True
+            except Exception as e:
+                print(f"Failed to send email to {email_to}: {e}")
+
+        results.append({
+            "company_id": sub.company_id,
+            "company_name": company_name,
+            "old_plan": old_plan,
+            "email_to": email_to,
+            "notified": notified
+        })
+
+    db.commit()
+    return results

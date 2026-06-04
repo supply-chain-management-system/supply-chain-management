@@ -40,7 +40,7 @@ PLAN_LIMITS = {
     }
 }
 
-def get_company_plan(db_public: Session, company_id: int) -> str:
+def get_company_plan(db_public: Session, company_id: int):
     sub = db_public.query(CompanySubscription).filter(
         CompanySubscription.company_id == company_id,
         CompanySubscription.status == "ACTIVE"
