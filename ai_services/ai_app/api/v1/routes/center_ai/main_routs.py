@@ -43,9 +43,6 @@ async def chat_with_central_agent(
         raise HTTPException(status_code=500, detail=str(e))
     
 
-
-
-
 @router.get("/internal/chat/history/{session_id}", status_code=status.HTTP_200_OK)
 async def get_internal_agent_history(session_id: str):
     try:
@@ -104,7 +101,6 @@ async def get_internal_agent_history(session_id: str):
                 else:
                     content = str(content).strip()
                 
-                # 🚀 THE BRUTE-FORCE OVERRIDE
                 # If the AI message is completely blank (because it tried to use a tool and crashed),
                 # FORCE a placeholder string so it shows up in your React array!
                 if sender_type == "ai" and not content:
