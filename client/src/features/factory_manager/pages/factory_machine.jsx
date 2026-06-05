@@ -95,23 +95,11 @@ const MachineCard = ({ machine, isSelected, onSelect, onEdit, onDelete }) => {
   );
 };
 
-<<<<<<< HEAD
-const HeaderTabs = ({ activeTab, setActiveTab, machines }) => {
-  const allCount = machines.length;
-  const availableCount = machines.filter(m => m.status === 'available').length;
-  const maintenanceCount = machines.filter(m => m.status === 'maintenance').length;
-
-  const tabs = [
-    { id: 'all', label: 'All Machines', count: allCount },
-    { id: 'available', label: 'Available', count: availableCount },
-    { id: 'maintenance', label: 'In Maintenance', count: maintenanceCount }
-=======
 const HeaderTabs = ({ activeTab, setActiveTab, counts }) => {
   const tabs = [
     { id: 'all', label: 'All Machines', count: counts.all },
     { id: 'available', label: 'Available', count: counts.available },
     { id: 'maintenance', label: 'In Maintenance', count: counts.maintenance }
->>>>>>> development
   ];
 
   return (
@@ -461,37 +449,7 @@ export default function Machine() {
       const res = await api.get('/factory_machine/machines/');
       setMachines(res.data);
     } catch (err) {
-<<<<<<< HEAD
-      console.error("Failed to fetch machines:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchMachines();
-  }, []);
-
- const filteredMachines = machines.filter(machine => {
-  if (activeTab === 'all') return true;
-  if (activeTab === 'available') return machine.status === 'available';
-  if (activeTab === 'maintenance') return machine.status === 'maintenance';
-  return true;
-});
-const formattedMachines = filteredMachines.map(m => ({
-  ...m,
-  category: m.type, // backend → UI
-  location: "Not Assigned", // temporary
-  lastMaintenance: m.last_maintenance_date,
-  efficiency: 100 // default
-}));
-const handleAddMachine = async (data) => {
-  try {
-    // 🔴 VALIDATION
-    if (!data.name || !data.category) {
-      alert("Name and Category are required");
-      return;
-=======
       console.error("Failed to fetch machines", err);
->>>>>>> development
     }
   };
 
@@ -605,11 +563,7 @@ const handleAddMachine = async (data) => {
           </div>
           
           <div className="mt-6">
-<<<<<<< HEAD
-            <HeaderTabs activeTab={activeTab} setActiveTab={setActiveTab} machines={machines} />
-=======
             <HeaderTabs activeTab={activeTab} setActiveTab={setActiveTab} counts={counts} />
->>>>>>> development
           </div>
         </div>
       </header>

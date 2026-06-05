@@ -55,12 +55,6 @@ class Inventory_ware(BaseTenant):
     rack_id = Column(Integer, ForeignKey("racks.id"))
 
     quantity = Column(Integer, default=0)
-<<<<<<< HEAD
-
-
-
-    
-=======
     batch_number = Column(String, nullable=True)
     expiry_date = Column(DateTime, nullable=True)
     status = Column(String, default="available")
@@ -73,4 +67,3 @@ class BillOfMaterials(BaseTenant):
     finished_product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     material_product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     quantity_required = Column(Float, default=1.0)
->>>>>>> development

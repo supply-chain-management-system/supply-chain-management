@@ -36,14 +36,10 @@ def create_worker(
     work=Worker(
         name=data.name,
         role=data.role,
-<<<<<<< HEAD
-        factory_id=data.factory_id
-=======
         factory_id=data.factory_id,
         email=data.email,
         phone=data.phone,
         hourly_rate=data.hourly_rate
->>>>>>> development
     )
 
     db.add(work)

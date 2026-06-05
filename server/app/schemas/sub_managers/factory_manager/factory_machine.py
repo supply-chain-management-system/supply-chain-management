@@ -37,10 +37,7 @@ class MachineCreate(MachineBase):
 
 class MachineResponse(MachineBase):
     id: int
-<<<<<<< HEAD
-=======
     created_at: Optional[datetime] = None
->>>>>>> development
 
     class Config:
         from_attributes = True
