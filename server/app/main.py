@@ -64,7 +64,7 @@ from app.api.v1.routes.sub_managers import request
 
 from app.api.v1.routes.sub_managers.factory_manager import production, team,factory_machine, factory_material
 from app.api.v1.routes.sub_managers.factory_manager import analytics    
-from app.api.v1.routes.elt import production_elt 
+from app.api.v1.routes.elt import production_elt, warehouse_elt, logistics_elt
 
 
 
@@ -128,6 +128,8 @@ app.include_router(factory_machine.router,prefix='/api/v1/factory_machine')
 app.include_router(factory_material.router,prefix='/api/v1/factory_material')
 app.include_router(analytics.router,prefix='/api/v1/factory_analytics')
 app.include_router(production_elt.router,prefix='/api/v1/elt')
+app.include_router(warehouse_elt.router,prefix='/api/v1/elt')
+app.include_router(logistics_elt.router,prefix='/api/v1/elt')
 
 
  

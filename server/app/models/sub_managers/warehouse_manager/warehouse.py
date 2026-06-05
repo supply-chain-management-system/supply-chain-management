@@ -44,3 +44,7 @@ class Inventory_ware(BaseTenant):
     rack_id = Column(Integer, ForeignKey("racks.id"))
 
     quantity = Column(Integer, default=0)
+
+
+
+    

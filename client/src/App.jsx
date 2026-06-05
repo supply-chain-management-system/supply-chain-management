@@ -36,6 +36,8 @@ import ProductionManagement from './features/factory_manager/pages/production_pa
 import Team from './features/factory_manager/pages/factory_team';
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 import ProductionELT from './features/elt/factory_elt';
+import WarehouseELT from './features/elt/warehouse_elt';
+import LogisticsELT from './features/elt/logistics_elt';
 import ProductionOutputHistory from './features/factory_manager/pages/outputlogs';
 import FactoryMaterial from './features/factory_manager/pages/factory_material';
 
@@ -114,6 +116,7 @@ function App() {
             <Route path="/Inventory" element={<InventoryPage />} />
             <Route path="/Racks" element={<RackPage />} />
             <Route path="/stockupdate" element={<StockUpdatePage />} />
+            <Route path="/elt_warehouse" element={<WarehouseELT />} />
             <Route path="/ware-chat" element={<ChatPage />} />
           </Route>
 
@@ -144,6 +147,7 @@ function App() {
           <Route element={<LogisticsLayout />}>
             <Route path="/logistics_dashboard" element={<LogisticsDashboard />} />
             <Route path="/logistics_fleet" element={<LogisticsFleetPage />} />
+            <Route path="/logistics_analytics" element={<LogisticsELT />} />
             <Route path="/logistics-chat" element={<ChatPage />} />
           </Route>
 

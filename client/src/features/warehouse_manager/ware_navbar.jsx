@@ -19,6 +19,7 @@ function Ware_Navbar() {
           <a href="/ware_products" className="hover:text-blue-400">Products</a>
           <a href="/racks" className="hover:text-blue-400">Racks</a>
           <a href="/stockupdate" className="hover:text-blue-400">Stock Update</a>
+          <a href="/elt_warehouse" className="hover:text-blue-400">ELT Analytics</a>
           <a href="/ware-chat" className="hover:text-blue-400">Chat</a>
 
           <button className="bg-red-500 px-3 py-1 rounded hover:bg-red-600">
@@ -43,6 +44,7 @@ function Ware_Navbar() {
           <a href="/ware_products">Products</a>
           <a href="/Racks">Racks</a>
           <a href="/stockupdate">Stock Update</a>
+          <a href="/elt_warehouse">ELT Analytics</a>
           <a href="/ware-chat">Chat</a>
 
           <button className="bg-red-500 px-3 py-1 rounded w-fit">
