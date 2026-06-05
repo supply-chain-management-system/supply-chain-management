@@ -35,7 +35,11 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    if (
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      originalRequest.url?.includes("/refresh")
+    ) {
       return Promise.reject(error);
     }
 
@@ -59,7 +63,20 @@ api.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError); 
 
-      window.location.href = "/login";
+      const isPublicPath = [
+        "/login",
+        "/signup",
+        "/forgot-password",
+        "/reset-password",
+        "/verify-email",
+        "/invite",
+        "/pricing",
+        "/contact-sales"
+      ].some(path => window.location.pathname.startsWith(path)) || window.location.pathname === "/";
+
+      if (!isPublicPath) {
+        window.location.href = "/login";
+      }
       return Promise.reject(refreshError);
 
     } finally {

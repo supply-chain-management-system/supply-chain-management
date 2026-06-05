@@ -43,6 +43,9 @@ class Production(BaseTenant):
     factory_id=Column(Integer,ForeignKey('factories.id'),nullable=False)
     created_by=Column(Integer)
     created_at=Column(DateTime(timezone=True),server_default=func.now())
+    scrap_qty=Column(Integer,default=0)
+    priority=Column(String,default="medium")
+    notes=Column(Text,nullable=True)
 
     factory=relationship('Factory',back_populates='productions')
     material_transactions = relationship("Factory_MaterialTransaction", back_populates="production", cascade="all, delete")

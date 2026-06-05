@@ -14,6 +14,9 @@ class ProfileBase(BaseModel):
     categories_managed: Optional[str] = None
     supplier_target_score: Optional[str] = None
     office_extension: Optional[str] = None
+    fleet_size: Optional[str] = None
+    regions_managed: Optional[str] = None
+    logistics_license_no: Optional[str] = None
 
 class ProfileUpdate(ProfileBase):
     pass

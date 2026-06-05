@@ -1,0 +1,11 @@
+.git
+client
+server
+ai_services
+chat_service
+nginx
+*.log
+*.db
+docker-compose.yml
+README.md
+package-lock.json

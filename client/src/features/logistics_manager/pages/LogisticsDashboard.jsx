@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   fetchDashboardStats,
   fetchShipments,
   fetchActivities,
   fetchVehicles,
-} from '../../redux/logisticsDashboardSlice';
+} from '../../../redux/logisticsDashboardSlice';
 import {
   Truck,
   Package,
@@ -31,13 +32,13 @@ const card = 'bg-[#0f0f0f] border border-white/[0.07] rounded-xl';
 // ─── Status badge ───────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
   const styles = {
-    'In Transit': 'bg-green-500/10 text-green-400 border-green-500/20',
+    'In Transit': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
     Delivered:    'bg-white/[0.06] text-white/70 border-white/[0.08]',
     Pending:      'bg-white/[0.04] text-white/40 border-white/[0.06]',
     Delayed:      'bg-red-500/10 text-red-400 border-red-500/20',
   };
   const dotColors = {
-    'In Transit': 'bg-green-400',
+    'In Transit': 'bg-emerald-400',
     Delivered:    'bg-white/50',
     Pending:      'bg-white/20',
     Delayed:      'bg-red-400',
@@ -62,7 +63,7 @@ const Sparkline = ({ data, green }) => (
       return (
         <div
           key={i}
-          className={`flex-1 rounded-sm ${green ? 'bg-green-500' : 'bg-white/20'}`}
+          className={`flex-1 rounded-sm ${green ? 'bg-emerald-500' : 'bg-white/20'}`}
           style={{ height: `${pct}%`, opacity: 0.5 + (i / data.length) * 0.5 }}
         />
       );
@@ -77,12 +78,12 @@ const StatCard = ({ icon: Icon, label, value, delta, deltaUp, sparkData, green }
     <div className="flex items-start justify-between">
       <div
         className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-          green ? 'bg-green-500/15' : 'bg-white/[0.06]'
+          green ? 'bg-emerald-500/15' : 'bg-white/[0.06]'
         }`}
       >
         <Icon
           style={{ width: '16px', height: '16px' }}
-          className={green ? 'text-green-400' : 'text-white/50'}
+          className={green ? 'text-emerald-400' : 'text-white/50'}
         />
       </div>
 
@@ -90,7 +91,7 @@ const StatCard = ({ icon: Icon, label, value, delta, deltaUp, sparkData, green }
         <div
           className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md ${
             deltaUp
-              ? 'text-green-400 bg-green-500/10'
+              ? 'text-emerald-400 bg-emerald-500/10'
               : 'text-red-400 bg-red-500/10'
           }`}
         >
@@ -113,7 +114,7 @@ const StatCard = ({ icon: Icon, label, value, delta, deltaUp, sparkData, green }
 const ShipmentRow = ({ id, destination, driver, weight, status, eta }) => (
   <tr className="group border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors duration-100">
     <td className="py-3 px-4">
-      <span className="font-mono text-xs font-semibold text-green-400">{id}</span>
+      <span className="font-mono text-xs font-semibold text-emerald-400">{id}</span>
     </td>
     <td className="py-3 px-4">
       <div className="flex items-center gap-1.5">
@@ -146,8 +147,8 @@ const ActivityItem = ({ icon: Icon, green, text, time, isLast }) => (
   <div className="flex gap-3">
     <div className="flex flex-col items-center shrink-0">
       <div className={`w-6 h-6 rounded-full flex items-center justify-center
-        ${green ? 'bg-green-500/15' : 'bg-white/[0.06]'}`}>
-        <Icon style={{ width: '12px', height: '12px' }} className={green ? 'text-green-400' : 'text-white/40'} />
+        ${green ? 'bg-emerald-500/15' : 'bg-white/[0.06]'}`}>
+        <Icon style={{ width: '12px', height: '12px' }} className={green ? 'text-emerald-400' : 'text-white/40'} />
       </div>
       {!isLast && <div className="w-px flex-1 bg-white/[0.04] mt-1 min-h-[1rem]" />}
     </div>
@@ -161,7 +162,7 @@ const ActivityItem = ({ icon: Icon, green, text, time, isLast }) => (
 // ─── Vehicle tile ────────────────────────────────────────────────────────────────
 const VehicleTile = ({ id, stop_warehouse_name, capacity_kg, vehicle_type, status }) => {
   const statusCls = {
-    Active:      'text-green-400 bg-green-500/10',
+    Active:      'text-emerald-400 bg-emerald-500/10',
     Idle:        'text-white/50 bg-white/[0.06]',
     Maintenance: 'text-red-400 bg-red-500/10',
   };
@@ -193,7 +194,7 @@ const VehicleTile = ({ id, stop_warehouse_name, capacity_kg, vehicle_type, statu
 // ─── KPI row ─────────────────────────────────────────────────────────────────────
 const KpiChip = ({ icon: Icon, label, value }) => (
   <div className="flex-1 flex flex-col items-center gap-1 py-3 border-r border-white/[0.05] last:border-r-0">
-    <Icon className="w-4 h-4 text-green-400" />
+    <Icon className="w-4 h-4 text-emerald-400" />
     <p className="text-sm font-bold text-white tabular-nums">{value}</p>
     <p className="text-[9px] text-white/25 uppercase tracking-wide">{label}</p>
   </div>
@@ -202,7 +203,8 @@ const KpiChip = ({ icon: Icon, label, value }) => (
 // ─── Main ────────────────────────────────────────────────────────────────────────
 const LogisticsDashboard = () => {
   const dispatch = useDispatch();
-  const { stats, shipments, activities, vehicles, loading } = useSelector(
+  const navigate = useNavigate();
+  const { stats, kpis, shipments, activities, vehicles, loading } = useSelector(
     (state) => state.logisticsDashboard
   );
 
@@ -292,7 +294,7 @@ const LogisticsDashboard = () => {
         </div>
         <button
           onClick={handleRefresh}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 hover:bg-green-400
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400
                      text-xs font-semibold text-black transition-all duration-150 hover:-translate-y-0.5"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${Object.values(loading).some(v => v) ? 'animate-spin' : ''}`} /> Refresh
@@ -306,10 +308,10 @@ const LogisticsDashboard = () => {
 
       {/* ── KPI strip ── */}
       <div className={`${card} flex divide-x divide-white/[0.05]`}>
-        <KpiChip icon={Activity}     label="On-Time Rate"  value="94.2%" />
-        <KpiChip icon={Truck}        label="Fleet Util."   value="78%"   />
-        <KpiChip icon={Package}      label="Avg Delivery"  value="1.4 d" />
-        <KpiChip icon={Navigation}   label="km Driven"     value="12.4k" />
+        <KpiChip icon={Activity}     label="On-Time Rate"  value={kpis?.on_time_rate ?? "96.0%"} />
+        <KpiChip icon={Truck}        label="Fleet Util."   value={kpis?.fleet_utilization ?? "78.0%"}   />
+        <KpiChip icon={Package}      label="Avg Delivery"  value={kpis?.avg_delivery ?? "1.4 d"} />
+        <KpiChip icon={Navigation}   label="km Driven"     value={kpis?.km_driven ?? "12,400.0 km"} />
       </div>
 
       {/* ── Row: Shipments + Activity ── */}
@@ -322,7 +324,10 @@ const LogisticsDashboard = () => {
               <h2 className="text-sm font-semibold text-white">Recent Shipments</h2>
               <p className="text-[10px] text-white/30 mt-0.5">Last 5 active shipments</p>
             </div>
-            <button className="flex items-center gap-1 text-xs font-medium text-green-400 hover:text-green-300 transition-colors">
+            <button
+              onClick={() => navigate('/logistics_shipments')}
+              className="flex items-center gap-1 text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
               View all <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -375,8 +380,8 @@ const LogisticsDashboard = () => {
               <p className="text-[10px] text-white/30 mt-0.5">Live vehicle status</p>
             </div>
             <button
-              onClick={() => window.location.href = '/logistics_fleet'}
-              className="flex items-center gap-1 text-xs font-medium text-green-400 hover:text-green-300 transition-colors"
+              onClick={() => navigate('/logistics_fleet')}
+              className="flex items-center gap-1 text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               Manage <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -396,7 +401,7 @@ const LogisticsDashboard = () => {
               <h2 className="text-sm font-semibold text-white">Stand Overview</h2>
               <p className="text-[10px] text-white/30 mt-0.5">{vehicles.length} vehicles assigned to warehouse stands</p>
             </div>
-            <span className="flex items-center gap-1 text-[9px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
               <Wifi className="w-2.5 h-2.5" /> LIVE
             </span>
           </div>
@@ -417,8 +422,8 @@ const LogisticsDashboard = () => {
 
             {/* Stand connection lines */}
             <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <line x1="20%" y1="70%" x2="65%" y2="30%" stroke="#4ade80" strokeWidth="1" strokeOpacity="0.2" strokeDasharray="4 3"/>
-              <line x1="65%" y1="30%" x2="85%" y2="55%" stroke="#4ade80" strokeWidth="1" strokeOpacity="0.15" strokeDasharray="4 3"/>
+              <line x1="20%" y1="70%" x2="65%" y2="30%" stroke="#10b981" strokeWidth="1" strokeOpacity="0.2" strokeDasharray="4 3"/>
+              <line x1="65%" y1="30%" x2="85%" y2="55%" stroke="#10b981" strokeWidth="1" strokeOpacity="0.15" strokeDasharray="4 3"/>
               <line x1="30%" y1="40%" x2="60%" y2="65%" stroke="white" strokeWidth="1" strokeOpacity="0.08" strokeDasharray="4 3"/>
             </svg>
 
@@ -431,8 +436,8 @@ const LogisticsDashboard = () => {
             ].map((pos, i) => (
               <div key={i} className="absolute" style={pos}>
                 <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-50" style={{ animationDelay: `${i * 0.4}s` }} />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-400 border border-black" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" style={{ animationDelay: `${i * 0.4}s` }} />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 border border-black" />
                 </span>
               </div>
             ))}
@@ -451,7 +456,7 @@ const LogisticsDashboard = () => {
               { icon: Activity,   label: 'Stands',   value: new Set(vehicles.map(v => v.stop_warehouse_name).filter(Boolean)).size },
             ].map(({ icon: I, label, value }) => (
               <div key={label} className="flex flex-col items-center gap-1 py-2.5 bg-white/[0.03] border border-white/[0.05] rounded-lg">
-                <I className="w-3.5 h-3.5 text-green-400" />
+                <I className="w-3.5 h-3.5 text-emerald-400" />
                 <p className="text-xs font-bold text-white leading-none tabular-nums">{value}</p>
                 <p className="text-[9px] text-white/25 leading-none">{label}</p>
               </div>

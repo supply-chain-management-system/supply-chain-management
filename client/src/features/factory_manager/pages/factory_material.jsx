@@ -21,11 +21,12 @@ export default function FactoryMaterial() {
   const [transactions, setTransactions] = useState([]);
   const [productionJobs, setProductionJobs] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("materials"); // "materials" | "transactions"
+  const [activeTab, setActiveTab] = useState("materials"); // "materials" | "transactions" | "requests"
   
   // Modals state
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [notification, setNotification] = useState({ message: "", type: "" }); // type: "success" | "error"
 
@@ -44,10 +45,25 @@ export default function FactoryMaterial() {
     production_id: ""
   });
 
+  // Material Request Form state
+  const [requests, setRequests] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [factories, setFactories] = useState([]);
+  const [rawMaterials, setRawMaterials] = useState([]);
+  const [requestForm, setRequestForm] = useState({
+    product_id: "",
+    warehouse_id: "",
+    quantity: ""
+  });
+
   useEffect(() => {
     fetchMaterials();
     fetchTransactions();
     fetchProductionJobs();
+    fetchRequests();
+    fetchWarehouses();
+    fetchFactories();
+    fetchRawMaterials();
   }, []);
 
   const fetchMaterials = async () => {
@@ -80,6 +96,76 @@ export default function FactoryMaterial() {
       setProductionJobs(activeJobs);
     } catch (err) {
       console.error("Failed to fetch production jobs:", err);
+    }
+  };
+
+  const fetchRequests = async () => {
+    try {
+      const res = await api.get("/request");
+      setRequests(res.data);
+    } catch (err) {
+      console.error("Failed to fetch requests:", err);
+    }
+  };
+
+  const fetchWarehouses = async () => {
+    try {
+      const res = await api.get("/ware_house");
+      setWarehouses(res.data);
+      if (res.data.length > 0) {
+        setRequestForm(prev => ({ ...prev, warehouse_id: res.data[0].id }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch warehouses:", err);
+    }
+  };
+
+  const fetchFactories = async () => {
+    try {
+      const res = await api.get("/factory/user");
+      setFactories(res.data);
+    } catch (err) {
+      console.error("Failed to fetch factories:", err);
+    }
+  };
+
+  const fetchRawMaterials = async () => {
+    try {
+      const res = await api.get("/ware_products?type=raw_material");
+      setRawMaterials(res.data);
+      if (res.data.length > 0) {
+        setRequestForm(prev => ({ ...prev, product_id: res.data[0].id }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch raw materials:", err);
+    }
+  };
+
+  const handleRequestSubmit = async (e) => {
+    e.preventDefault();
+    if (!requestForm.product_id || !requestForm.warehouse_id || !requestForm.quantity) {
+      return showNotification("Please fill in all fields", "error");
+    }
+
+    try {
+      const payload = {
+        product_id: Number(requestForm.product_id),
+        sender_type: "factory",
+        sender_id: factories[0]?.id || 1,
+        receiver_type: "warehouse",
+        receiver_id: Number(requestForm.warehouse_id),
+        quantity: Number(requestForm.quantity)
+      };
+
+      await api.post("/request", payload);
+      showNotification("Material request submitted successfully");
+      setShowRequestModal(false);
+      setRequestForm(prev => ({ ...prev, quantity: "" }));
+      fetchRequests();
+    } catch (err) {
+      console.error(err);
+      const errorMsg = err.response?.data?.detail || "Failed to submit request";
+      showNotification(errorMsg, "error");
     }
   };
 
@@ -228,13 +314,30 @@ export default function FactoryMaterial() {
               Maintain resource balances, log stock transactions, and coordinate with active production jobs.
             </p>
           </div>
-          <button
-            onClick={() => { resetMaterialForm(); setShowMaterialModal(true); }}
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md shadow-blue-200 dark:shadow-none hover:translate-y-[-1px]"
-          >
-            <Plus className="w-5 h-5" />
-            Register Material
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                if (rawMaterials.length > 0) {
+                  setRequestForm(prev => ({ ...prev, product_id: rawMaterials[0].id }));
+                }
+                if (warehouses.length > 0) {
+                  setRequestForm(prev => ({ ...prev, warehouse_id: warehouses[0].id }));
+                }
+                setShowRequestModal(true);
+              }}
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md shadow-indigo-200 dark:shadow-none hover:translate-y-[-1px]"
+            >
+              <ArrowUpRight className="w-5 h-5" />
+              Request Materials
+            </button>
+            <button
+              onClick={() => { resetMaterialForm(); setShowMaterialModal(true); }}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold transition-all shadow-md shadow-blue-200 dark:shadow-none hover:translate-y-[-1px]"
+            >
+              <Plus className="w-5 h-5" />
+              Register Material
+            </button>
+          </div>
         </div>
 
         {/* Notifications */}
@@ -316,6 +419,16 @@ export default function FactoryMaterial() {
                 }`}
               >
                 Stock Transaction Logs
+              </button>
+              <button
+                onClick={() => setActiveTab("requests")}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  activeTab === "requests"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-200 dark:shadow-none"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800"
+                }`}
+              >
+                Material Requests
               </button>
             </div>
           </div>
@@ -403,7 +516,7 @@ export default function FactoryMaterial() {
                 </div>
               )}
             </div>
-          ) : (
+          ) : activeTab === "transactions" ? (
             // Transactions Tab
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {transactions.length === 0 ? (
@@ -470,6 +583,64 @@ export default function FactoryMaterial() {
                             <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                               <Calendar className="w-4 h-4 text-gray-400" />
                               {new Date(tx.timestamp).toLocaleString()}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Material Requests Tab
+            <div className="divide-y divide-gray-100 dark:divide-gray-800 animate-fade-in">
+              {requests.filter(r => r.sender_type === "factory").length === 0 ? (
+                <div className="p-12 text-center text-gray-500">
+                  <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-700" />
+                  <h3 className="font-bold text-lg text-gray-800 dark:text-white">No requests submitted</h3>
+                  <p className="mt-1">Request raw materials from the warehouse to see the requests log here.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50/50 dark:bg-gray-900/50 text-gray-400 text-xs font-bold uppercase tracking-wider border-b border-gray-100 dark:border-gray-800">
+                        <th className="px-6 py-4">Request ID</th>
+                        <th className="px-6 py-4">Material Name</th>
+                        <th className="px-6 py-4">Destination Warehouse</th>
+                        <th className="px-6 py-4">Quantity Requested</th>
+                        <th className="px-6 py-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                      {requests.filter(r => r.sender_type === "factory").map((req) => {
+                        const productName = rawMaterials.find(p => p.id === req.product_id)?.name || `Product #${req.product_id}`;
+                        const warehouseName = warehouses.find(w => w.id === req.receiver_id)?.name || `Warehouse #${req.receiver_id}`;
+                        return (
+                          <tr key={req.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/50 transition-colors">
+                            <td className="px-6 py-4 font-mono text-xs text-gray-500 dark:text-gray-400">
+                              #{req.id}
+                            </td>
+                            <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">
+                              {productName}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                              {warehouseName}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-bold text-gray-700 dark:text-gray-300">
+                              {req.quantity}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                                req.status === "approved"
+                                  ? "bg-green-100 text-green-800 border-green-200"
+                                  : req.status === "rejected"
+                                  ? "bg-red-100 text-red-800 border-red-200"
+                                  : "bg-amber-100 text-amber-800 border-amber-200"
+                              }`}>
+                                {req.status.toUpperCase()}
+                              </span>
                             </td>
                           </tr>
                         );
@@ -693,6 +864,113 @@ export default function FactoryMaterial() {
                     className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
                   >
                     Confirm Action
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* REQUEST MATERIAL MODAL */}
+        {showRequestModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowRequestModal(false)} />
+            
+            <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 dark:border-gray-800 overflow-hidden animate-slide-up">
+              <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 px-6 py-4 flex items-center justify-between text-white">
+                <div>
+                  <h2 className="text-lg font-bold">Request Raw Materials</h2>
+                  <p className="text-indigo-100 text-xs mt-0.5">
+                    Submit transfer request to warehouse inventory
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowRequestModal(false)}
+                  className="text-white/80 hover:text-white hover:bg-white/20 rounded-lg p-1.5 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleRequestSubmit} className="p-6 space-y-4">
+                {/* Product Select */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Select Raw Material
+                  </label>
+                  {rawMaterials.length === 0 ? (
+                    <div className="text-sm text-red-500 font-medium p-2 bg-red-50 rounded-lg border border-red-100 dark:bg-red-950/20 dark:border-red-900/50">
+                      No raw materials found in warehouse catalog.
+                    </div>
+                  ) : (
+                    <select
+                      value={requestForm.product_id}
+                      onChange={(e) => setRequestForm({ ...requestForm, product_id: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-gray-800 transition-all text-sm"
+                    >
+                      {rawMaterials.map((prod) => (
+                        <option key={prod.id} value={prod.id}>
+                          {prod.name} (SKU: {prod.sku || "N/A"})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Warehouse Select */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Select Source Warehouse
+                  </label>
+                  {warehouses.length === 0 ? (
+                    <div className="text-sm text-red-500 font-medium p-2 bg-red-50 rounded-lg border border-red-100 dark:bg-red-950/20 dark:border-red-900/50">
+                      No warehouses found.
+                    </div>
+                  ) : (
+                    <select
+                      value={requestForm.warehouse_id}
+                      onChange={(e) => setRequestForm({ ...requestForm, warehouse_id: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white dark:bg-gray-800 transition-all text-sm"
+                    >
+                      {warehouses.map((wh) => (
+                        <option key={wh.id} value={wh.id}>
+                          {wh.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                {/* Quantity */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Quantity to Transfer
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={requestForm.quantity}
+                    onChange={(e) => setRequestForm({ ...requestForm, quantity: e.target.value })}
+                    placeholder="e.g. 100"
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowRequestModal(false)}
+                    className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 font-semibold transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={rawMaterials.length === 0 || warehouses.length === 0}
+                    className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                  >
+                    Submit Request
                   </button>
                 </div>
               </form>

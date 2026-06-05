@@ -78,6 +78,26 @@ export const removeLogisticsManager = createAsyncThunk(
   }
 );
 
+export const updateLogisticsManager = createAsyncThunk(
+  'logisticsManager/update',
+  async ({ managerId, formData }, { rejectWithValue }) => {
+    try {
+      const res = await api.put(`${BASE}/${managerId}`, {
+        name:         formData.name.trim(),
+        email:        formData.email.trim(),
+        phone:        formData.phone?.trim() || null,
+        shift:        formData.shift,
+        route:        formData.route,
+        logistics_id: formData.logistics_id || 1,
+      });
+
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.detail || 'Failed to update manager.');
+    }
+  }
+);
+
 /* ══════════════════════════════════════════════════════════
    SLICE
 ═══════════════════════════════════════════════════════════ */
@@ -205,6 +225,24 @@ const logisticsManagerSlice = createSlice({
       })
       .addCase(removeLogisticsManager.rejected, (state, action) => {
         state.toast = { msg: action.payload, type: 'error' };
+      });
+
+    /* updateLogisticsManager */
+    builder
+      .addCase(updateLogisticsManager.pending, (state) => {
+        state.inviteLoading = true;
+        state.error = null;
+      })
+      .addCase(updateLogisticsManager.fulfilled, (state, action) => {
+        state.inviteLoading = false;
+        state.managers      = state.managers.map(m => m.id === action.payload.id ? action.payload : m);
+        state.form          = initialForm;
+        state.isFormOpen    = false;
+        state.toast         = { msg: 'Manager card updated successfully!', type: 'success' };
+      })
+      .addCase(updateLogisticsManager.rejected, (state, action) => {
+        state.inviteLoading = false;
+        state.toast         = { msg: action.payload, type: 'error' };
       });
   },
 });

@@ -30,7 +30,7 @@ const fmt = (d) =>
       })
     : 'Not available';
 
-const mockSections = [
+const divisionSections = [
   {
     title: 'Factory',
     value: '0',
@@ -702,7 +702,7 @@ const BusinessManagerDetails = () => {
 
   if (loading) {
     return (
-      <div className="ml-64 min-h-screen bg-[#F7F8FA] p-8 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F8FA] p-8 flex items-center justify-center">
         <div className="h-9 w-9 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
       </div>
     );
@@ -710,7 +710,7 @@ const BusinessManagerDetails = () => {
 
   if (error || !card) {
     return (
-      <div className="ml-64 min-h-screen bg-[#F7F8FA] p-8">
+      <div className="min-h-screen bg-[#F7F8FA] p-8">
         <button onClick={() => navigate('/managers')} className="mb-4 flex items-center gap-2 text-sm font-semibold text-blue-600">
           <ArrowLeft size={16} />
           Back
@@ -731,7 +731,7 @@ const BusinessManagerDetails = () => {
   const cardMemberCount = managerCards.reduce((total, managerCard) => total + (managerCard.members?.length || 0), 0);
 
   return (
-    <div className="ml-64 min-h-screen bg-[#F7F8FA] p-8">
+    <div className="min-h-screen bg-[#F7F8FA] p-8">
       <button
         onClick={() => navigate('/managers')}
         className="mb-6 flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition"
@@ -772,7 +772,7 @@ const BusinessManagerDetails = () => {
       </section>
 
       <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {mockSections.map((section) => {
+        {divisionSections.map((section) => {
           const value = section.title === 'Factory'
             ? countsByRole.factory_manager || 0
             : section.title === 'Warehouses'

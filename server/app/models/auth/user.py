@@ -100,6 +100,11 @@ class UserProfile(Base):
     categories_managed = Column(String, nullable=True)
     supplier_target_score = Column(String, nullable=True)
     office_extension = Column(String, nullable=True)
+
+    # Logistics Manager specific fields
+    fleet_size = Column(String, nullable=True)
+    regions_managed = Column(String, nullable=True)
+    logistics_license_no = Column(String, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

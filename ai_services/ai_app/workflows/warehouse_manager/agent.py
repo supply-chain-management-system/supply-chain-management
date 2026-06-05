@@ -23,10 +23,7 @@ groq_model = ChatGroq(model="llama-3.3-70b-versatile")
 openai_model = ChatOpenAI(model="gpt-4o-mini")
 cohere_model = ChatCohere(model="command-r-plus")
 
-# 4. Inject system prompts & 5. Bind tools
-groq_model = groq_model.bind(system_prompt=AI_SYSTEM_PROMPT)
-openai_model = openai_model.bind(system_prompt=AI_SYSTEM_PROMPT)
-
+# 4. Bind tools
 groq_with_tools = groq_model.bind_tools(tools)
 openai_with_tools = openai_model.bind_tools(tools)
 cohere_with_tools = cohere_model.bind_tools(tools)
@@ -46,5 +43,6 @@ memory = _stack.enter_context(MongoDBSaver.from_conn_string(MONGO_URL, db_name="
 agent_executor = create_react_agent(
     model=smart_llm_chain,
     tools=tools,
+    prompt=AI_SYSTEM_PROMPT,
     checkpointer=memory # <--- Receives the valid instance now!
 )

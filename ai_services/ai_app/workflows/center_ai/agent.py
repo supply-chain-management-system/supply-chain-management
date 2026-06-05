@@ -93,6 +93,7 @@ memory = _stack.enter_context(MongoDBSaver.from_conn_string(MONGO_URL, db_name="
 agent_executor = create_react_agent(
     model=smart_llm_chain,
     tools=central_tools,
+    prompt=CENTRAL_AI_PROMPT,
     checkpointer=memory
 )
 

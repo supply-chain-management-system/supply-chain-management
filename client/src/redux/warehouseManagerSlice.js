@@ -77,6 +77,26 @@ export const removeWarehouseManager = createAsyncThunk(
   }
 );
 
+export const updateWarehouseManager = createAsyncThunk(
+  'warehouseManager/update',
+  async ({ managerId, formData }, { rejectWithValue }) => {
+    try {
+      const res = await api.put(`${BASE}/${managerId}`, {
+        name:         formData.name.trim(),
+        email:        formData.email.trim(),
+        phone:        formData.phone?.trim() || null,
+        shift:        formData.shift,
+        zone:         formData.zone,
+        warehouse_id: formData.warehouse_id || 1,
+      });
+
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.detail || 'Failed to update manager.');
+    }
+  }
+);
+
 /* ══════════════════════════════════════════════════════════
    SLICE
 ═══════════════════════════════════════════════════════════ */
@@ -165,6 +185,21 @@ const warehouseManagerSlice = createSlice({
       })
       .addCase(removeWarehouseManager.rejected, (s, a) => {
         s.toast = { type: 'error', msg: a.payload };
+      });
+
+    /* update */
+    builder
+      .addCase(updateWarehouseManager.pending,   (s) => { s.inviteLoading = true; })
+      .addCase(updateWarehouseManager.fulfilled, (s, a) => {
+        s.inviteLoading = false;
+        s.managers      = s.managers.map(m => m.id === a.payload.id ? a.payload : m);
+        s.isFormOpen    = false;
+        s.form          = initialForm;
+        s.toast         = { type: 'success', msg: '✅ Manager card updated successfully!' };
+      })
+      .addCase(updateWarehouseManager.rejected,  (s, a) => {
+        s.inviteLoading = false;
+        s.toast         = { type: 'error', msg: a.payload };
       });
   },
 });

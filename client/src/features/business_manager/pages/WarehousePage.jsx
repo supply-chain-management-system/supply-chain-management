@@ -11,14 +11,16 @@ import {
   toggleForm,
   updateForm,
   clearToast,
+  updateWarehouseManager,
 } from '../../../redux/warehouseManagerSlice';
 import {
   Users, Mail, Phone, Trash2, Plus, X, ArrowRight,
   Loader2, ChevronLeft, ChevronRight, Grid, List,
-  Package, Warehouse, Truck, CheckCircle2, BarChart3, ShieldCheck,
+  Package, Warehouse, Truck, CheckCircle2, BarChart3, ShieldCheck, Edit2,
+  Send, UserPlus, ChevronUp, ChevronDown
 } from 'lucide-react';
 
-import WMAnalyticsPage from './WMAnalyticsPage';
+import api from '../../../api/api';
 
 const ITEMS_PER_PAGE = 9;
 
@@ -74,37 +76,88 @@ const SkeletonCard = () => (
   </div>
 );
 
-/* ══════════════════════════════════════════════════════════
-   Warehouse Manager Card
-═══════════════════════════════════════════════════════════ */
-const ManagerCard = ({ wm, isSelected, onCardClick, onRemove }) => {
+
+const ManagerCard = ({ wm, isSelected, onCardClick, onEdit, onRemove }) => {
   const zone      = wm.department || 'General Storage';
   const shift     = wm.shift || 'Day';
   const zoneMeta  = ZONE_COLOR[zone]  ?? ZONE_COLOR['General Storage'];
   const shiftCls  = SHIFT_BADGE[shift] ?? SHIFT_BADGE.Day;
 
+  const [members, setMembers]           = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [expanded, setExpanded]         = useState(true);
+  const [inviteEmail, setInviteEmail]   = useState('');
+  const [inviting, setInviting]         = useState(false);
+  const [inviteMsg, setInviteMsg]       = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadMembers = async () => {
+      setMembersLoading(true);
+      try {
+        const res = await api.get(`/business-manager/warehouse-managers/${wm.id}/members`);
+        if (!cancelled) setMembers(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        // fail silently
+      } finally {
+        if (!cancelled) setMembersLoading(false);
+      }
+    };
+    loadMembers();
+    return () => { cancelled = true; };
+  }, [wm.id]);
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    try {
+      await api.post(`/business-manager/warehouse-managers/${wm.id}/invite`, { email: inviteEmail.trim() });
+      setInviteMsg({ type: 'success', text: `Invite sent to ${inviteEmail.trim()}` });
+      setInviteEmail('');
+      // Reload members
+      const res = await api.get(`/business-manager/warehouse-managers/${wm.id}/members`);
+      setMembers(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setInviteMsg({ type: 'error', text: detail || 'Failed to send invite.' });
+    } finally {
+      setInviting(false);
+      setTimeout(() => setInviteMsg(null), 4000);
+    }
+  };
+
   return (
     <div
-      onClick={() => onCardClick(wm)}
-      className={`bg-white/[0.02] border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-cyan-500/30 transition-all duration-200 flex flex-col cursor-pointer ${
+      className={`bg-white/[0.02] border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-cyan-500/30 transition-all duration-200 flex flex-col ${
         isSelected ? 'border-cyan-500 ring-2 ring-cyan-500/10' : 'border-white/[0.08]'
       }`}
     >
       {/* coloured banner */}
       <div
         className={`relative h-32 flex flex-col justify-end px-5 pb-4 flex-shrink-0 bg-gradient-to-br ${zoneMeta.banner} border-b border-white/5`}
+        onClick={() => onCardClick(wm)}
+        style={{ cursor: 'pointer' }}
       >
         <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/[0.02] pointer-events-none" />
-        <div className="absolute top-3 right-12 w-12 h-12 rounded-full bg-white/[0.01] pointer-events-none" />
+        <div className="absolute top-3 right-14 w-12 h-12 rounded-full bg-white/[0.01] pointer-events-none" />
 
-        {/* remove */}
-        <button
-          onClick={(e) => onRemove(e, wm.id)}
-          className="absolute top-3 right-3 text-gray-500 hover:text-red-400 transition-colors z-10 p-1 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 hover:border-red-500/20"
-          title="Remove"
-        >
-          <Trash2 size={12} />
-        </button>
+        {/* edit / remove */}
+        <div className="absolute top-3 right-3 flex gap-1.5 z-10">
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(e, wm); }}
+            className="text-gray-500 hover:text-white transition-colors p-1 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5"
+            title="Edit"
+          >
+            <Edit2 size={12} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onRemove(e, wm.id); }}
+            className="text-gray-500 hover:text-red-400 transition-colors p-1 bg-white/5 hover:bg-white/10 rounded-lg border border-white/5 hover:border-red-500/20"
+            title="Remove"
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
 
         {/* avatar */}
         <div className="absolute top-3 left-5 w-8 h-8 bg-cyan-600/30 border border-cyan-500/40 rounded-xl flex items-center justify-center text-white font-black text-sm">
@@ -125,23 +178,107 @@ const ManagerCard = ({ wm, isSelected, onCardClick, onRemove }) => {
       </div>
 
       {/* body */}
-      <div className="flex flex-col gap-3 p-5 flex-1">
+      <div className="flex flex-col gap-0 p-5 flex-1">
+        {/* Status + contact */}
         <div className="pb-3 border-b border-white/5">
           <StatusDot isUsed={wm.is_used} />
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="pt-3 grid grid-cols-2 gap-2">
           <MetaChip icon={Mail}  label="Email" value={wm.email} />
           <MetaChip icon={Phone} label="Phone" value={wm.phone} />
+        </div>
+
+        {/* Members section */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Users size={11} className="text-gray-500" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Team Members</span>
+              {members.length > 0 && (
+                <span className="text-[9px] font-black bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded-full border border-cyan-500/20">
+                  {members.length}
+                </span>
+              )}
+            </div>
+            {members.length > 0 && (
+              <button onClick={() => setExpanded(v => !v)} className="text-gray-500 hover:text-white transition-colors">
+                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            )}
+          </div>
+
+          {membersLoading ? (
+            <div className="space-y-2">
+              {[1, 2].map(i => <div key={i} className="h-11 bg-white/5 rounded-xl animate-pulse" />)}
+            </div>
+          ) : members.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-4 gap-2 bg-white/[0.01] rounded-xl border border-dashed border-white/10">
+              <UserPlus size={16} className="text-gray-600" />
+              <p className="text-[10px] text-gray-500 font-semibold text-center">No members yet<br /><span className="font-normal text-[9px]">Send an invite below</span></p>
+            </div>
+          ) : expanded ? (
+            <div className="space-y-1.5 max-h-44 overflow-y-auto pr-0.5">
+              {members.map(member => (
+                <div key={member.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+                  <div className="w-7 h-7 rounded-lg bg-cyan-600/30 border border-cyan-500/40 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {member.name?.charAt(0)?.toUpperCase() ?? '?'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-white truncate">{member.name}</p>
+                    <p className="text-[10px] text-gray-500 truncate">{member.email}</p>
+                  </div>
+                  <span className={`h-2 w-2 rounded-full flex-shrink-0 ${member.is_used ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <button onClick={() => setExpanded(true)} className="w-full py-2 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 uppercase tracking-widest transition-colors">
+              Show {members.length} member{members.length !== 1 ? 's' : ''}
+            </button>
+          )}
+        </div>
+
+        {/* Invite input */}
+        <div className="mt-3 pt-3 border-t border-white/5">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Mail size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={e => { setInviteEmail(e.target.value); setInviteMsg(null); }}
+                onKeyDown={e => e.key === 'Enter' && handleInvite()}
+                placeholder="Invite by email…"
+                className="w-full h-9 pl-8 pr-3 text-xs rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+              />
+            </div>
+            <button
+              onClick={handleInvite}
+              disabled={inviting || !inviteEmail.trim()}
+              className="h-9 px-3.5 flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all active:scale-95 shadow-lg shadow-cyan-600/10"
+            >
+              {inviting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+              <span className="hidden sm:inline">{inviting ? 'Sending…' : 'Invite'}</span>
+            </button>
+          </div>
+          {inviteMsg && (
+            <div className={`mt-2 text-[10px] font-semibold px-2 py-1 rounded-lg ${
+              inviteMsg.type === 'success' ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'
+            }`}>
+              {inviteMsg.text}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
+
 /* ══════════════════════════════════════════════════════════
    Create form
 ═══════════════════════════════════════════════════════════ */
-const CreateForm = ({ form, inviteLoading, onSubmit, onClose, dispatch }) => {
+const CreateForm = ({ form, inviteLoading, onSubmit, onClose, dispatch, isEdit }) => {
   const zone     = form.zone  || 'Dry Goods';
   const shift    = form.shift || 'Day';
   const zoneMeta = ZONE_COLOR[zone]  ?? ZONE_COLOR['General Storage'];
@@ -153,8 +290,8 @@ const CreateForm = ({ form, inviteLoading, onSubmit, onClose, dispatch }) => {
       {/* header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div>
-          <p className="text-sm font-bold text-white">New Warehouse Manager</p>
-          <p className="text-[11px] text-gray-500 mt-0.5">Card is created instantly & invite email is sent</p>
+          <p className="text-sm font-bold text-white">{isEdit ? 'Edit Warehouse Manager' : 'New Warehouse Manager'}</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">{isEdit ? 'Modify manager card details and settings' : 'Card is created instantly & invite email is sent'}</p>
         </div>
         <button
           onClick={onClose}
@@ -245,8 +382,8 @@ const CreateForm = ({ form, inviteLoading, onSubmit, onClose, dispatch }) => {
               className="w-full h-10 mt-1 flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-all active:scale-95 shadow-md shadow-cyan-600/10"
             >
               {inviteLoading
-                ? <><Loader2 size={13} className="animate-spin" /> Creating…</>
-                : <><ArrowRight size={13} /> Create Card & Send Invite</>}
+                ? <><Loader2 size={13} className="animate-spin" /> saving…</>
+                : <><ArrowRight size={13} /> {isEdit ? 'Save Changes' : 'Create Card & Send Invite'}</>}
             </button>
           </form>
         </div>
@@ -303,7 +440,7 @@ const CreateForm = ({ form, inviteLoading, onSubmit, onClose, dispatch }) => {
 /* ══════════════════════════════════════════════════════════
    LIST VIEW TABLE
 ═══════════════════════════════════════════════════════════ */
-const ManagersTable = ({ managers, selectedId, onRowClick, onRemove }) => {
+const ManagersTable = ({ managers, selectedId, onRowClick, onEdit, onRemove }) => {
   return (
     <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
@@ -367,13 +504,22 @@ const ManagersTable = ({ managers, selectedId, onRowClick, onRemove }) => {
                     <StatusDot isUsed={wm.is_used} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={(e) => onRemove(e, wm.id)}
-                      className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-red-500/20 text-gray-500 hover:text-red-400 transition-all"
-                      title="Remove Manager"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={(e) => onEdit(e, wm)}
+                        className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/20 text-slate-400 hover:text-white transition-all"
+                        title="Edit Manager"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => onRemove(e, wm.id)}
+                        className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-red-500/20 text-gray-500 hover:text-red-400 transition-all"
+                        title="Remove Manager"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -399,6 +545,7 @@ const WarehouseManagerPage = () => {
   } = useSelector(state => state.warehouseManager);
 
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [editingManagerId, setEditingManagerId] = useState(null);
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   useEffect(() => {
@@ -416,9 +563,28 @@ const WarehouseManagerPage = () => {
     dispatch(fetchManagerAnalytics(wm.id));
   };
 
+  const handleEdit = (e, wm) => {
+    e.stopPropagation();
+    dispatch(updateForm({
+      name: wm.name,
+      email: wm.email,
+      phone: wm.phone || '',
+      shift: wm.shift,
+      zone: wm.department || 'General Storage',
+      warehouse_id: wm.warehouse_id || 1,
+    }));
+    setEditingManagerId(wm.id);
+    dispatch(toggleForm());
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(createWarehouseManager(form));
+    if (editingManagerId) {
+      dispatch(updateWarehouseManager({ managerId: editingManagerId, formData: form }));
+      setEditingManagerId(null);
+    } else {
+      dispatch(createWarehouseManager(form));
+    }
   };
 
   const handleRemove = (e, id) => {
@@ -509,8 +675,9 @@ const WarehouseManagerPage = () => {
               form={form}
               inviteLoading={inviteLoading}
               onSubmit={handleSubmit}
-              onClose={() => dispatch(toggleForm())}
+              onClose={() => { dispatch(toggleForm()); setEditingManagerId(null); }}
               dispatch={dispatch}
+              isEdit={!!editingManagerId}
             />
           )}
 
@@ -542,6 +709,7 @@ const WarehouseManagerPage = () => {
                   wm={wm}
                   isSelected={selectedManager?.id === wm.id}
                   onCardClick={handleCardClick}
+                  onEdit={handleEdit}
                   onRemove={handleRemove}
                 />
               ))}
@@ -551,6 +719,7 @@ const WarehouseManagerPage = () => {
               managers={managers}
               selectedId={selectedManager?.id}
               onRowClick={handleCardClick}
+              onEdit={handleEdit}
               onRemove={handleRemove}
             />
           )}

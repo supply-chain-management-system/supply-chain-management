@@ -19,6 +19,8 @@ const ProductionManagement = () => {
     factory_id: "",
     status: "pending", 
     output_qty: 0,
+    priority: "medium",
+    notes: "",
   });
   
   const [products, setProducts] = useState([]);
@@ -30,6 +32,8 @@ const ProductionManagement = () => {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completeJob, setCompleteJob] = useState(null);
   const [completeQty, setCompleteQty] = useState("");
+  const [scrapQty, setScrapQty] = useState("0");
+  const [completeNotes, setCompleteNotes] = useState("");
 
   useEffect(() => {
     fetchProducts();
@@ -63,15 +67,33 @@ const ProductionManagement = () => {
     return true;
   });
 
-  const handleComplete = async (id, outputQty) => {
+  const handleComplete = async (id, outputQty, scrap, notes) => {
     try {
-      await api.patch(`/production/factory/products/${id}/complete`, { output_qty: Number(outputQty) });
+      await api.patch(`/production/factory/products/${id}/complete`, { 
+        output_qty: Number(outputQty),
+        scrap_qty: Number(scrap),
+        notes: notes
+      });
       await fetchProducts();
       setMessage("Job marked as complete");
       setTimeout(() => setMessage(""), 3000);
     } catch (err) {
       console.error(err.response?.data || err);
       setMessage("Failed to complete job");
+      setTimeout(() => setMessage(""), 3000);
+    }
+  };
+
+  const handleDeleteJob = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this production job?")) return;
+    try {
+      await api.delete(`/production/factory/products/${id}`);
+      setMessage("Production job deleted successfully");
+      setTimeout(() => setMessage(""), 3000);
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      setMessage("Failed to delete production job");
       setTimeout(() => setMessage(""), 3000);
     }
   };
@@ -91,6 +113,8 @@ const ProductionManagement = () => {
         target_qty: Number(form.target_qty),
         factory_id: Number(form.factory_id),
         status: form.status,
+        priority: form.priority,
+        notes: form.notes,
       };
 
       if (editId) {
@@ -107,7 +131,7 @@ const ProductionManagement = () => {
       setTimeout(() => {
         setShowModal(false);
         setEditId(null);
-        setForm({ product_name: "", target_qty: "", factory_id: "", status: "pending", output_qty: 0 });
+        setForm({ product_name: "", target_qty: "", factory_id: "", status: "pending", output_qty: 0, priority: "medium", notes: "" });
         setMessage("");
       }, 1500);
     } catch (err) {
@@ -163,13 +187,15 @@ const ProductionManagement = () => {
       factory_id: job.factory_id || "",
       status: job.status || "pending",
       output_qty: job.output_qty || 0,
+      priority: job.priority || "medium",
+      notes: job.notes || "",
     });
     setShowModal(true);
   };
 
   const openCreateModal = () => {
     setEditId(null);
-    setForm({ product_name: "", target_qty: "", factory_id: "", status: "pending", output_qty: 0 });
+    setForm({ product_name: "", target_qty: "", factory_id: "", status: "pending", output_qty: 0, priority: "medium", notes: "" });
     setMessage("");
     setShowModal(true);
   };
@@ -246,10 +272,11 @@ const ProductionManagement = () => {
           {/* Table Header */}
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
             <div className="grid grid-cols-12 gap-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
-              <div className="col-span-4">Job</div>
+              <div className="col-span-3">Job</div>
               <div className="col-span-2">Factory</div>
-              <div className="col-span-3">Progress</div>
-              <div className="col-span-1 text-center">Output</div>
+              <div className="col-span-2">Priority / Notes</div>
+              <div className="col-span-2">Progress</div>
+              <div className="col-span-1 text-center">Output / Scrap</div>
               <div className="col-span-1 text-center">Status</div>
               <div className="col-span-1 text-center">Actions</div>
             </div>
@@ -272,7 +299,7 @@ const ProductionManagement = () => {
                     <div className="grid grid-cols-12 gap-4 items-center">
                       
                       {/* Job Name & ID */}
-                      <div className="col-span-4">
+                      <div className="col-span-3">
                         <p className="font-medium text-gray-900 text-sm">{item.product_name}</p>
                         <p className="text-xs text-gray-400 font-mono mt-0.5">#{item.id}</p>
                       </div>
@@ -284,8 +311,25 @@ const ProductionManagement = () => {
                         </p>
                       </div>
 
+                      {/* Priority / Notes */}
+                      <div className="col-span-2">
+                        <div className="flex flex-col">
+                          <span className={`inline-flex items-center w-max px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                            item.priority === "high" ? "bg-rose-100 text-rose-800 border border-rose-200" :
+                            item.priority === "low" ? "bg-slate-100 text-slate-800 border border-slate-200" : "bg-blue-100 text-blue-800 border border-blue-200"
+                          }`}>
+                            {item.priority || "medium"}
+                          </span>
+                          {item.notes && (
+                            <span className="text-[10px] text-gray-400 truncate max-w-[150px] mt-0.5" title={item.notes}>
+                              {item.notes}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
                       {/* Progress Bar */}
-                      <div className="col-span-3">
+                      <div className="col-span-2">
                         <div className="flex items-center gap-3">
                           <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                             <div
@@ -299,11 +343,16 @@ const ProductionManagement = () => {
                         </div>
                       </div>
 
-                      {/* Output */}
+                      {/* Output / Scrap */}
                       <div className="col-span-1 text-center">
                         <p className="text-sm font-medium text-gray-900">
                           {completed} <span className="text-gray-400 font-normal">/ {target}</span>
                         </p>
+                        {item.scrap_qty > 0 && (
+                          <p className="text-[10px] font-bold text-rose-600 mt-0.5">
+                            Scrap: {item.scrap_qty}
+                          </p>
+                        )}
                       </div>
 
                       {/* Status Badge */}
@@ -320,6 +369,8 @@ const ProductionManagement = () => {
                             onClick={() => {
                               setCompleteJob(item);
                               setCompleteQty(item.target_qty || "");
+                              setScrapQty("0");
+                              setCompleteNotes("");
                               setShowCompleteModal(true);
                             }}
                             className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
@@ -334,7 +385,7 @@ const ProductionManagement = () => {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
-                          </span>
+                          </span >
                         )}
                         <button
                           onClick={() => openEditModal(item)}
@@ -343,6 +394,15 @@ const ProductionManagement = () => {
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteJob(item.id)}
+                          className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-rose-600 transition-colors"
+                          title="Delete Job"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
                       </div>
@@ -465,6 +525,34 @@ const ProductionManagement = () => {
                 </select>
               </div>
 
+              {/* Priority */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide mb-1.5">Priority</label>
+                <select
+                  name="priority"
+                  value={form.priority}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm bg-white transition-all"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide mb-1.5">Notes</label>
+                <textarea
+                  name="notes"
+                  value={form.notes}
+                  onChange={handleChange}
+                  placeholder="Enter production/operator notes..."
+                  rows="3"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm transition-all placeholder:text-gray-400"
+                />
+              </div>
+
               {/* Output Quantity (Only for Edit) */}
               {editId && (
                 <div>
@@ -515,6 +603,31 @@ const ProductionManagement = () => {
         </div>
       )}
 
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slide-up { 
+          from { opacity: 0; transform: translateY(16px); } 
+          to { opacity: 1; transform: translateY(0); } 
+        }
+        .animate-fade-in { animation: fade-in 0.2s ease-out; }
+        .animate-slide-up { animation: slide-up 0.25s ease-out; }
+      `}</style>
+       {!isChatOpen && (
+                <button
+                  onClick={() => setIsChatOpen(true)}
+                  className="fixed bottom-6 right-6 z-[9998] w-14 h-14 flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+                  style={{ background: "linear-gradient(135deg, #00c88c 0%, #00a06e 100%)" }}
+                >
+                  <MessageSquare size={24} color="#ffffff" strokeWidth={2.5} />
+                </button>
+              )}
+        
+              <KorvexCopilot 
+                isOpen={isChatOpen} 
+                onClose={() => setIsChatOpen(false)} 
+              />
+
       {/* Complete Job Modal */}
       {showCompleteModal && completeJob && (
         <div 
@@ -550,7 +663,7 @@ const ProductionManagement = () => {
               onSubmit={async (e) => {
                 e.preventDefault();
                 setLoading(true);
-                await handleComplete(completeJob.id, completeQty);
+                await handleComplete(completeJob.id, completeQty, scrapQty, completeNotes);
                 setLoading(false);
                 setShowCompleteModal(false);
               }} 
@@ -575,6 +688,36 @@ const ProductionManagement = () => {
                   min="0"
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm transition-all placeholder:text-gray-400"
                   required
+                />
+              </div>
+
+              {/* Scrap Quantity Input */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide mb-1.5">
+                  Defective / Scrap Quantity
+                </label>
+                <input
+                  type="number"
+                  value={scrapQty}
+                  onChange={(e) => setScrapQty(e.target.value)}
+                  placeholder="e.g. 10"
+                  min="0"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm transition-all placeholder:text-gray-400"
+                  required
+                />
+              </div>
+
+              {/* Complete Notes Input */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide mb-1.5">
+                  Operator Notes / Comments
+                </label>
+                <textarea
+                  value={completeNotes}
+                  onChange={(e) => setCompleteNotes(e.target.value)}
+                  placeholder="e.g. Completed with slight calibration adjustment..."
+                  rows="3"
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none text-sm transition-all placeholder:text-gray-400"
                 />
               </div>
 
