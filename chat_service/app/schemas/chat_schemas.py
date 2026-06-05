@@ -32,6 +32,7 @@ class MessageOut(BaseModel):
     content: str
     message_type: str
     timestamp: str
+    edited: bool = False
 
 class NotificationOut(BaseModel):
     id: str

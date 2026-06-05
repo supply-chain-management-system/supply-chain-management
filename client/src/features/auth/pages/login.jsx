@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
 
-import { loginUser } from "../../../redux/authslice";
+import { loginUser, loginGoogle } from "../../../redux/authslice";
 
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Zap, ArrowRight } from "lucide-react";
 
@@ -145,43 +145,12 @@ const handleGoogleResponse = () => {
     client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
     scope: "openid email profile",
     ux_mode: "popup",
-    callback: async (response) => {
+    callback: (response) => {
       if (response.error) {
         console.error("Google OAuth error:", response.error);
         return;
       }
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/google`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ code: response.code }),
-        });
-        const data = await res.json();
-        console.log("Google login response:", data);
-        if (res.ok && data.user.company_verified) {
-          const role = data.user.role;
-          if (role === "owner") {
-            navigate("/admindashboard");
-          } else if (role === "business_manager") {
-            navigate("/business-manager/dashboard");
-          } else if (role === "warehouse_manager") {
-            navigate("/ware_dashboard");
-          } else if (role === "factory_manager") {
-            navigate("/factorydash");
-          } else if (role === "supply_manager") {
-            navigate("/supplier-manager/dashboard");
-          } else if (role === "logistics_manager") {
-            navigate("/logistics_dashboard");
-          } else {
-            navigate("/");
-          }
-        } else {
-          navigate("/company-onboarding");
-        }
-      } catch (err) {
-        console.error("Google login failed", err);
-      }
+      dispatch(loginGoogle({ code: response.code, navigate }));
     },
   });
   client.requestCode();

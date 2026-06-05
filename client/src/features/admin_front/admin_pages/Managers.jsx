@@ -421,7 +421,7 @@ const ManagerGrid = () => {
   };
 
   return (
-    <div className="ml-64 min-h-screen bg-[#F7F8FA] p-8">
+    <div className="min-h-screen bg-[#F7F8FA] p-8">
 
       {showModal && (
         <CreateContainerModal

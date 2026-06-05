@@ -3,7 +3,7 @@ import {
   Users, Mail, Trash2, Plus, X, Loader2,
   ChevronLeft, ChevronRight, RefreshCw, AlertCircle,
   CheckCircle2, Send, UserPlus, Building2, Moon, Sun,
-  Shuffle, ChevronDown, ChevronUp, Grid, List
+  Shuffle, ChevronDown, ChevronUp, Grid, List, Edit2, Phone
 } from 'lucide-react';
 
 import api from '../../../api/api';
@@ -16,6 +16,7 @@ const fetchGroups   = (page, size) => api.get(`${FM}/`, { params: { page, size }
 const fetchCount    = ()           => api.get(`${FM}/count`);
 const postGroup     = (payload)    => api.post(`${FM}/`, payload);
 const deleteGroup   = (id)         => api.delete(`${FM}/${id}`);
+const updateGroup   = (id, payload) => api.put(`${FM}/${id}`, payload);
 const sendInvite    = (business_id, email)  => api.post(`/company/auth/invite/send`, { business_id: Number(business_id) || 1, role: 'factory_manager', email });
 const fetchMembers  = (id)         => api.get(`${FM}/${id}/members`);
 
@@ -37,6 +38,7 @@ const DEPT_COLOR = {
 const EMPTY_FORM = {
   name: '', shift: 'Day', department: 'Assembly',
   factory_id: 1, business_id: 1,
+  email: '', phone: '',
 };
 
 const errMsg = (err) => {
@@ -78,6 +80,17 @@ const SkeletonGroupCard = () => (
         ))}
       </div>
       <div className="h-9 bg-white/5 rounded-xl mt-2" />
+    </div>
+  </div>
+);
+
+// ─── Meta Chip ─────────────────────────────────────────────────────────────
+const MetaChip = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-2 bg-white/[0.02] rounded-xl px-3 py-2 border border-white/5 min-w-0">
+    <Icon size={11} className="text-gray-500 mt-0.5 shrink-0" />
+    <div className="min-w-0">
+      <p className="text-[8px] font-bold uppercase tracking-widest text-gray-500">{label}</p>
+      <p className="text-[10px] text-gray-300 truncate font-semibold mt-0.5">{value || '—'}</p>
     </div>
   </div>
 );
@@ -149,7 +162,7 @@ const InviteInput = ({ businessId, onSuccess, onError }) => {
 };
 
 // ─── Group Card ───────────────────────────────────────────────────────────
-const GroupCard = ({ group, onDelete, deleting, onMemberClick, showToast }) => {
+const GroupCard = ({ group, onDelete, deleting, onMemberClick, showToast, onEdit }) => {
   const shift      = group.shift || 'Day';
   const shiftMeta  = SHIFT_META[shift] ?? SHIFT_META.Day;
   const deptCls    = DEPT_COLOR[group.department] ?? 'bg-white/5 text-gray-400 border-white/10';
@@ -185,6 +198,15 @@ const GroupCard = ({ group, onDelete, deleting, onMemberClick, showToast }) => {
         <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/[0.02] pointer-events-none" />
         <div className="absolute top-3 right-14 w-12 h-12 rounded-full bg-white/[0.01] pointer-events-none" />
 
+        {/* edit btn */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit(group); }}
+          className="absolute top-3 right-12 w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-500/30 text-gray-400 hover:text-white transition-all duration-200 z-10"
+          title="Edit group"
+        >
+          <Edit2 size={12} />
+        </button>
+
         {/* delete btn */}
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(group.id); }}
@@ -215,6 +237,12 @@ const GroupCard = ({ group, onDelete, deleting, onMemberClick, showToast }) => {
 
       {/* Body */}
       <div className="flex flex-col gap-0 p-5 flex-1">
+        {/* Contact info */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <MetaChip icon={Mail} label="Email" value={group.email} />
+          <MetaChip icon={Phone} label="Phone" value={group.phone} />
+        </div>
+
         {/* members header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -295,8 +323,8 @@ const GroupCard = ({ group, onDelete, deleting, onMemberClick, showToast }) => {
 };
 
 // ─── Create Form ─────────────────────────────────────────────────────────
-const CreateGroupForm = ({ onSubmit, onClose, loading }) => {
-  const [form, setForm] = useState(EMPTY_FORM);
+const CreateGroupForm = ({ onSubmit, onClose, loading, initialData, isEdit }) => {
+  const [form, setForm] = useState(initialData || EMPTY_FORM);
   const shift = SHIFT_META[form.shift] ?? SHIFT_META.Day;
   const deptCls = DEPT_COLOR[form.department] ?? 'bg-white/5 text-gray-400 border-white/10';
 
@@ -313,9 +341,9 @@ const CreateGroupForm = ({ onSubmit, onClose, loading }) => {
     <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden shadow-lg">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div>
-          <p className="text-sm font-black text-white tracking-tight">Create Factory Group Card</p>
+          <p className="text-sm font-black text-white tracking-tight">{isEdit ? 'Edit Factory Group Card' : 'Create Factory Group Card'}</p>
           <p className="text-[11px] text-gray-500 mt-0.5">
-            Once created, use the card's invite field to add managers
+            {isEdit ? 'Update group card parameters and assignments' : 'Once created, use the card\'s invite field to add managers'}
           </p>
         </div>
         <button
@@ -335,6 +363,23 @@ const CreateGroupForm = ({ onSubmit, onClose, loading }) => {
               required type="text" placeholder="e.g. Night Assembly Team A"
               className={inputCls} {...field('name')}
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls}>Work Email <span className="text-red-400">*</span></label>
+              <input
+                required type="email" placeholder="e.g. manager@factory.com"
+                className={inputCls} {...field('email')}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Phone Number</label>
+              <input
+                type="text" placeholder="e.g. +1 (555) 0199"
+                className={inputCls} {...field('phone')}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -370,12 +415,12 @@ const CreateGroupForm = ({ onSubmit, onClose, loading }) => {
           <button
             type="button"
             onClick={() => onSubmit(form)}
-            disabled={loading || !form.name?.trim()}
+            disabled={loading || !form.name?.trim() || !form.email?.trim()}
             className="w-full h-10 flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all duration-200 active:scale-95 shadow-md shadow-cyan-600/10"
           >
             {loading
-              ? <><Loader2 size={13} className="animate-spin" /> Creating…</>
-              : <><Plus size={13} /> Create Group Card</>}
+              ? <><Loader2 size={13} className="animate-spin" /> Saving…</>
+              : <>{isEdit ? <Edit2 size={13} /> : <Plus size={13} />}{isEdit ? ' Save Changes' : ' Create Group Card'}</>}
           </button>
         </div>
 
@@ -399,7 +444,11 @@ const CreateGroupForm = ({ onSubmit, onClose, loading }) => {
                 {form.name?.trim() || <span className="opacity-30 font-normal italic text-xs">Group name</span>}
               </h2>
             </div>
-            <div className="p-4">
+            <div className="p-4 flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-2">
+                <MetaChip icon={Mail} label="Email" value={form.email} />
+                <MetaChip icon={Phone} label="Phone" value={form.phone} />
+              </div>
               <div className="flex flex-col items-center justify-center py-4 gap-2 bg-white/[0.01] rounded-xl border border-dashed border-white/10">
                 <UserPlus size={16} className="text-gray-600" />
                 <p className="text-[10px] text-gray-500">No members yet</p>
@@ -414,7 +463,7 @@ const CreateGroupForm = ({ onSubmit, onClose, loading }) => {
 };
 
 // ─── LIST VIEW TABLE ──────────────────────────────────────────────────────
-const GroupsTable = ({ groups, onDelete, deletingIds, onMemberClick, showToast }) => {
+const GroupsTable = ({ groups, onDelete, deletingIds, onMemberClick, showToast, onEdit }) => {
   const [membersMap, setMembersMap] = useState({});
 
   useEffect(() => {
@@ -489,7 +538,14 @@ const GroupsTable = ({ groups, onDelete, deletingIds, onMemberClick, showToast }
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right space-x-2">
+                    <button
+                      onClick={() => onEdit(group)}
+                      className="p-2 rounded-lg bg-white/5 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-500/30 text-gray-450 hover:text-white transition-all animate-none"
+                      title="Edit Group"
+                    >
+                      <Edit2 size={12} />
+                    </button>
                     <button
                       onClick={() => onDelete(group.id)}
                       disabled={deletingIds.has(group.id)}
@@ -520,6 +576,7 @@ const FactoryPage = () => {
   const [listError, setListError]   = useState(null);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState(null);
   const [creating, setCreating]     = useState(false);
   const [viewMode, setViewMode]     = useState('grid'); // 'grid' or 'list'
 
@@ -552,25 +609,49 @@ const FactoryPage = () => {
 
   useEffect(() => { loadGroups(currentPage); }, [currentPage, loadGroups]);
 
-  const handleCreate = async (form) => {
-    setCreating(true);
-    try {
-      const { data: created } = await postGroup({
-        name:        form.name.trim(),
-        shift:       form.shift,
-        department:  form.department,
-        factory_id:  Number(form.factory_id),
-        business_id: Number(form.business_id),
-        email:       "group@placeholder.com"
-      });
-      setGroups(prev => [created, ...prev]);
-      setTotal(prev => prev + 1);
-      setIsFormOpen(false);
-      showToast(`"${created.name}" group created!`);
-    } catch (err) {
-      showToast(errMsg(err), 'error');
-    } finally {
-      setCreating(false);
+  const handleCreateOrUpdate = async (form) => {
+    if (editingGroup) {
+      setCreating(true);
+      try {
+        const { data: updated } = await updateGroup(editingGroup.id, {
+          name:        form.name.trim(),
+          shift:       form.shift,
+          department:  form.department,
+          factory_id:  Number(form.factory_id),
+          business_id: Number(form.business_id),
+          email:       form.email.trim(),
+          phone:       form.phone?.trim() || null,
+        });
+        setGroups(prev => prev.map(g => g.id === updated.id ? updated : g));
+        setIsFormOpen(false);
+        setEditingGroup(null);
+        showToast(`"${updated.name}" group updated!`);
+      } catch (err) {
+        showToast(errMsg(err), 'error');
+      } finally {
+        setCreating(false);
+      }
+    } else {
+      setCreating(true);
+      try {
+        const { data: created } = await postGroup({
+          name:        form.name.trim(),
+          shift:       form.shift,
+          department:  form.department,
+          factory_id:  Number(form.factory_id),
+          business_id: Number(form.business_id),
+          email:       form.email.trim(),
+          phone:       form.phone?.trim() || null,
+        });
+        setGroups(prev => [created, ...prev]);
+        setTotal(prev => prev + 1);
+        setIsFormOpen(false);
+        showToast(`"${created.name}" group created!`);
+      } catch (err) {
+        showToast(errMsg(err), 'error');
+      } finally {
+        setCreating(false);
+      }
     }
   };
 
@@ -655,7 +736,7 @@ const FactoryPage = () => {
           </button>
 
           <button
-            onClick={() => { setIsFormOpen(v => !v); }}
+            onClick={() => { setIsFormOpen(v => !v); setEditingGroup(null); }}
             className="group flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-xs font-bold uppercase tracking-wide px-4 py-2.5 rounded-xl transition-all duration-200 shadow-md shadow-cyan-600/10"
           >
             <span className="w-5 h-5 bg-white/15 rounded-md flex items-center justify-center group-hover:rotate-90 transition-transform duration-200">
@@ -669,9 +750,11 @@ const FactoryPage = () => {
       {/* CREATE FORM */}
       {isFormOpen && (
         <CreateGroupForm
-          onSubmit={handleCreate}
-          onClose={() => setIsFormOpen(false)}
+          onSubmit={handleCreateOrUpdate}
+          onClose={() => { setIsFormOpen(false); setEditingGroup(null); }}
           loading={creating}
+          initialData={editingGroup}
+          isEdit={!!editingGroup}
         />
       )}
 
@@ -708,6 +791,7 @@ const FactoryPage = () => {
               deleting={deletingIds.has(group.id)}
               onMemberClick={handleMemberClick}
               showToast={showToast}
+              onEdit={(g) => { setEditingGroup(g); setIsFormOpen(true); }}
             />
           ))}
         </div>
@@ -718,6 +802,7 @@ const FactoryPage = () => {
           deletingIds={deletingIds}
           onMemberClick={handleMemberClick}
           showToast={showToast}
+          onEdit={(g) => { setEditingGroup(g); setIsFormOpen(true); }}
         />
       )}
 

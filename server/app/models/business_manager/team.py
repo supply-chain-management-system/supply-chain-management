@@ -63,6 +63,7 @@ class WarehouseManager(BaseTenant):
     description = Column(String, nullable=True)
     color = Column(String, default="#185FA5")
 
+    role = Column(String, default="warehouse_manager")   # warehouse_manager | warehouse_manager_member
     is_used = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -95,6 +96,7 @@ class LogisticsManager(BaseTenant):
     description = Column(String, nullable=True)
     color = Column(String, default="#185FA5")
 
+    role = Column(String, default="logistics_manager")    # logistics_manager | logistics_manager_member
     is_active = Column(Boolean, default=False)           # Tracks if user registered
     is_used = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -132,6 +134,7 @@ class SupplyManager(BaseTenant):
     description = Column(String, nullable=True)
     color = Column(String, default="#185FA5")
 
+    role = Column(String, default="supply_manager")       # supply_manager | supply_manager_member
     is_active = Column(Boolean, default=False)           # Tracks if user registered
     is_used = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

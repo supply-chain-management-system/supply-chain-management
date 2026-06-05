@@ -26,6 +26,23 @@ def register_connector():
     with open(file_path) as f:
         config = json.load(f)
 
+    # Dynamically inject credentials from environment variables if present
+    postgres_host = os.getenv("POSTGRES_HOST")
+    if postgres_host:
+        config["config"]["database.hostname"] = postgres_host
+    postgres_port = os.getenv("POSTGRES_PORT")
+    if postgres_port:
+        config["config"]["database.port"] = postgres_port
+    postgres_user = os.getenv("POSTGRES_USER")
+    if postgres_user:
+        config["config"]["database.user"] = postgres_user
+    postgres_password = os.getenv("POSTGRES_PASSWORD")
+    if postgres_password:
+        config["config"]["database.password"] = postgres_password
+    postgres_db = os.getenv("POSTGRES_DB")
+    if postgres_db:
+        config["config"]["database.dbname"] = postgres_db
+
     r = requests.post(CONNECT_URL, json=config)
     print(r.status_code, r.text)
 
