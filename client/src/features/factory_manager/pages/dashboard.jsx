@@ -146,20 +146,39 @@ const Dashboard = () => {
         {/* Header Dashboard Control Panel */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-5 dark:border-gray-800">
           <div>
+<<<<<<< HEAD
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
               <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">Telemetry Online</span>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white mt-1">Factory Cockpit</h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">Real-time supervision of active assembly lines, stock alerts, and machine health.</p>
+=======
+            <div className="flex items-center gap-3">
+              <span className="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700 rounded-md border border-slate-200">
+                Live Factory Feed
+              </span>
+            </div>
+            <div className="flex items-center gap-3 mt-1.5">
+              <div className="w-1 h-7 rounded-full" style={{ background: 'linear-gradient(180deg, #94a3b8, #64748b)' }} />
+              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Factory Overview</h1>
+            </div>
+            <p className="text-gray-500 mt-1 ml-4 text-sm">Real-time status of production line 04 — Sector B</p>
+>>>>>>> development
           </div>
 
           <div className="flex items-center gap-3">
             <button 
+<<<<<<< HEAD
               onClick={() => fetchDashboardData(true)}
               disabled={refreshing}
               className={`p-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 text-gray-600 dark:text-gray-300 transition-all ${refreshing ? 'cursor-not-allowed opacity-60' : 'hover:scale-105'}`}
               title="Refresh telemetry data"
+=======
+              className="flex items-center gap-2 px-5 py-3 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all" 
+              style={{ background: 'linear-gradient(135deg, #94a3b8, #64748b)' }}
+              onClick={() => navigate('/createproduct')}
+>>>>>>> development
             >
               <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
             </button>

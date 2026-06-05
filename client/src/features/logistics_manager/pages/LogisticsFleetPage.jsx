@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { AlertCircle, Edit2, MapPin, Package, Plus, Search, Truck, UserRound, X } from 'lucide-react';
+import { AlertCircle, Edit2, Trash2, MapPin, Package, Plus, Search, Truck, UserRound, X } from 'lucide-react';
 import {
   addVehicle,
   fetchVehicleWarehouses,
   fetchVehicles,
   updateVehicle,
+  deleteVehicle,
 } from '../../../redux/logisticsDashboardSlice';
 
 const vehicleTypes = ['Truck', 'Box Truck', 'Van', 'Flatbed', 'Mini Truck', 'Refrigerated'];
@@ -86,7 +87,7 @@ const VehicleModal = ({ isOpen, onClose, onSave, editingVehicle, warehouses, war
       <div className="w-full max-w-lg bg-[#0a0a0a] border border-white/[0.1] rounded-xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.05]">
           <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-            <Truck className="w-4 h-4 text-green-500" />
+            <Truck className="w-4 h-4 text-emerald-500" />
             {editingVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
           </h2>
           <button onClick={onClose} className="text-white/40 hover:text-white transition-colors" title="Close">
@@ -111,7 +112,7 @@ const VehicleModal = ({ isOpen, onClose, onSave, editingVehicle, warehouses, war
                 type="text"
                 value={formData.fleet_id}
                 onChange={(e) => setFormData({ ...formData, fleet_id: e.target.value })}
-                className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 transition-all placeholder:text-white/20"
+                className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-white/20"
                 placeholder="TRK-001"
                 disabled={!!editingVehicle}
               />
@@ -124,7 +125,7 @@ const VehicleModal = ({ isOpen, onClose, onSave, editingVehicle, warehouses, war
               <select
                 value={formData.vehicle_type}
                 onChange={(e) => setFormData({ ...formData, vehicle_type: e.target.value })}
-                className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 transition-all"
+                className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
               >
                 {vehicleTypes.map((type) => (
                   <option key={type} value={type}>{type}</option>
@@ -141,7 +142,7 @@ const VehicleModal = ({ isOpen, onClose, onSave, editingVehicle, warehouses, war
               value={formData.stop_warehouse_id}
               onChange={handleWarehouseChange}
               disabled={warehousesLoading}
-              className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 transition-all"
+              className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
             >
               <option value="">{warehousesLoading ? 'Loading warehouse stands...' : 'Select warehouse stand'}</option>
               {warehouses.map((warehouse) => (
@@ -167,7 +168,7 @@ const VehicleModal = ({ isOpen, onClose, onSave, editingVehicle, warehouses, war
                 min="1"
                 value={formData.capacity_kg}
                 onChange={(e) => setFormData({ ...formData, capacity_kg: e.target.value })}
-                className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 transition-all"
+                className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
                 placeholder="2500"
               />
             </div>
@@ -178,7 +179,7 @@ const VehicleModal = ({ isOpen, onClose, onSave, editingVehicle, warehouses, war
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 transition-all"
+                className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
               >
                 <option value="Active">Active</option>
                 <option value="Idle">Idle</option>
@@ -195,7 +196,7 @@ const VehicleModal = ({ isOpen, onClose, onSave, editingVehicle, warehouses, war
               type="text"
               value={formData.driver_name}
               onChange={(e) => setFormData({ ...formData, driver_name: e.target.value })}
-              className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 transition-all placeholder:text-white/20"
+              className="w-full bg-[#141414] border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-white/20"
               placeholder="Optional"
             />
           </div>
@@ -210,7 +211,7 @@ const VehicleModal = ({ isOpen, onClose, onSave, editingVehicle, warehouses, war
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-400 text-black text-xs font-bold transition-all shadow-[0_0_15px_rgba(34,197,94,0.2)]"
+              className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)]"
             >
               {editingVehicle ? 'Save Changes' : 'Add Vehicle'}
             </button>
@@ -265,6 +266,12 @@ const LogisticsFleetPage = () => {
     }
   };
 
+  const handleDeleteVehicle = async (vehicle) => {
+    if (window.confirm(`Are you sure you want to delete vehicle ${vehicle.id}?`)) {
+      await dispatch(deleteVehicle(vehicle.id)).unwrap();
+    }
+  };
+
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -274,43 +281,43 @@ const LogisticsFleetPage = () => {
         </div>
         <button
           onClick={handleOpenAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-400 text-black rounded-lg text-xs font-bold transition-all shadow-[0_0_15px_rgba(34,197,94,0.15)] hover:shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:-translate-y-0.5"
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black rounded-lg text-xs font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:-translate-y-0.5"
         >
           <Plus className="w-4 h-4" /> Add Vehicle
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <Truck className="w-5 h-5 text-green-400" />
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/40">Total Vehicles</p>
-              <p className="text-lg font-bold text-white">{vehicles.length}</p>
+          <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <Truck className="w-5 h-5 text-emerald-400" />
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/40">Total Vehicles</p>
+                <p className="text-lg font-bold text-white">{vehicles.length}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <Package className="w-5 h-5 text-emerald-400" />
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/40">Total Capacity</p>
+                <p className="text-lg font-bold text-white">
+                  {vehicles.reduce((sum, vehicle) => sum + Number(vehicle.capacity_kg || 0), 0).toLocaleString()} kg
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <MapPin className="w-5 h-5 text-emerald-400" />
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-white/40">Warehouse Stands</p>
+                <p className="text-lg font-bold text-white">{warehouses.length}</p>
+              </div>
             </div>
           </div>
         </div>
-        <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <Package className="w-5 h-5 text-green-400" />
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/40">Total Capacity</p>
-              <p className="text-lg font-bold text-white">
-                {vehicles.reduce((sum, vehicle) => sum + Number(vehicle.capacity_kg || 0), 0).toLocaleString()} kg
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <MapPin className="w-5 h-5 text-green-400" />
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-white/40">Warehouse Stands</p>
-              <p className="text-lg font-bold text-white">{warehouses.length}</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl shadow-xl overflow-hidden flex flex-col">
         <div className="p-4 border-b border-white/[0.05] flex items-center justify-between bg-white/[0.01]">
@@ -321,7 +328,7 @@ const LogisticsFleetPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search vehicles, stands, drivers..."
-              className="w-full bg-[#111] border border-white/[0.06] rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/50 transition-all placeholder:text-white/20"
+              className="w-full bg-[#111] border border-white/[0.06] rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all placeholder:text-white/20"
             />
           </div>
         </div>
@@ -357,8 +364,8 @@ const LogisticsFleetPage = () => {
                   <tr key={v.id} className="group hover:bg-white/[0.02] transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center group-hover:border-green-500/30 transition-colors">
-                          <Truck className="w-4 h-4 text-white/60 group-hover:text-green-400 transition-colors" />
+                        <div className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center group-hover:border-emerald-500/30 transition-colors">
+                          <Truck className="w-4 h-4 text-white/60 group-hover:text-emerald-400 transition-colors" />
                         </div>
                         <span className="text-sm font-semibold text-white">{v.id}</span>
                       </div>
@@ -383,25 +390,34 @@ const LogisticsFleetPage = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                        v.status === 'Active' ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        v.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                           : v.status === 'Maintenance' ? 'bg-red-500/10 text-red-400 border-red-500/20'
                             : 'bg-white/[0.05] text-white/50 border-white/[0.05]'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${
-                          v.status === 'Active' ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]'
+                          v.status === 'Active' ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]'
                             : v.status === 'Maintenance' ? 'bg-red-500' : 'bg-white/30'
                         }`} />
                         {v.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleOpenEdit(v)}
-                        className="p-1.5 text-white/30 hover:text-white hover:bg-white/[0.05] rounded-md transition-all"
-                        title="Edit Vehicle"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenEdit(v)}
+                          className="p-1.5 text-white/30 hover:text-white hover:bg-white/[0.05] rounded-md transition-all"
+                          title="Edit Vehicle"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVehicle(v)}
+                          className="p-1.5 text-white/30 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all"
+                          title="Delete Vehicle"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

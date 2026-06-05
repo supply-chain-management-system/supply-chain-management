@@ -4,7 +4,8 @@ import {
   Loader2, ChevronLeft, ChevronRight,
   ShieldCheck, Globe, Star, Clock, AlertTriangle,
   TrendingUp, ShoppingCart, BadgeCheck, CheckCircle2,
-  RefreshCw, Award, Activity, Grid, List
+  RefreshCw, Award, Activity, Grid, List, Edit2,
+  Send, UserPlus, ChevronUp, ChevronDown
 } from 'lucide-react';
 import api from '../../../api/api';
 
@@ -91,32 +92,82 @@ const Toast = ({ toast, onClose }) => {
   );
 };
 
-/* ── Manager Card Component ── */
-const ManagerCard = ({ sm, isSelected, onCardClick, onRemove }) => {
-  const catTheme = CAT_COLORS[sm.category] || CAT_COLORS.Electronics;
+/* ── Manager Card Component (Group Card with Members + Invite) ── */
+const ManagerCard = ({ sm, isSelected, onCardClick, onEdit, onRemove }) => {
+  const catTheme  = CAT_COLORS[sm.category]  || CAT_COLORS.Electronics;
   const regionCls = REGION_BADGES[sm.region] || REGION_BADGES.Domestic;
+
+  const [members, setMembers]               = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [expanded, setExpanded]             = useState(true);
+  const [inviteEmail, setInviteEmail]       = useState('');
+  const [inviting, setInviting]             = useState(false);
+  const [inviteMsg, setInviteMsg]           = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setMembersLoading(true);
+      try {
+        const res = await api.get(`/business-manager/supply-managers/${sm.id}/members`);
+        if (!cancelled) setMembers(Array.isArray(res.data) ? res.data : []);
+      } catch { /* silent */ } finally {
+        if (!cancelled) setMembersLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [sm.id]);
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    try {
+      await api.post(`/business-manager/supply-managers/${sm.id}/invite`, { email: inviteEmail.trim() });
+      setInviteMsg({ type: 'success', text: `Invite sent to ${inviteEmail.trim()}` });
+      setInviteEmail('');
+      const res = await api.get(`/business-manager/supply-managers/${sm.id}/members`);
+      setMembers(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      setInviteMsg({ type: 'error', text: err?.response?.data?.detail || 'Failed to send invite.' });
+    } finally {
+      setInviting(false);
+      setTimeout(() => setInviteMsg(null), 4000);
+    }
+  };
 
   return (
     <div
-      onClick={() => onCardClick(sm)}
-      className={`bg-white/[0.02] border rounded-2xl overflow-hidden hover:shadow-[0_0_30px_rgba(255,255,255,0.03)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col cursor-pointer ${
+      className={`bg-white/[0.02] border rounded-2xl overflow-hidden hover:shadow-[0_0_30px_rgba(255,255,255,0.03)] hover:-translate-y-0.5 transition-all duration-300 flex flex-col ${
         isSelected ? 'border-cyan-500/50 ring-2 ring-cyan-500/10 bg-white/[0.04]' : 'border-white/5'
       }`}
     >
       {/* coloured banner */}
-      <div className={`relative h-28 bg-gradient-to-br ${catTheme.banner} flex flex-col justify-end px-5 pb-4 shrink-0`}>
+      <div
+        className={`relative h-28 bg-gradient-to-br ${catTheme.banner} flex flex-col justify-end px-5 pb-4 shrink-0 cursor-pointer`}
+        onClick={() => onCardClick(sm)}
+      >
         <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/5 pointer-events-none" />
         <div className="absolute top-3 right-12 w-10 h-10 rounded-full bg-white/5 pointer-events-none" />
         <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
 
-        {/* remove btn */}
-        <button
-          onClick={(e) => onRemove(e, sm.id)}
-          className="absolute top-3 right-3 text-white/40 hover:text-red-400 hover:scale-110 transition-all z-10 p-1"
-          title="Remove Manager Card"
-        >
-          <Trash2 size={14} />
-        </button>
+        {/* edit / remove btns */}
+        <div className="absolute top-3 right-3 flex gap-2 z-10">
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(e, sm); }}
+            className="text-white/40 hover:text-white hover:scale-110 transition-all p-1"
+            title="Edit Manager Card"
+          >
+            <Edit2 size={14} />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onRemove(e, sm.id); }}
+            className="text-white/40 hover:text-red-400 hover:scale-110 transition-all p-1"
+            title="Remove Manager Card"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
 
         {/* avatar */}
         <div className="absolute top-3 left-5 w-8 h-8 bg-cyan-600/30 border border-cyan-500/40 rounded-xl flex items-center justify-center text-white font-black text-sm">
@@ -146,13 +197,88 @@ const ManagerCard = ({ sm, isSelected, onCardClick, onRemove }) => {
           <MetaChip icon={Mail}  label="Email" value={sm.email} />
           <MetaChip icon={Phone} label="Phone" value={sm.phone} />
         </div>
+
+        {/* Members section */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Users size={11} className="text-gray-500" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-gray-500">Team Members</span>
+              {members.length > 0 && (
+                <span className="text-[9px] font-black bg-cyan-500/10 text-cyan-400 px-1.5 py-0.5 rounded-full border border-cyan-500/20">{members.length}</span>
+              )}
+            </div>
+            {members.length > 0 && (
+              <button onClick={() => setExpanded(v => !v)} className="text-gray-500 hover:text-white transition-colors">
+                {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            )}
+          </div>
+
+          {membersLoading ? (
+            <div className="space-y-2">{[1,2].map(i => <div key={i} className="h-10 bg-white/5 rounded-xl animate-pulse" />)}</div>
+          ) : members.length === 0 ? (
+            <div className="flex flex-col items-center py-4 gap-2 bg-white/[0.01] rounded-xl border border-dashed border-white/10">
+              <UserPlus size={15} className="text-gray-600" />
+              <p className="text-[10px] text-gray-500 text-center">No members yet<br /><span className="text-[9px]">Send an invite below</span></p>
+            </div>
+          ) : expanded ? (
+            <div className="space-y-1.5 max-h-44 overflow-y-auto">
+              {members.map(m => (
+                <div key={m.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+                  <div className="w-7 h-7 rounded-lg bg-cyan-600/30 border border-cyan-500/40 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {m.name?.charAt(0)?.toUpperCase() ?? '?'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-white truncate">{m.name}</p>
+                    <p className="text-[10px] text-gray-500 truncate">{m.email}</p>
+                  </div>
+                  <span className={`h-2 w-2 rounded-full flex-shrink-0 ${(m.is_active || m.is_used) ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <button onClick={() => setExpanded(true)} className="w-full py-2 text-[10px] font-bold text-cyan-400 hover:text-cyan-300 uppercase tracking-widest transition-colors">
+              Show {members.length} member{members.length !== 1 ? 's' : ''}
+            </button>
+          )}
+        </div>
+
+        {/* Invite input */}
+        <div className="pt-3 border-t border-white/5">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <Mail size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <input
+                type="email" value={inviteEmail}
+                onChange={e => { setInviteEmail(e.target.value); setInviteMsg(null); }}
+                onKeyDown={e => e.key === 'Enter' && handleInvite()}
+                placeholder="Invite by email…"
+                className="w-full h-9 pl-8 pr-3 text-xs rounded-xl border border-white/10 bg-white/5 text-white placeholder-gray-600 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+              />
+            </div>
+            <button
+              onClick={handleInvite}
+              disabled={inviting || !inviteEmail.trim()}
+              className="h-9 px-3.5 flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-cyan-600/10"
+            >
+              {inviting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+              <span className="hidden sm:inline">{inviting ? 'Sending…' : 'Invite'}</span>
+            </button>
+          </div>
+          {inviteMsg && (
+            <div className={`mt-2 text-[10px] font-semibold px-2 py-1 rounded-lg ${inviteMsg.type === 'success' ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
+              {inviteMsg.text}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
 /* ── Create Form Component ── */
-const CreateForm = ({ form, loading, onSubmit, onClose, setForm }) => {
+const CreateForm = ({ form, loading, onSubmit, onClose, setForm, isEdit }) => {
   const catTheme = CAT_COLORS[form.category] || CAT_COLORS.Electronics;
   const regionCls = REGION_BADGES[form.region] || REGION_BADGES.Domestic;
 
@@ -161,8 +287,8 @@ const CreateForm = ({ form, loading, onSubmit, onClose, setForm }) => {
       {/* header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.01]">
         <div>
-          <p className="text-sm font-black text-white uppercase tracking-wider">New Supplier Manager Card</p>
-          <p className="text-[11px] text-gray-500 mt-0.5">Card will be created & registry email invite dispatched instantly</p>
+          <p className="text-sm font-black text-white uppercase tracking-wider">{isEdit ? 'Edit Supplier Manager Card' : 'New Supplier Manager Card'}</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">{isEdit ? 'Update details of the manager card' : 'Card will be created & registry email invite dispatched instantly'}</p>
         </div>
         <button
           onClick={onClose}
@@ -240,9 +366,9 @@ const CreateForm = ({ form, loading, onSubmit, onClose, setForm }) => {
               className="w-full h-11 mt-2 flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-[0_0_20px_rgba(8,145,178,0.2)] transition active:scale-95 cursor-pointer"
             >
               {loading ? (
-                <><Loader2 size={13} className="animate-spin" /> Provisioning Card…</>
+                <><Loader2 size={13} className="animate-spin" /> saving…</>
               ) : (
-                <><ArrowRight size={13} /> Onboard Supply Manager</>
+                <><ArrowRight size={13} /> {isEdit ? 'Save Changes' : 'Onboard Supply Manager'}</>
               )}
             </button>
           </form>
@@ -363,7 +489,7 @@ const SMAnalyticsView = ({ manager, analytics, loading, onBack }) => {
 };
 
 /* ── LIST VIEW TABLE ── */
-const ManagersTable = ({ managers, selectedId, onRowClick, onRemove }) => {
+const ManagersTable = ({ managers, selectedId, onRowClick, onEdit, onRemove }) => {
   return (
     <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
@@ -429,13 +555,22 @@ const ManagersTable = ({ managers, selectedId, onRowClick, onRemove }) => {
                     <StatusDot isUsed={sm.is_active || sm.is_used} />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      onClick={(e) => onRemove(e, sm.id)}
-                      className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-red-500/20 text-gray-500 hover:text-red-400 transition-all"
-                      title="Remove Manager"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={(e) => onEdit(e, sm)}
+                        className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-cyan-500/20 text-slate-400 hover:text-white transition-all animate-none"
+                        title="Edit Manager"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => onRemove(e, sm.id)}
+                        className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-red-500/20 text-gray-500 hover:text-red-400 transition-all animate-none"
+                        title="Remove Manager"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -456,6 +591,7 @@ const SupplyManagerPage = () => {
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingManagerId, setEditingManagerId] = useState(null);
   const [createLoading, setCreateLoading] = useState(false);
 
   const [view, setView] = useState('roster'); // 'roster' | 'analytics'
@@ -500,34 +636,64 @@ const SupplyManagerPage = () => {
     }
   };
 
+  const handleEdit = (e, sm) => {
+    e.stopPropagation();
+    setForm({
+      name: sm.name,
+      email: sm.email,
+      phone: sm.phone || '',
+      category: sm.category,
+      region: sm.region,
+      department: sm.department || 'Procurement',
+    });
+    setEditingManagerId(sm.id);
+    setIsFormOpen(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setCreateLoading(true);
     try {
-      // 1. Create card record
-      const cardRes = await api.post('/business-manager/supply-managers/', {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone?.trim() || null,
-        category: form.category,
-        region: form.region,
-        department: form.department,
-      });
+      if (editingManagerId) {
+        const res = await api.put(`/business-manager/supply-managers/${editingManagerId}`, {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone?.trim() || null,
+          category: form.category,
+          region: form.region,
+          department: form.department,
+        });
+        setManagers(prev => prev.map(m => m.id === editingManagerId ? res.data : m));
+        setIsFormOpen(false);
+        setForm(EMPTY_FORM);
+        setEditingManagerId(null);
+        setToast({ type: 'success', msg: 'Supply Manager updated successfully!' });
+      } else {
+        // 1. Create card record
+        const cardRes = await api.post('/business-manager/supply-managers/', {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone?.trim() || null,
+          category: form.category,
+          region: form.region,
+          department: form.department,
+        });
 
-      // 2. Dispatched invite email
-      await api.post('/company/auth/invite/send', {
-        business_id: 1,
-        role: 'supply_manager',
-        email: form.email.trim(),
-      });
+        // 2. Dispatched invite email
+        await api.post('/company/auth/invite/send', {
+          business_id: 1,
+          role: 'supply_manager',
+          email: form.email.trim(),
+        });
 
-      setManagers(prev => [cardRes.data, ...prev]);
-      setTotal(prev => prev + 1);
-      setIsFormOpen(false);
-      setForm(EMPTY_FORM);
-      setToast({ type: 'success', msg: 'Supply Manager onboarded successfully!' });
+        setManagers(prev => [cardRes.data, ...prev]);
+        setTotal(prev => prev + 1);
+        setIsFormOpen(false);
+        setForm(EMPTY_FORM);
+        setToast({ type: 'success', msg: 'Supply Manager onboarded successfully!' });
+      }
     } catch (err) {
-      setToast({ type: 'error', msg: err?.response?.data?.detail || 'Failed to create manager card.' });
+      setToast({ type: 'error', msg: err?.response?.data?.detail || 'Failed to save manager card.' });
     } finally {
       setCreateLoading(false);
     }
@@ -590,7 +756,7 @@ const SupplyManagerPage = () => {
             </div>
 
             <button
-              onClick={() => setIsFormOpen(v => !v)}
+              onClick={() => { setIsFormOpen(v => !v); setEditingManagerId(null); setForm(EMPTY_FORM); }}
               className="group flex items-center gap-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-xs font-black uppercase tracking-wider px-5 py-3 rounded-xl transition duration-150 shadow-md shadow-cyan-600/10 cursor-pointer"
             >
               <Plus size={14} className="group-hover:rotate-90 transition-transform duration-200" />
@@ -606,8 +772,9 @@ const SupplyManagerPage = () => {
           form={form}
           loading={createLoading}
           onSubmit={handleSubmit}
-          onClose={() => setIsFormOpen(false)}
+          onClose={() => { setIsFormOpen(false); setEditingManagerId(null); setForm(EMPTY_FORM); }}
           setForm={setForm}
+          isEdit={!!editingManagerId}
         />
       )}
 
@@ -643,6 +810,7 @@ const SupplyManagerPage = () => {
                   sm={sm}
                   isSelected={selectedManager?.id === sm.id}
                   onCardClick={handleCardClick}
+                  onEdit={handleEdit}
                   onRemove={handleRemove}
                 />
               ))}
@@ -652,6 +820,7 @@ const SupplyManagerPage = () => {
               managers={managers}
               selectedId={selectedManager?.id}
               onRowClick={handleCardClick}
+              onEdit={handleEdit}
               onRemove={handleRemove}
             />
           )}

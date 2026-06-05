@@ -13,7 +13,8 @@ class MessageService:
             "sender_email": sender["email"],
             "content": content,
             "message_type": msg_type,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
+            "edited": False
         }
         result = await db.messages.insert_one(message_doc)
         message_doc["id"] = str(result.inserted_id)
@@ -23,6 +24,49 @@ class MessageService:
         # Publish to Redis Pub/Sub so all instances broadcast to active users
         await broker.publish(room_id, message_doc)
         return message_doc
+
+    @staticmethod
+    async def edit_message(message_id: str, new_content: str, sender_id: int) -> dict:
+        try:
+            # 1. Fetch message from MongoDB
+            doc = await db.messages.find_one({"_id": ObjectId(message_id)})
+            if not doc:
+                return None
+            
+            # 2. Authorization: verify that editor is the sender
+            if doc.get("sender_id") != sender_id:
+                raise Exception("Unauthorized to edit this message")
+            
+            # 3. Update the content and set edited to True
+            await db.messages.update_one(
+                {"_id": ObjectId(message_id)},
+                {"$set": {
+                    "content": new_content,
+                    "edited": True
+                }}
+            )
+            
+            # 4. Construct updated payload
+            doc["content"] = new_content
+            doc["edited"] = True
+            doc["id"] = str(doc["_id"])
+            del doc["_id"]
+            
+            # 5. Broadcast message_edit update to active connections in the room
+            broadcast_payload = {
+                "type": "message_edit",
+                "id": doc["id"],
+                "room_id": doc["room_id"],
+                "content": doc["content"],
+                "edited": doc["edited"],
+                "sender_id": doc["sender_id"],
+                "timestamp": doc["timestamp"]
+            }
+            await broker.publish(doc["room_id"], broadcast_payload)
+            return doc
+        except Exception as e:
+            print(f"Error editing message: {e}")
+            raise e
 
     @staticmethod
     async def get_messages(room_id: str, limit: int = 50, skip: int = 0) -> list:

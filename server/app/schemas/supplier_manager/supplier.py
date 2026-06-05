@@ -20,3 +20,15 @@ class SupplierOut(SupplierBase):
 
     class Config:
         from_attributes = True
+
+class SupplierUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    lead_time_days: Optional[int] = None
+    business_id: Optional[int] = None
+    manager_id: Optional[int] = None
+    rating: Optional[float] = None
+    is_active: Optional[bool] = None
+

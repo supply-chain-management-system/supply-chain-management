@@ -6,6 +6,7 @@ from app.schemas.sub_managers.factory_manager.factory_team import (
     worker_create,
     team_create,
     get_worker,
+    worker_update,
 )
 from app.models.sub_managers.factory_manager.teams import Worker, Productionteam
 from app.models.sub_managers.factory_manager.production import Production
@@ -35,7 +36,14 @@ def create_worker(
     work=Worker(
         name=data.name,
         role=data.role,
+<<<<<<< HEAD
         factory_id=data.factory_id
+=======
+        factory_id=data.factory_id,
+        email=data.email,
+        phone=data.phone,
+        hourly_rate=data.hourly_rate
+>>>>>>> development
     )
 
     db.add(work)
@@ -45,7 +53,7 @@ def create_worker(
 
 
 @router.get('/get_worker', response_model=list[get_worker])
-def get_worker(db: Session = Depends(get_tenant_db)):  
+def get_available_workers(db: Session = Depends(get_tenant_db)):  
     assigned_worker_ids = db.query(Productionteam.worker_id).subquery()
 
   
@@ -112,7 +120,10 @@ def get_all_production_teams(db: Session = Depends(get_tenant_db)):
             Worker.name,
             Productionteam.role,
             Productionteam.worker_id,
-            Worker.status
+            Worker.status,
+            Worker.hourly_rate,
+            Worker.email,
+            Worker.phone
         )
         .join(Worker, Worker.id == Productionteam.worker_id)
         .order_by(Productionteam.production_id)
@@ -129,6 +140,9 @@ def get_all_production_teams(db: Session = Depends(get_tenant_db)):
             "role": row.role,
             "worker_id": row.worker_id,
             'status': row.status,
+            'hourly_rate': row.hourly_rate,
+            'email': row.email,
+            'phone': row.phone,
         })
 
     return grouped
@@ -159,6 +173,41 @@ def remove_teammember(mem_id: int, db: Session = Depends(get_tenant_db)):
     except SQLAlchemyError as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="database error while delete")
+
+
+@router.delete('/delete_worker/{worker_id}')
+def delete_worker(worker_id: int, db: Session = Depends(get_tenant_db)):
+    try:
+        # First remove from any production team to satisfy foreign keys
+        db.query(Productionteam).filter(Productionteam.worker_id == worker_id).delete()
+        
+        # Then remove the worker
+        worker = db.query(Worker).filter(Worker.id == worker_id).first()
+        if not worker:
+            raise HTTPException(status_code=404, detail="Worker not found")
+        db.delete(worker)
+        db.commit()
+        return {'message': 'Worker deleted successfully'}
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error while deleting worker")
+
+
+@router.put('/update_worker/{worker_id}', response_model=get_worker)
+def update_worker(worker_id: int, data: worker_update, db: Session = Depends(get_tenant_db)):
+    worker = db.query(Worker).filter(Worker.id == worker_id).first()
+    if not worker:
+        raise HTTPException(status_code=404, detail="Worker not found")
+    try:
+        update_data = data.dict(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(worker, key, value)
+        db.commit()
+        db.refresh(worker)
+        return worker
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Database error while updating worker")
 
 
 

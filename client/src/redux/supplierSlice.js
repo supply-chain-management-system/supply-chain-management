@@ -70,6 +70,25 @@ export const removeSupplier = createAsyncThunk(
   }
 );
 
+export const updateSupplier = createAsyncThunk(
+  'supplier/update',
+  async ({ supplierId, formData }, { rejectWithValue }) => {
+    try {
+      const res = await api.put(`${BASE}/${supplierId}`, {
+        name:           formData.name.trim(),
+        category:       formData.category,
+        contact_email:  formData.contact_email.trim(),
+        phone:          formData.phone?.trim() || null,
+        lead_time_days: parseInt(formData.lead_time_days) || 14,
+      });
+
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err?.response?.data?.detail || 'Failed to update supplier.');
+    }
+  }
+);
+
 /* ══════════════════════════════════════════════════════════
    SLICE
 ═══════════════════════════════════════════════════════════ */
@@ -196,6 +215,24 @@ const supplierSlice = createSlice({
       })
       .addCase(removeSupplier.rejected, (state, action) => {
         state.toast = { msg: action.payload, type: 'error' };
+      });
+
+    /* updateSupplier */
+    builder
+      .addCase(updateSupplier.pending, (state) => {
+        state.createLoading = true;
+        state.error = null;
+      })
+      .addCase(updateSupplier.fulfilled, (state, action) => {
+        state.createLoading = false;
+        state.suppliers     = state.suppliers.map(s => s.id === action.payload.id ? action.payload : s);
+        state.form          = initialForm;
+        state.isFormOpen    = false;
+        state.toast         = { msg: `${action.payload.name} updated successfully!`, type: 'success' };
+      })
+      .addCase(updateSupplier.rejected, (state, action) => {
+        state.createLoading = false;
+        state.toast         = { msg: action.payload, type: 'error' };
       });
   },
 });

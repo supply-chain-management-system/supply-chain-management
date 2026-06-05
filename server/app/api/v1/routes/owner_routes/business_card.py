@@ -26,13 +26,16 @@ from app.services.subscriptions.limit_checker import check_business_limit
 router = APIRouter(prefix="/business-cards", tags=["Business Cards"])
 
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(require_role(["admin", "owner"]))])
 def create_business_card(
     payload: BusinessCardCreate,
     db: Session = Depends(get_tenant_db),
+<<<<<<< HEAD
     app_db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     dependencies=[Depends(require_role(["owner"]))],
+=======
+>>>>>>> development
 ):
     if current_user.company_id:
         check_business_limit(app_db, db, current_user.company_id)

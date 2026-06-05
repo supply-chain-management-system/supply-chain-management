@@ -15,7 +15,8 @@ import {
   Clock, 
   Users,
   Plus,
-  Filter
+  Filter,
+  Trash2
 } from 'lucide-react';
 
 
@@ -35,37 +36,101 @@ const [groupedTeam, setGroupedTeam] = useState({});
 
   const [workers, setWorkers] = useState([]);
   const [newWorker, setNewWorker] = useState({
-  name: "",
-  role: "",
-  factory_id: 1
-});
+    name: "",
+    role: "",
+    factory_id: 1,
+    email: "",
+    phone: "",
+    hourly_rate: 15.0
+  });
 
-const handleCreateWorker = async () => {
-  try {
-    const payload = {
-      name: newWorker.name,
-      role: newWorker.role,
-      factory_id: Number(newWorker.factory_id)
-    };
+  const [editingWorker, setEditingWorker] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    role: "",
+    factory_id: 1,
+    email: "",
+    phone: "",
+    hourly_rate: 15.0
+  });
 
-    const res = await api.post(
-      '/factory_team/factory/create_worker',
-      
-      payload
-    );
+  const handleCreateWorker = async () => {
+    try {
+      const payload = {
+        name: newWorker.name,
+        role: newWorker.role,
+        factory_id: Number(newWorker.factory_id),
+        email: newWorker.email || null,
+        phone: newWorker.phone || null,
+        hourly_rate: parseFloat(newWorker.hourly_rate) || 15.0
+      };
 
-    console.log(res.data);
-    alert("Worker created successfully");
+      const res = await api.post(
+        '/factory_team/factory/create_worker',
+        payload
+      );
 
-    // refresh list
-    fetchWorkers();
+      console.log(res.data);
+      alert("Worker created successfully");
 
-    // reset form
-    setNewWorker({ name: "", role: "", factory_id: 1 });
+      // refresh list
+      fetchWorkers();
+
+      // reset form
+      setNewWorker({ name: "", role: "", factory_id: 1, email: "", phone: "", hourly_rate: 15.0 });
 
   } catch (err) {
     console.error(err);
     alert("Failed to create worker");
+  }
+};
+
+const handleDeleteWorker = async (workerId) => {
+  if (!window.confirm("Are you sure you want to delete this worker completely?")) return;
+  try {
+    await api.delete(`factory_team/factory/delete_worker/${workerId}`);
+    alert("Worker deleted successfully");
+    fetchWorkers();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to delete worker");
+  }
+};
+
+const handleOpenEditWorker = (worker) => {
+  setEditingWorker(worker);
+  setEditForm({
+    name: worker.name || "",
+    role: worker.role || "",
+    factory_id: worker.factory_id || 1,
+    email: worker.email || "",
+    phone: worker.phone || "",
+    hourly_rate: worker.hourly_rate || 15.0
+  });
+  setShowEditModal(true);
+};
+
+const handleUpdateWorker = async (e) => {
+  e.preventDefault();
+  try {
+    const payload = {
+      name: editForm.name,
+      role: editForm.role,
+      factory_id: Number(editForm.factory_id),
+      email: editForm.email || null,
+      phone: editForm.phone || null,
+      hourly_rate: parseFloat(editForm.hourly_rate) || 15.0
+    };
+
+    await api.put(`/factory_team/factory/update_worker/${editingWorker.id}`, payload);
+    alert("Worker updated successfully ✅");
+    setShowEditModal(false);
+    setEditingWorker(null);
+    fetchWorkers();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update worker");
   }
 };
 
@@ -240,38 +305,67 @@ console.log(workers.id)
               </div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
-  <h3 className="font-semibold text-slate-700">Add Worker</h3>
+              <h3 className="font-semibold text-slate-700">Add Worker</h3>
 
-  <input
-    className="w-full p-2 border rounded"
-    placeholder="Name"
-    value={newWorker.name}
-    onChange={(e) =>
-      setNewWorker({ ...newWorker, name: e.target.value })
-    }
-  />
+              <input
+                className="w-full p-2 border rounded text-sm"
+                placeholder="Name"
+                value={newWorker.name}
+                onChange={(e) =>
+                  setNewWorker({ ...newWorker, name: e.target.value })
+                }
+              />
 
-  <select
-  className="w-full p-2 border rounded"
-  value={newWorker.role}
-  onChange={(e) =>
-    setNewWorker({ ...newWorker, role: e.target.value })
-  }
->
-  <option value="">Select Role</option>
+              <select
+                className="w-full p-2 border rounded text-sm bg-white"
+                value={newWorker.role}
+                onChange={(e) =>
+                  setNewWorker({ ...newWorker, role: e.target.value })
+                }
+              >
+                <option value="">Select Role</option>
+                <option value="worker">Worker</option>
+                <option value="operator">Operator</option>
+                <option value="supervisor">Supervisor</option>
+              </select>
 
-  <option value="worker">Worker</option>
-  <option value="operator">Operator</option>
-  <option value="supervisor">Supervisor</option>
-</select>
+              <input
+                className="w-full p-2 border rounded text-sm"
+                placeholder="Email Address"
+                value={newWorker.email}
+                onChange={(e) =>
+                  setNewWorker({ ...newWorker, email: e.target.value })
+                }
+              />
 
-  <button
-    onClick={handleCreateWorker}
-    className="w-full bg-green-600 text-white py-2 rounded-lg"
-  >
-    Create Worker
-  </button>
-</div>
+              <input
+                className="w-full p-2 border rounded text-sm"
+                placeholder="Phone Number"
+                value={newWorker.phone}
+                onChange={(e) =>
+                  setNewWorker({ ...newWorker, phone: e.target.value })
+                }
+              />
+
+              <input
+                type="number"
+                step="any"
+                min="0"
+                className="w-full p-2 border rounded text-sm"
+                placeholder="Hourly Rate ($/hr)"
+                value={newWorker.hourly_rate}
+                onChange={(e) =>
+                  setNewWorker({ ...newWorker, hourly_rate: e.target.value })
+                }
+              />
+
+              <button
+                onClick={handleCreateWorker}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition-colors text-sm"
+              >
+                Create Worker
+              </button>
+            </div>
 
         
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -282,9 +376,8 @@ console.log(workers.id)
                 </span>
               </div>
               
-              <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">
-               {workers.map((person) => (
-              
+              <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto">               {workers.map((person) => (
+               
                   <div 
                     key={person.id} 
                     
@@ -293,17 +386,47 @@ console.log(workers.id)
                     onClick={() => toggleUserSelection(Number(person.id))}
                   >
                     <div className="flex items-center gap-3">
-<img 
-  src={DEFAULT_AVATAR} 
-  alt={person.name} 
-  className="w-10 h-10 rounded-full object-cover border border-gray-200" 
-/>                      <div>
+                      <img 
+                        src={DEFAULT_AVATAR} 
+                        alt={person.name} 
+                        className="w-10 h-10 rounded-full object-cover border border-gray-200" 
+                      />
+                      <div>
                         <p className="text-sm font-medium text-slate-900">{person.name}</p>
-                        <p className="text-xs text-slate-500">{person.role}</p>
+                        <p className="text-xs text-slate-500">{person.role} • ${person.hourly_rate || 15}/hr</p>
+                        {(person.email || person.phone) && (
+                          <p className="text-[10px] text-slate-400">
+                            {person.email || ""} {person.phone ? `(${person.phone})` : ""}
+                          </p>
+                        )}
                       </div>
                     </div>
-                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedUsers.includes(person.id) ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'}`}>
-                      {selectedUsers.includes(person.id) && <Check className="w-3.5 h-3.5 text-white" />}
+                    <div className="flex items-center gap-1.5">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEditWorker(person);
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                        title="Edit worker specs"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteWorker(person.id);
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                        title="Delete worker completely"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${selectedUsers.includes(person.id) ? 'bg-blue-600 border-blue-600' : 'border-gray-300 bg-white'}`}>
+                        {selectedUsers.includes(person.id) && <Check className="w-3.5 h-3.5 text-white" />}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -375,6 +498,7 @@ console.log(workers.id)
                     <tr className="bg-gray-50/80 border-b border-gray-100 text-xs uppercase tracking-wider text-slate-500 font-semibold">
                       <th className="p-4 pl-6">Name</th>
                       <th className="p-4">Role</th>
+                      <th className="p-4">Rate & Contact</th>
                       <th className="p-4">Status</th>
                       <th className="p-4 pr-6 text-right">Actions</th>
                     </tr>
@@ -385,7 +509,7 @@ console.log(workers.id)
     <>
 
       <tr key={`prod-${productionId}`}>
-        <td colSpan="4" className="bg-gray-100 p-3 font-bold text-sm">
+        <td colSpan="5" className="bg-gray-100 p-3 font-bold text-sm">
           Production ID: {productionId}
         </td>
       </tr>
@@ -417,6 +541,17 @@ console.log(workers.id)
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium border bg-blue-50 text-blue-700 border-blue-100">
               {member.role}
             </span>
+          </td>
+
+          <td className="p-4">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-slate-700">${member.hourly_rate || 15}/hr</span>
+              {(member.email || member.phone) && (
+                <span className="text-[10px] text-slate-400">
+                  {member.email || ""} {member.phone ? `(${member.phone})` : ""}
+                </span>
+              )}
+            </div>
           </td>
 
           <td className="p-4">
@@ -498,7 +633,93 @@ console.log(workers.id)
 
           </div>
         </div>
-      </div>
+    </div>
+
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="bg-white p-6 rounded-2xl w-[400px] shadow-xl border border-gray-100 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-gray-900 mb-5">Edit Worker Details</h2>
+            
+            <form onSubmit={handleUpdateWorker} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Name</label>
+                <input 
+                  type="text" 
+                  value={editForm.name} 
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} 
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none text-sm" 
+                  required 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Role</label>
+                <select 
+                  value={editForm.role} 
+                  onChange={(e) => setEditForm({ ...editForm, role: e.target.value })} 
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none text-sm bg-white" 
+                  required
+                >
+                  <option value="">Select Role</option>
+                  <option value="worker">Worker</option>
+                  <option value="operator">Operator</option>
+                  <option value="supervisor">Supervisor</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  value={editForm.email} 
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} 
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none text-sm" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Phone Number</label>
+                <input 
+                  type="text" 
+                  value={editForm.phone} 
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} 
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none text-sm" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Hourly Rate ($/hr)</label>
+                <input 
+                  type="number" 
+                  step="any"
+                  min="0"
+                  value={editForm.hourly_rate} 
+                  onChange={(e) => setEditForm({ ...editForm, hourly_rate: e.target.value })} 
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none text-sm" 
+                  required 
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button 
+                  type="button" 
+                  onClick={() => { setShowEditModal(false); setEditingWorker(null); }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-sm"
+                >
+                  Update
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

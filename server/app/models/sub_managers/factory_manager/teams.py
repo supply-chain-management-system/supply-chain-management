@@ -1,4 +1,4 @@
-from sqlalchemy import Column,Integer,String,ForeignKey,Enum
+from sqlalchemy import Column,Integer,String,ForeignKey,Enum,Float
 from sqlalchemy.orm import relationship
 from app.db.database import BaseTenant
 import enum
@@ -13,8 +13,8 @@ class  worker_role(str,enum.Enum):
      Supervisor='supervisor'
 
 class worker_status(str,enum.Enum):
-    Active='active'
-    Leave='leave'
+     Active='active'
+     Leave='leave'
 
 class Worker(BaseTenant):
     __tablename__='workers'
@@ -25,6 +25,9 @@ class Worker(BaseTenant):
     role = Column(Enum(worker_role, native_enum=False), default=worker_role.Worker)
     status=Column(Enum(worker_status),default=worker_status.Active)
     factory_id=Column(Integer,ForeignKey('factories.id'))
+    email=Column(String,nullable=True)
+    phone=Column(String,nullable=True)
+    hourly_rate=Column(Float,default=15.0)
     
     factory=relationship('Factory')
 

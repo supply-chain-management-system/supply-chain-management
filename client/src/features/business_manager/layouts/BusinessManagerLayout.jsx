@@ -1,8 +1,9 @@
 
-import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { logoutUser } from "../../../redux/authSlice";
+import LogoutConfirmModal from "../../../components/profile/LogoutConfirmModal";
 import CopilotWidget from "../components/CopilotWidget";
 import {
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
   X,
   Diamond,
   MessageSquare,
+  ChevronDown,
 } from "lucide-react";
 
 const BusinessManagerLayout = () => {
@@ -25,6 +27,9 @@ const BusinessManagerLayout = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const dropdownRef = useRef(null);
 
   const navItems = [
     {
@@ -53,10 +58,16 @@ const BusinessManagerLayout = () => {
     },
   ];
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
-    navigate("/login");
-  };
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#070b13] font-sans flex flex-col relative overflow-hidden">
@@ -118,27 +129,54 @@ const BusinessManagerLayout = () => {
               <span className="absolute top-2 right-2 w-2 h-2 bg-cyan-500 rounded-full border-2 border-[#070b13]" />
             </button>
 
-            {/* User Profile */}
-            <Link 
-              to="/business-manager/profile"
-              className="flex items-center gap-4 pl-6 border-l border-white/10 group cursor-pointer"
-            >
-              <div className="flex flex-col items-end hidden sm:flex">
-                <p className="text-white text-sm font-bold tracking-tight leading-none group-hover:text-cyan-400 transition-colors">
-                  {user?.name || "Manager"}
-                </p>
-                <p className="text-cyan-400 text-[10px] font-black uppercase tracking-widest mt-1">
-                  Enterprise Admin
-                </p>
-              </div>
-              <div className="relative">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 p-[2px] transition-transform group-hover:rotate-6">
-                  <div className="w-full h-full rounded-[10px] bg-[#101925] flex items-center justify-center text-white font-black text-sm">
-                    {user?.name?.charAt(0)?.toUpperCase() || "B"}
+            {/* User Profile Dropdown */}
+            <div ref={dropdownRef} className="relative">
+              <button
+                onClick={() => setProfileOpen((p) => !p)}
+                className="flex items-center gap-4 pl-6 border-l border-white/10 group cursor-pointer"
+              >
+                <div className="flex flex-col items-end hidden sm:flex">
+                  <p className="text-white text-sm font-bold tracking-tight leading-none group-hover:text-cyan-400 transition-colors">
+                    {user?.name || "Manager"}
+                  </p>
+                  <p className="text-cyan-400 text-[10px] font-black uppercase tracking-widest mt-1">
+                    Enterprise Admin
+                  </p>
+                </div>
+                <div className="relative">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 p-[2px] transition-transform group-hover:rotate-6">
+                    <div className="w-full h-full rounded-[10px] bg-[#101925] flex items-center justify-center text-white font-black text-sm">
+                      {user?.name?.charAt(0)?.toUpperCase() || "B"}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
+                <ChevronDown
+                  size={16}
+                  className={`text-white/30 transition-transform duration-200 ${profileOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {/* Dropdown */}
+              {profileOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-[#0a0f1a] border border-white/[0.08] rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.7)] z-50 overflow-hidden">
+                  <div className="p-1">
+                    <button
+                      onClick={() => { navigate('/business-manager/profile'); setProfileOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.05] transition-all font-medium"
+                    >
+                      <User size={16} /> My Profile
+                    </button>
+                    <div className="my-1 border-t border-white/[0.05]" />
+                    <button
+                      onClick={() => { setShowLogoutModal(true); setProfileOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-red-400/80 hover:text-red-300 hover:bg-red-500/[0.07] transition-all font-medium"
+                    >
+                      <LogOut size={16} /> Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Mobile hamburger */}
             <button
@@ -170,6 +208,13 @@ const BusinessManagerLayout = () => {
                 {item.name}
               </NavLink>
             ))}
+            {/* Mobile logout */}
+            <button
+              onClick={() => { setShowLogoutModal(true); setMobileOpen(false); }}
+              className="flex items-center gap-4 px-5 py-4 rounded-2xl text-lg font-bold text-red-400 hover:bg-red-500/10 transition-all mt-2"
+            >
+              <LogOut size={22} /> Sign Out
+            </button>
           </div>
         )}
       </header>
@@ -190,6 +235,13 @@ const BusinessManagerLayout = () => {
           Korvex Control Tower Dashboard v1.0
         </p>
       </footer>
+
+      <LogoutConfirmModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        accentColor="from-cyan-500 to-blue-600"
+        isDark={true}
+      />
     </div>
   );
 };
