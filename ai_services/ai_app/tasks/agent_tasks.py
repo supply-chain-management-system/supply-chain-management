@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
-# 🚀 The magic variable name that Celery auto-discovers flawlessly
+#  The magic variable name that Celery auto-discovers flawlessly
 celery = Celery(
     "ai_services_app",
     broker=REDIS_URL,
@@ -21,7 +21,7 @@ celery.conf.update(
     enable_utc=True,
 )
 
-# 🚀 Bind the task directly to the 'celery' app
+#  Bind the task directly to the 'celery' app
 @celery.task(name="ai_app.tasks.run_central_agent")
 def run_central_agent_task(user_input: str, session_id: str, tenant_schema: str, user_role: str):
     try:
@@ -31,12 +31,12 @@ def run_central_agent_task(user_input: str, session_id: str, tenant_schema: str,
                 "tenant_schema": tenant_schema,
                 "user_role": user_role
             },
-            "recursion_limit": 5  # 🛡️ STOPS INFINITE LOOPS! Protects your API credits.
+            "recursion_limit": 5  #  STOPS INFINITE LOOPS! Protects your API credits.
         }
         
         input_data = {"messages": [HumanMessage(content=user_input)]}
         
-        # 🚀 Fixed the typo here
+        #  Fixed the typo here
         response = agent_executor.invoke(input_data, config=config)
         return response["messages"][-1].content
 

@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from "react";
 import api from "../../../api/api";
-
+import KorvexCopilot from "../../KorvexCopilot";
+import {
+ 
+  MessageSquare
+} from "lucide-react";
+KorvexCopilot
 const ProductionManagement = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState(null);
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -597,6 +603,31 @@ const ProductionManagement = () => {
         </div>
       )}
 
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slide-up { 
+          from { opacity: 0; transform: translateY(16px); } 
+          to { opacity: 1; transform: translateY(0); } 
+        }
+        .animate-fade-in { animation: fade-in 0.2s ease-out; }
+        .animate-slide-up { animation: slide-up 0.25s ease-out; }
+      `}</style>
+       {!isChatOpen && (
+                <button
+                  onClick={() => setIsChatOpen(true)}
+                  className="fixed bottom-6 right-6 z-[9998] w-14 h-14 flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+                  style={{ background: "linear-gradient(135deg, #00c88c 0%, #00a06e 100%)" }}
+                >
+                  <MessageSquare size={24} color="#ffffff" strokeWidth={2.5} />
+                </button>
+              )}
+        
+              <KorvexCopilot 
+                isOpen={isChatOpen} 
+                onClose={() => setIsChatOpen(false)} 
+              />
+
       {/* Complete Job Modal */}
       {showCompleteModal && completeJob && (
         <div 
@@ -712,6 +743,33 @@ const ProductionManagement = () => {
           </div>
         </div>
       )}
+
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slide-up { 
+          from { opacity: 0; transform: translateY(16px); } 
+          to { opacity: 1; transform: translateY(0); } 
+        }
+        .animate-fade-in { animation: fade-in 0.2s ease-out; }
+        .animate-slide-up { animation: slide-up 0.25s ease-out; }
+      `}</style>
+       {!isChatOpen && (
+                <button
+                  onClick={() => setIsChatOpen(true)}
+                  className="fixed bottom-6 right-6 z-[9998] w-14 h-14 flex items-center justify-center rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+                  style={{ background: "linear-gradient(135deg, #00c88c 0%, #00a06e 100%)" }}
+                >
+                  <MessageSquare size={24} color="#ffffff" strokeWidth={2.5} />
+                </button>
+              )}
+        
+              <KorvexCopilot 
+                isOpen={isChatOpen} 
+                onClose={() => setIsChatOpen(false)} 
+              />
+
     </div>
   );
 };
