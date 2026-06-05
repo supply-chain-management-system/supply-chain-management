@@ -7,6 +7,13 @@ from app.schemas.profile import ProfileUpdate, UserProfileOut
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
+def get_role_value(role):
+    if role is None:
+        return ""
+    if hasattr(role, "value"):
+        return role.value
+    return str(role)
+
 @router.get("", response_model=UserProfileOut)
 def get_profile(
     current_user: User = Depends(get_current_user),
@@ -20,12 +27,13 @@ def get_profile(
         db.refresh(profile)
     
     company_name = current_user.company.name if current_user.company else None
+    role_val = get_role_value(current_user.role)
     
     return {
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email,
-        "role": current_user.role.value if current_user.role else None,
+        "role": role_val or "user",
         "company_name": company_name,
         "profile": profile
     }
@@ -46,7 +54,7 @@ def update_profile(
     update_data = profile_data.dict(exclude_unset=True)
     
     # Restrict role-specific fields
-    role_value = current_user.role.value if current_user.role else ""
+    role_value = get_role_value(current_user.role)
     if role_value != "business_manager":
         update_data.pop("budget_authority", None)
         update_data.pop("focus_area", None)
@@ -54,6 +62,10 @@ def update_profile(
         update_data.pop("categories_managed", None)
         update_data.pop("supplier_target_score", None)
         update_data.pop("office_extension", None)
+    if role_value != "logistics_manager":
+        update_data.pop("fleet_size", None)
+        update_data.pop("regions_managed", None)
+        update_data.pop("logistics_license_no", None)
         
     for key, value in update_data.items():
         setattr(profile, key, value)
@@ -67,7 +79,7 @@ def update_profile(
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email,
-        "role": current_user.role.value if current_user.role else None,
+        "role": role_value or "user",
         "company_name": company_name,
         "profile": profile
     }

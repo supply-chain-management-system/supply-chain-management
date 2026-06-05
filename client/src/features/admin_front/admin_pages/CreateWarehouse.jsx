@@ -32,6 +32,19 @@ function CreateWarehouse() {
       .catch((err) => console.log(err));
   };
 
+  const handleDeleteWarehouse = (id) => {
+    if (!window.confirm("Are you sure you want to delete this facility? All associated racks and inventory data will be lost.")) return;
+    api.delete(`/ware_house/${id}`)
+      .then(() => {
+        fetchWarehouses();
+        alert("Facility deleted successfully");
+      })
+      .catch((err) => {
+        console.error("Delete facility error:", err);
+        alert(err.response?.data?.detail || "Failed to delete facility");
+      });
+  };
+
   const filteredWarehouses = warehouses.filter(w => 
     w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     w.location.toLowerCase().includes(searchTerm.toLowerCase())
@@ -39,7 +52,7 @@ function CreateWarehouse() {
 
   return (
     /* ml-64 added for Admin Sidebar compatibility */
-    <div className="ml-64 bg-[#f8fafc] min-h-screen p-8">
+    <div className="bg-[#f8fafc] min-h-screen p-8">
       
       <div className="max-w-7xl mx-auto">
         
@@ -172,7 +185,10 @@ function CreateWarehouse() {
                           </div>
                         </td>
                         <td className="px-8 py-5 text-right">
-                          <button className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all">
+                          <button 
+                            onClick={() => handleDeleteWarehouse(w.id)}
+                            className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                          >
                             <Trash2 size={18} />
                           </button>
                         </td>

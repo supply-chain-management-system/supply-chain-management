@@ -18,8 +18,11 @@ const Dashboard = () => {
       <div className="mb-8">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Factory Overview</h1>
-            <p className="text-gray-500 mt-1">Real-time status of production line 04 - Sector B</p>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-1 h-7 rounded-full" style={{ background: 'linear-gradient(180deg, #94a3b8, #64748b)' }} />
+              <h1 className="text-3xl font-bold text-gray-900">Factory Overview</h1>
+            </div>
+            <p className="text-gray-500 mt-1 ml-4">Real-time status of production line 04 - Sector B</p>
           </div>
           
           <div className="flex items-center gap-4">
@@ -29,7 +32,11 @@ const Dashboard = () => {
               message="Aluminum Grade A (Low Stock)"
             />
             
-            <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors" onClick={()=>navigate('/createproduct')}>
+            <button
+              className="flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-lg transition-all shadow-sm hover:shadow-md"
+              style={{ background: 'linear-gradient(135deg, #94a3b8, #64748b)' }}
+              onClick={() => navigate('/createproduct')}
+            >
               <Plus className="w-5 h-5" />
               New Job
             </button>
@@ -55,7 +62,7 @@ const Dashboard = () => {
               <span className="text-sm text-gray-600">Available</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <div className="w-3 h-3 rounded-full" style={{ background: '#94a3b8' }}></div>
               <span className="text-sm text-gray-600">In Use</span>
             </div>
             <div className="flex items-center gap-2">

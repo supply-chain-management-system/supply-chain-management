@@ -24,11 +24,10 @@ from app.services.managers.manager_services import (
 router = APIRouter(prefix="/business-cards", tags=["Business Cards"])
 
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(require_role(["admin", "owner"]))])
 def create_business_card(
     payload: BusinessCardCreate,
     db: Session = Depends(get_tenant_db),
-    dependencies=[Depends(require_role(["owner"]))],
 ):
 
     business_card = BusinessCard(**payload.model_dump())

@@ -5,7 +5,7 @@ import httpx
 
 from app.db.deps import get_db, get_tenant_db
 from app.models.supplier_manager.supplier import Supplier
-from app.schemas.supplier_manager.supplier import SupplierCreate, SupplierOut
+from app.schemas.supplier_manager.supplier import SupplierCreate, SupplierOut, SupplierUpdate
 from app.models.auth.user import User
 from app.services.auth.dependancy import get_current_user
 
@@ -184,3 +184,25 @@ def remove_supplier(supplier_id: int, db: Session = Depends(get_tenant_db)):
     db.delete(supplier)
     db.commit()
     return {"status": "success", "message": f"Supplier {supplier.name} removed from registry."}
+
+@router.put("/{supplier_id}", response_model=SupplierOut)
+def update_supplier(
+    supplier_id: int,
+    data: SupplierUpdate,
+    db: Session = Depends(get_tenant_db),
+    current_user: User = Depends(get_current_user)
+):
+    supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found.")
+
+    for key, value in data.model_dump(exclude_unset=True).items():
+        setattr(supplier, key, value)
+
+    try:
+        db.commit()
+        db.refresh(supplier)
+        return supplier
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

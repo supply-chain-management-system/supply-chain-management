@@ -9,7 +9,7 @@ from app.services.auth.dependancy import get_current_user
 from app.models.auth.user import User
 from app.models.business_manager.team import WarehouseManager
 from app.models.company_auth.managers import InviteToken
-from app.models.sub_managers.logistics_manager.domain import Vehicle, Shipment, LogisticsActivity
+from app.models.sub_managers.logistics_manager.domain import Vehicle, Shipment, LogisticsActivity, LogisticsSetting
 
 router = APIRouter(
     prefix="/logistics-dashboard",
@@ -54,6 +54,15 @@ class ActivityCreate(BaseModel):
     event_text: str
     status_type: str = "info"
 
+class SettingUpdate(BaseModel):
+    autoRefresh: bool
+    refreshInterval: str
+    routeOptimization: bool
+    fuelConservation: bool
+    emailAlerts: bool
+    smsAlerts: bool
+    securityLogs: bool
+
 def serialize_vehicle(vehicle: Vehicle):
     return {
         "id": vehicle.fleet_id,
@@ -73,6 +82,17 @@ def serialize_warehouse_stand(warehouse_id, name, location=None, source="warehou
         "source": source
     }
 
+def log_activity(db: Session, text: str, status_type: str = "info"):
+    try:
+        activity = LogisticsActivity(
+            event_text=text,
+            status_type=status_type
+        )
+        db.add(activity)
+        db.commit()
+    except Exception as e:
+        print(f"Failed to log activity: {e}")
+
 @router.get("/stats")
 def get_dashboard_stats(db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
     active_vehicles = db.query(Vehicle).filter(Vehicle.status == "Active").count()
@@ -80,45 +100,18 @@ def get_dashboard_stats(db: Session = Depends(get_tenant_db), current_user: User
     pending_shipments = db.query(Shipment).filter(Shipment.status.in_(["Pending", "In Transit", "Delayed"])).count()
     critical_alerts = db.query(LogisticsActivity).filter(LogisticsActivity.status_type == "error").count()
 
-    # Create dummy data if table is completely empty to match UI on first run
-    if active_vehicles == 0 and pending_shipments == 0:
-        return {
-            "stats": [
-                {
-                    "label": "Active Vehicles",
-                    "value": "42",
-                    "delta": "+3 today",
-                    "deltaUp": True,
-                    "sparkData": [30, 38, 42, 35, 50, 44, 60, 55, 65, 42],
-                    "green": True,
-                },
-                {
-                    "label": "Deliveries Today",
-                    "value": "128",
-                    "delta": "+12%",
-                    "deltaUp": True,
-                    "sparkData": [80, 95, 88, 110, 105, 120, 115, 122, 128, 128],
-                    "green": False,
-                },
-                {
-                    "label": "Pending Shipments",
-                    "value": "15",
-                    "delta": "-2 cleared",
-                    "deltaUp": True,
-                    "sparkData": [22, 20, 25, 18, 17, 20, 16, 18, 17, 15],
-                    "green": False,
-                },
-                {
-                    "label": "Critical Alerts",
-                    "value": "3",
-                    "delta": "+1",
-                    "deltaUp": False,
-                    "sparkData": [1, 2, 1, 3, 2, 4, 2, 3, 4, 3],
-                    "green": False,
-                },
-            ]
-        }
-        
+    # Calculate KPIs from database
+    total_delivered = db.query(Shipment).filter(Shipment.status == "Delivered").count()
+    on_time_delivered = db.query(Shipment).filter(Shipment.status == "Delivered", Shipment.on_time == True).count()
+    on_time_rate = (on_time_delivered / total_delivered * 100) if total_delivered > 0 else 96.0
+
+    total_vehicles = db.query(Vehicle).count()
+    fleet_util = (active_vehicles / total_vehicles * 100) if total_vehicles > 0 else 78.0
+
+    total_km = db.query(func.sum(Vehicle.distance_driven_km)).scalar() or 0.0
+    if total_km == 0:
+        total_km = 12400.0
+
     return {
         "stats": [
             {
@@ -153,45 +146,39 @@ def get_dashboard_stats(db: Session = Depends(get_tenant_db), current_user: User
                 "sparkData": [1, 2, 1, 3, 2, 4, 2, 3, 4, 3],
                 "green": False,
             },
-        ]
+        ],
+        "kpis": {
+            "on_time_rate": f"{on_time_rate:.1f}%",
+            "fleet_utilization": f"{fleet_util:.1f}%",
+            "avg_delivery": "1.4 d",
+            "km_driven": f"{total_km:,.1f} km"
+        }
     }
 
 @router.get("/shipments")
 def get_shipments(db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
-    shipments = db.query(Shipment).order_by(Shipment.id.desc()).limit(5).all()
-    if not shipments:
-        return [
-            { "id": '#SHP-1001', "destination": 'New York, NY',    "driver": 'James K.', "weight": '2.4 t', "status": 'In Transit', "eta": 'Today 2:30 PM'     },
-            { "id": '#SHP-1002', "destination": 'Los Angeles, CA', "driver": 'Maria S.', "weight": '1.8 t', "status": 'Pending',    "eta": 'Tomorrow 10:00 AM' },
-            { "id": '#SHP-1003', "destination": 'Chicago, IL',     "driver": 'Tom R.',   "weight": '3.1 t', "status": 'Delivered',  "eta": 'Today 9:15 AM'     },
-            { "id": '#SHP-1004', "destination": 'Houston, TX',     "driver": 'Sara L.',  "weight": '0.9 t', "status": 'In Transit', "eta": 'Today 4:45 PM'     },
-            { "id": '#SHP-1005', "destination": 'Phoenix, AZ',     "driver": 'Mark D.',  "weight": '2.0 t', "status": 'Delayed',    "eta": 'Tomorrow 3:00 PM'  },
-        ]
+    shipments = db.query(Shipment).order_by(Shipment.id.desc()).all()
     return [
         {
             "id": f"#SHP-1{s.id:03d}",
+            "db_id": s.id,
+            "tracking_number": s.tracking_number,
             "destination": s.destination,
             "driver": s.driver_name,
+            "weight_kg": s.weight_kg,
             "weight": f"{s.weight_kg} kg",
             "status": s.status,
-            "eta": s.eta.strftime("%b %d, %H:%M") if s.eta else "N/A"
+            "eta": s.eta.strftime("%b %d, %H:%M") if s.eta else "N/A",
+            "eta_iso": s.eta.isoformat() if s.eta else None
         } for s in shipments
     ]
 
 @router.get("/activities")
 def get_activities(db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
-    activities = db.query(LogisticsActivity).order_by(LogisticsActivity.id.desc()).limit(5).all()
-    if not activities:
-        return [
-            { "icon": "CheckCircle2", "green": True,  "text": 'SHP-1003 delivered to Chicago, IL',     "time": '9:15 AM'  },
-            { "icon": "Truck",        "green": True,  "text": 'SHP-1001 departed Nashville depot',      "time": '8:42 AM'  },
-            { "icon": "AlertTriangle","green": False, "text": 'SHP-1005 delayed — traffic on I-10',    "time": '8:10 AM'  },
-            { "icon": "RefreshCw",    "green": False, "text": 'Warehouse stand queue updated automatically', "time": '7:55 AM' },
-            { "icon": "Circle",       "green": False, "text": 'SHP-1002 queued for departure',          "time": '7:30 AM' },
-        ]
+    activities = db.query(LogisticsActivity).order_by(LogisticsActivity.id.desc()).limit(15).all()
     return [
         {
-            "icon": "Circle", # Mapping icons is dynamic in frontend based on status_type
+            "icon": "Circle",
             "green": a.status_type == "success",
             "text": a.event_text,
             "time": a.event_time.strftime("%H:%M %p")
@@ -240,13 +227,6 @@ def get_warehouse_stands(
 @router.get("/vehicles")
 def get_vehicles(db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
     vehicles = db.query(Vehicle).limit(100).all()
-    if not vehicles:
-        return [
-            { "id": 'TRK-001', "stop_warehouse_id": 1, "stop_warehouse_name": 'Main Warehouse', "capacity_kg": 2400, "vehicle_type": 'Box Truck', "driver_name": 'James K.', "status": 'Active' },
-            { "id": 'TRK-004', "stop_warehouse_id": 2, "stop_warehouse_name": 'South Depot', "capacity_kg": 1800, "vehicle_type": 'Van', "driver_name": 'Maria S.', "status": 'Active' },
-            { "id": 'TRK-007', "stop_warehouse_id": 1, "stop_warehouse_name": 'Main Warehouse', "capacity_kg": 3100, "vehicle_type": 'Flatbed', "driver_name": 'Tom R.', "status": 'Idle' },
-            { "id": 'TRK-012', "stop_warehouse_id": None, "stop_warehouse_name": 'Service Centre', "capacity_kg": 900, "vehicle_type": 'Mini Truck', "driver_name": None, "status": 'Maintenance' },
-        ]
     return [serialize_vehicle(v) for v in vehicles]
 
 @router.post("/vehicles", status_code=status.HTTP_201_CREATED)
@@ -262,11 +242,14 @@ def create_vehicle(data: VehicleCreate, db: Session = Depends(get_tenant_db), cu
         capacity_kg=data.capacity_kg,
         vehicle_type=data.vehicle_type,
         driver_name=data.driver_name,
-        status=data.status
+        status=data.status,
+        distance_driven_km=150.0  # Assign baseline distance driven
     )
     db.add(new_vehicle)
     db.commit()
     db.refresh(new_vehicle)
+    
+    log_activity(db, f"Vehicle {new_vehicle.fleet_id} registered for {new_vehicle.stop_warehouse_name}", "success")
     return serialize_vehicle(new_vehicle)
 
 @router.put("/vehicles/{fleet_id}")
@@ -274,6 +257,8 @@ def update_vehicle(fleet_id: str, data: VehicleUpdate, db: Session = Depends(get
     vehicle = db.query(Vehicle).filter(Vehicle.fleet_id == fleet_id).first()
     if not vehicle:
         raise HTTPException(status_code=404, detail="Vehicle not found.")
+    
+    status_changed = data.status is not None and data.status != vehicle.status
     
     if data.fleet_id is not None: vehicle.fleet_id = data.fleet_id
     if data.stop_warehouse_id is not None: vehicle.stop_warehouse_id = data.stop_warehouse_id
@@ -285,6 +270,9 @@ def update_vehicle(fleet_id: str, data: VehicleUpdate, db: Session = Depends(get
     
     db.commit()
     db.refresh(vehicle)
+    
+    if status_changed:
+        log_activity(db, f"Vehicle {vehicle.fleet_id} status updated to {vehicle.status}", "info")
     return serialize_vehicle(vehicle)
 
 @router.delete("/vehicles/{fleet_id}")
@@ -295,6 +283,7 @@ def delete_vehicle(fleet_id: str, db: Session = Depends(get_tenant_db), current_
     
     db.delete(vehicle)
     db.commit()
+    log_activity(db, f"Vehicle {fleet_id} removed from fleet", "warning")
     return {"status": "success", "message": f"Vehicle {fleet_id} deleted."}
 
 @router.post("/shipments", status_code=status.HTTP_201_CREATED)
@@ -309,18 +298,25 @@ def create_shipment(data: ShipmentCreate, db: Session = Depends(get_tenant_db), 
         driver_name=data.driver_name,
         weight_kg=data.weight_kg,
         status=data.status,
-        eta=data.eta
+        eta=data.eta,
+        on_time=True
     )
     db.add(new_shipment)
     db.commit()
     db.refresh(new_shipment)
+    
+    log_activity(db, f"Shipment {new_shipment.tracking_number} registered to {new_shipment.destination}", "success")
     return {
         "id": f"#SHP-1{new_shipment.id:03d}",
+        "db_id": new_shipment.id,
+        "tracking_number": new_shipment.tracking_number,
         "destination": new_shipment.destination,
         "driver": new_shipment.driver_name,
+        "weight_kg": new_shipment.weight_kg,
         "weight": f"{new_shipment.weight_kg} kg",
         "status": new_shipment.status,
-        "eta": new_shipment.eta.strftime("%b %d, %H:%M") if new_shipment.eta else "N/A"
+        "eta": new_shipment.eta.strftime("%b %d, %H:%M") if new_shipment.eta else "N/A",
+        "eta_iso": new_shipment.eta.isoformat() if new_shipment.eta else None
     }
 
 @router.put("/shipments/{shipment_id}")
@@ -329,22 +325,34 @@ def update_shipment(shipment_id: int, data: ShipmentUpdate, db: Session = Depend
     if not shipment:
         raise HTTPException(status_code=404, detail="Shipment not found.")
     
+    status_changed = data.status is not None and data.status != shipment.status
+    
     if data.tracking_number is not None: shipment.tracking_number = data.tracking_number
     if data.destination is not None: shipment.destination = data.destination
     if data.driver_name is not None: shipment.driver_name = data.driver_name
     if data.weight_kg is not None: shipment.weight_kg = data.weight_kg
-    if data.status is not None: shipment.status = data.status
+    if data.status is not None:
+        shipment.status = data.status
+        if data.status == "Delayed":
+            shipment.on_time = False
     if data.eta is not None: shipment.eta = data.eta
     
     db.commit()
     db.refresh(shipment)
+    
+    if status_changed:
+        log_activity(db, f"Shipment {shipment.tracking_number} status updated to {shipment.status}", "info" if shipment.status != "Delayed" else "warning")
     return {
         "id": f"#SHP-1{shipment.id:03d}",
+        "db_id": shipment.id,
+        "tracking_number": shipment.tracking_number,
         "destination": shipment.destination,
         "driver": shipment.driver_name,
+        "weight_kg": shipment.weight_kg,
         "weight": f"{shipment.weight_kg} kg",
         "status": shipment.status,
-        "eta": shipment.eta.strftime("%b %d, %H:%M") if shipment.eta else "N/A"
+        "eta": shipment.eta.strftime("%b %d, %H:%M") if shipment.eta else "N/A",
+        "eta_iso": shipment.eta.isoformat() if shipment.eta else None
     }
 
 @router.delete("/shipments/{shipment_id}")
@@ -353,8 +361,10 @@ def delete_shipment(shipment_id: int, db: Session = Depends(get_tenant_db), curr
     if not shipment:
         raise HTTPException(status_code=404, detail="Shipment not found.")
     
+    tracking_no = shipment.tracking_number
     db.delete(shipment)
     db.commit()
+    log_activity(db, f"Shipment {tracking_no} deleted from dispatcher", "warning")
     return {"status": "success", "message": f"Shipment {shipment_id} deleted."}
 
 @router.post("/activities", status_code=status.HTTP_201_CREATED)
@@ -372,3 +382,39 @@ def create_activity(data: ActivityCreate, db: Session = Depends(get_tenant_db), 
         "text": new_activity.event_text,
         "time": new_activity.event_time.strftime("%H:%M %p")
     }
+
+@router.get("/settings")
+def get_settings(db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
+    settings_records = db.query(LogisticsSetting).all()
+    settings_dict = {
+        "autoRefresh": True,
+        "refreshInterval": "30",
+        "routeOptimization": True,
+        "fuelConservation": False,
+        "emailAlerts": True,
+        "smsAlerts": False,
+        "securityLogs": True
+    }
+    for record in settings_records:
+        if record.setting_key in settings_dict:
+            val = record.setting_value
+            if val.lower() == 'true':
+                settings_dict[record.setting_key] = True
+            elif val.lower() == 'false':
+                settings_dict[record.setting_key] = False
+            else:
+                settings_dict[record.setting_key] = val
+    return settings_dict
+
+@router.post("/settings")
+def save_settings(data: SettingUpdate, db: Session = Depends(get_tenant_db), current_user: User = Depends(get_current_user)):
+    settings_dict = data.model_dump()
+    for key, val in settings_dict.items():
+        record = db.query(LogisticsSetting).filter(LogisticsSetting.setting_key == key).first()
+        if not record:
+            record = LogisticsSetting(setting_key=key, setting_value=str(val))
+            db.add(record)
+        else:
+            record.setting_value = str(val)
+    db.commit()
+    return {"status": "success", "message": "Settings saved successfully."}

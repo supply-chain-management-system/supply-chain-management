@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { loginGoogle } from "../../../redux/authslice";
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle, Zap, Check, X } from "lucide-react";
 import api from "../../../api/api";
 
@@ -80,6 +82,7 @@ const validators = {
 
 export default function Signup() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const googleInitialized = useRef(false);
 
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
@@ -142,41 +145,12 @@ export default function Signup() {
       client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
       scope: "openid email profile",
       ux_mode: "popup",
-      callback: async (response) => {
+      callback: (response) => {
         if (response.error) {
           console.error("Google OAuth error:", response.error);
           return;
         }
-
-        try {
-          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/google`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ code: response.code }),
-          });
-          const data = await res.json();
-
-          if (res.ok && data.user.company_verified) {
-            const role = data.user.role;
-            if (role === "admin") {
-              navigate("/admindashboard");
-            } else if (role === "business_manager") {
-              navigate("/business-manager/dashboard");
-            } else if (role === "warehouse_manager") {
-              navigate("/ware_dashboard");
-            } else if (role === "factory_manager") {
-              navigate("/factorydash");
-            } else {
-              navigate("/");
-            }
-          } else {
-            navigate("/company-onboarding");
-          }
-        } catch (err) {
-          console.error("Google signup failed", err);
-          setError("Google signup failed. Please try again.");
-        }
+        dispatch(loginGoogle({ code: response.code, navigate }));
       },
     });
 

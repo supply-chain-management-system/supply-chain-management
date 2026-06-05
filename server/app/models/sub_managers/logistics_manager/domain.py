@@ -10,6 +10,7 @@ class Vehicle(BaseTenant):
     fleet_id = Column(String, unique=True, index=True, nullable=False)
     route = Column(String, nullable=True)
     fuel_level = Column(Float, default=100.0)
+    distance_driven_km = Column(Float, default=0.0)
     stop_warehouse_id = Column(Integer, nullable=True)
     stop_warehouse_name = Column(String, nullable=False)
     capacity_kg = Column(Float, nullable=False)
@@ -30,6 +31,7 @@ class Shipment(BaseTenant):
     weight_kg = Column(Float, nullable=False)
     status = Column(String, default="Pending")  # Pending, In Transit, Delivered, Delayed
     eta = Column(DateTime, nullable=True)
+    on_time = Column(Boolean, default=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -40,3 +42,10 @@ class LogisticsActivity(BaseTenant):
     event_text = Column(String, nullable=False)
     event_time = Column(DateTime, default=datetime.utcnow)
     status_type = Column(String, default="info")  # success, info, warning, error
+
+class LogisticsSetting(BaseTenant):
+    __tablename__ = "logistics_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    setting_key = Column(String, unique=True, index=True, nullable=False)
+    setting_value = Column(String, nullable=False)

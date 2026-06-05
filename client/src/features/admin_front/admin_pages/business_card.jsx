@@ -9,14 +9,14 @@ const BusinessCardPage = () => {
 
   if (!card) {
     return (
-      <div className="ml-64 min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <p className="text-gray-400 text-sm">No card data found. <button onClick={() => navigate(-1)} className="text-blue-600 underline">Go back</button></p>
       </div>
     );
   }
 
   return (
-    <div className="ml-64 min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-8">
 
       {/* Header */}
       <header className="mb-8 flex items-center gap-4">
