@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: supply-chain
+data:
+  DATABASE_URL: "postgresql://dbadmin:Fmmne81JLJxu5kbZ@supply-chain-dev-postgres.c27um46882ic.us-east-1.rds.amazonaws.com:5432/postgres?sslmode=require"
+  REDIS_URL: "redis://supply-chain-dev-redis.lqv54o.ng.0001.use1.cache.amazonaws.com:6379"
+  CELERY_BROKER_URL: "redis://supply-chain-dev-redis.lqv54o.ng.0001.use1.cache.amazonaws.com:6379"
+  CELERY_RESULT_BACKEND: "redis://supply-chain-dev-redis.lqv54o.ng.0001.use1.cache.amazonaws.com:6379"
+
+  # Core Backend Settings
+  PYTHONPATH: "/app"
+  SECRET_KEY: "hve1rhfLe6NmBMr5s6GKx9tjneqWton8nwJST63r5-w"
+  FRONTEND_URL: "http://localhost:5173"
+
+  # Database Connection Details (Fallback)
+  DB_TYPE: "postgresdb"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "mypassword"
+  POSTGRES_DB: "supply_chain_db"
+
+  # Mail Configuration
+  MAIL_USERNAME: "a9dcc6001@smtp-brevo.com"
+  MAIL_FROM: "korvexchain@gmail.com"
+  MAIL_PORT: "587"
+  MAIL_SERVER: "smtp-relay.brevo.com"
+  MAIL_STARTTLS: "True"
+  MAIL_SSL_TLS: "False"
+
+  # OAuth Configuration
+  GOOGLE_CLIENT_ID: "723580086987-d8s8sh2qt5bss0ut2f7b2hfdhr1ssecm.apps.googleusercontent.com"
+
+  # API Integrations
+  OPENAI_API_KEY: "sk-proj-placeholder-key"
+  GROQ_API_KEY: "gsk_placeholder_key"
+  GOOGLE_API_KEY: "AIzaSy_placeholder_key"
+  COHERE_API_KEY: "cohere_placeholder_key"
+
+  # Other integrations
+  N8N_WEBHOOK_URL: "http://n8n:5678/webhook/invite/company/managers"
