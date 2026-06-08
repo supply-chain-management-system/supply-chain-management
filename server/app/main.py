@@ -8,7 +8,8 @@ from app.db.database import engine, Base
 
 from app.models.auth.user import User
 
-from fastapi import FastAPI, Depends
+import logging
+from fastapi import FastAPI, Depends, Request
 from app.services.auth.dependancy import require_role
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -85,9 +86,22 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json",
 )
 
+logger = logging.getLogger("uvicorn.error")
+
+@app.middleware("http")
+async def log_request_origin(request: Request, call_next):
+    origin = request.headers.get("origin")
+    logger.info(f"Incoming request: {request.method} {request.url.path} | Origin: {origin or 'No Origin (Direct/Same-Origin)'}")
+    response = await call_next(request)
+    return response
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://korvex-d098b.web.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

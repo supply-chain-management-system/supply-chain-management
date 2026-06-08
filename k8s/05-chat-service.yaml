@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  namespace: supply-chain
+  labels:
+    app: chat-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+    spec:
+      nodeSelector:
+        role: ai-workers
+      tolerations:
+        - key: "dedicated"
+          operator: "Equal"
+          value: "ai-workers"
+          effect: "NoSchedule"
+      containers:
+        - name: chat-service
+          # Custom image. Remeber to build: docker build -t shiyasdx/supply-chain-chat-service:latest ./chat_service
+          # and push it to Docker Hub: docker push shiyasdx/supply-chain-chat-service:latest
+          image: shiyasdx/supply-chain-chat-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8002
+              name: http
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          env:
+            # MongoDB configuration (to point to EKS internal Mongo deployment)
+            - name: MONGO_URL
+              value: "mongodb://mongodb.supply-chain.svc.cluster.local:27017"
+            - name: MONGO_DB
+              value: "chat_db"
+            - name: PORT
+              value: "8002"
+            
+            # NOTE ON LLM / API KEYS:
+            # Our static search did not find direct OpenAI/Gemini/LiteLLM code in this microservice.
+            # If you configure LLM support later, add those keys (e.g. OPENAI_API_KEY, GEMINI_API_KEY) 
+            # to your k8s/02-configmap.yaml file, and they will automatically inject here via envFrom.
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "250Mi"
+              cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+  namespace: supply-chain
+  labels:
+    app: chat-service
+spec:
+  type: ClusterIP
+  selector:
+    app: chat-service
+  ports:
+    - port: 8002
+      targetPort: 8002
+      protocol: TCP
+      name: http
