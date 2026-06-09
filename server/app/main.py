@@ -10,6 +10,8 @@ from app.models.auth.user import User
 
 import logging
 from fastapi import FastAPI, Depends, Request, Response
+from fastapi.responses import Response
+from starlette.types import ASGIApp, Scope, Receive, Send
 from app.services.auth.dependancy import require_role
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -86,24 +88,33 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json",
 )
 
-@app.middleware("http")
-async def force_cors_headers(request: Request, call_next):
-    # If it's a preflight OPTIONS check, intercept it and reply immediately
-    if request.method == "OPTIONS":
-        response = Response(status_code=200)
-        response.headers["Access-Control-Allow-Origin"] = "https://korvex-d098b.web.app"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Requested-With, Tenant-ID"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        return response
-    
-    # For regular requests (GET, POST), add the headers to the backend response
-    response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "https://korvex-d098b.web.app"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Requested-With, Tenant-ID"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    return response
+class PreflightASGIMiddleware:
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] == "http" and scope["method"] == "OPTIONS":
+            headers = [
+                (b"access-control-allow-origin", b"https://korvex-d098b.web.app"),
+                (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS"),
+                (b"access-control-allow-headers", b"Authorization, Content-Type, X-Requested-With, Tenant-ID"),
+                (b"access-control-allow-credentials", b"true"),
+                (b"content-length", b"0")
+            ]
+            await send({
+                "type": "http.response.start",
+                "status": 200,
+                "headers": headers
+            })
+            await send({
+                "type": "http.response.body",
+                "body": b"",
+                "more_body": False
+            })
+            return
+        await self.app(scope, receive, send)
+
+app.add_middleware(PreflightASGIMiddleware)
 
 logger = logging.getLogger("uvicorn.error")
 
