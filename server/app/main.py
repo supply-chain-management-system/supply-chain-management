@@ -93,27 +93,48 @@ class PreflightASGIMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        print(f"PreflightASGIMiddleware: received scope: type={scope.get('type')}, method={scope.get('method')}, path={scope.get('path')}")
-        if scope["type"] == "http" and scope["method"] == "OPTIONS":
-            print("PreflightASGIMiddleware: Intercepting OPTIONS request and sending 200 OK headers")
-            headers = [
-                (b"access-control-allow-origin", b"https://korvex-d098b.web.app"),
-                (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS"),
-                (b"access-control-allow-headers", b"Authorization, Content-Type, X-Requested-With, Tenant-ID"),
-                (b"access-control-allow-credentials", b"true"),
-                (b"content-length", b"0")
-            ]
-            await send({
-                "type": "http.response.start",
-                "status": 200,
-                "headers": headers
-            })
-            await send({
-                "type": "http.response.body",
-                "body": b"",
-                "more_body": False
-            })
+        if scope["type"] == "http":
+            if scope["method"] == "OPTIONS":
+                headers = [
+                    (b"access-control-allow-origin", b"https://korvex-d098b.web.app"),
+                    (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS"),
+                    (b"access-control-allow-headers", b"Authorization, Content-Type, X-Requested-With, Tenant-ID"),
+                    (b"access-control-allow-credentials", b"true"),
+                    (b"content-length", b"0")
+                ]
+                await send({
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": headers
+                })
+                await send({
+                    "type": "http.response.body",
+                    "body": b"",
+                    "more_body": False
+                })
+                return
+
+            async def cors_send(message: dict) -> None:
+                if message["type"] == "http.response.start":
+                    headers = list(message.get("headers", []))
+                    
+                    # Prevent duplicate CORS headers
+                    cors_keys = {b"access-control-allow-origin", b"access-control-allow-methods", 
+                                 b"access-control-allow-headers", b"access-control-allow-credentials"}
+                    headers = [h for h in headers if h[0].lower() not in cors_keys]
+                    
+                    headers.extend([
+                        (b"access-control-allow-origin", b"https://korvex-d098b.web.app"),
+                        (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS"),
+                        (b"access-control-allow-headers", b"Authorization, Content-Type, X-Requested-With, Tenant-ID"),
+                        (b"access-control-allow-credentials", b"true")
+                    ])
+                    message["headers"] = headers
+                await send(message)
+
+            await self.app(scope, receive, cors_send)
             return
+
         await self.app(scope, receive, send)
 
 app.add_middleware(PreflightASGIMiddleware)
