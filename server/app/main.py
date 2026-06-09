@@ -109,6 +109,8 @@ logger = logging.getLogger("uvicorn.error")
 
 @app.middleware("http")
 async def log_request_origin(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
     origin = request.headers.get("origin")
     logger.info(f"Incoming request: {request.method} {request.url.path} | Origin: {origin or 'No Origin (Direct/Same-Origin)'}")
     response = await call_next(request)
