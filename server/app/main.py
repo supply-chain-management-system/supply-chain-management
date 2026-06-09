@@ -259,7 +259,7 @@ async def chat_websocket_proxy(websocket: WebSocket, room_id: str):
         headers.append(("Cookie", cookie_header))
         
     try:
-        async with websockets.connect(target_url, extra_headers=headers) as target_ws:
+        async with websockets.connect(target_url, additional_headers=headers) as target_ws:
             async def forward_to_target():
                 try:
                     while True:
