@@ -30,39 +30,8 @@ spec:
               memory: "128Mi"
               cpu: "100m"
             limits:
-              memory: "256Mi"
-              cpu: "300m"
-        - name: n8n
-          image: docker.n8n.io/n8nio/n8n:1.82.0
-          ports:
-            - containerPort: 5678
-              name: n8n
-          env:
-            - name: N8N_PORT
-              value: "5678"
-            - name: N8N_HOST
-              value: "0.0.0.0"
-            - name: N8N_PROTOCOL
-              value: "http"
-            - name: N8N_SECURE_COOKIE
-              value: "false"
-            - name: GENERIC_TIMEZONE
-              value: "Asia/Kolkata"
-            - name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
-              value: "false"
-          resources:
-            requests:
-              cpu: "50m"
-              memory: "192Mi"
-            limits:
-              cpu: "300m"
               memory: "384Mi"
-          volumeMounts:
-            - name: n8n-storage
-              mountPath: /home/node/.n8n
-      volumes:
-        - name: n8n-storage
-          emptyDir: {}
+              cpu: "400m"
 ---
 apiVersion: v1
 kind: Service

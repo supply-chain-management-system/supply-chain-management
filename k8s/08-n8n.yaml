@@ -1,3 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: n8n
+  namespace: supply-chain
+  labels:
+    app: n8n
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: n8n
+  template:
+    metadata:
+      labels:
+        app: n8n
+    spec:
+      # Pin to the node that has free IP slots
+      nodeName: ip-10-10-11-101.ec2.internal
+      containers:
+        - name: n8n
+          image: docker.n8n.io/n8nio/n8n:1.82.0
+          ports:
+            - containerPort: 5678
+              name: http
+          env:
+            - name: N8N_PORT
+              value: "5678"
+            - name: N8N_HOST
+              value: "0.0.0.0"
+            - name: N8N_PROTOCOL
+              value: "http"
+            - name: N8N_SECURE_COOKIE
+              value: "false"
+            # This is the key fix - tells n8n its webhook base URL
+            # so activation and test-workflow work correctly
+            - name: N8N_WEBHOOK_URL
+              value: "http://n8n:5678/"
+            - name: N8N_EDITOR_BASE_URL
+              value: "http://n8n:5678"
+            - name: GENERIC_TIMEZONE
+              value: "Asia/Kolkata"
+            - name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+              value: "false"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "400m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: n8n-data
+              mountPath: /home/node/.n8n
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5678
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: n8n-data
+          emptyDir: {}
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -8,7 +72,7 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: fastapi
+    app: n8n
   ports:
     - port: 5678
       targetPort: 5678

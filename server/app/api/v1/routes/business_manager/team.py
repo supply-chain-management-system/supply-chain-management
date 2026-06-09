@@ -65,7 +65,7 @@ def invite_link(token: str, role: str, target_id: Optional[int] = None) -> str:
 
 
 async def dispatch_invite(payload: dict):
-    n8n_url = "http://127.0.0.1:5678/webhook/invite-user"
+    n8n_url = "http://n8n:5678/webhook/invite-user"
     async with httpx.AsyncClient() as client:
         try:
             await client.post(n8n_url, json=payload)
