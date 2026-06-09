@@ -8,8 +8,12 @@ from app.db.database import engine, Base
 
 from app.models.auth.user import User
 
+import asyncio
+import httpx
+import websockets
+from starlette.websockets import WebSocketState
 import logging
-from fastapi import FastAPI, Depends, Request, Response
+from fastapi import FastAPI, Depends, Request, Response, WebSocket
 from fastapi.responses import Response
 from starlette.types import ASGIApp, Scope, Receive, Send
 from app.services.auth.dependancy import require_role
@@ -206,6 +210,72 @@ app.include_router(business_card.router, prefix="/api/v1", dependencies=[Depends
 app.include_router(subscriptions.router, prefix="/api/v1")
 app.include_router(S_center_ai.router, prefix="/api/v1")
 
+
+CHAT_SERVICE_URL = "http://chat-service:8002"
+
+@app.api_route("/api/v1/chat/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def chat_proxy(request: Request, path: str):
+    url = f"{CHAT_SERVICE_URL}/api/v1/chat/{path}"
+    params = dict(request.query_params)
+    headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
+    body = await request.body()
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.request(
+                method=request.method,
+                url=url,
+                params=params,
+                headers=headers,
+                content=body,
+            )
+            response_headers = {k: v for k, v in resp.headers.items() if k.lower() not in ("content-length", "content-encoding", "transfer-encoding")}
+            return Response(
+                content=resp.content,
+                status_code=resp.status_code,
+                headers=response_headers,
+            )
+        except Exception as e:
+            return Response(content=f"Chat Service proxy error: {str(e)}", status_code=502)
+
+@app.websocket("/ws/chat/{room_id}")
+async def chat_websocket_proxy(websocket: WebSocket, room_id: str):
+    await websocket.accept()
+    query_string = ""
+    if websocket.query_params:
+         request_query = "&".join([f"{k}={v}" for k, v in websocket.query_params.items()])
+         query_string = f"?{request_query}"
+         
+    target_url = f"ws://chat-service:8002/ws/chat/{room_id}{query_string}"
+    headers = []
+    cookie_header = websocket.headers.get("cookie")
+    if cookie_header:
+        headers.append(("Cookie", cookie_header))
+        
+    try:
+        async with websockets.connect(target_url, extra_headers=headers) as target_ws:
+            async def forward_to_target():
+                try:
+                    while True:
+                        message = await websocket.receive_text()
+                        await target_ws.send(message)
+                except Exception:
+                    pass
+
+            async def forward_to_client():
+                try:
+                    while True:
+                        message = await target_ws.recv()
+                        await websocket.send_text(message)
+                except Exception:
+                    pass
+
+            await asyncio.gather(forward_to_target(), forward_to_client())
+    except Exception as e:
+        print(f"WebSocket proxy error: {e}")
+    finally:
+        if websocket.client_state != WebSocketState.DISCONNECTED:
+            await websocket.close()
 
 @app.get("/")
 def root():
