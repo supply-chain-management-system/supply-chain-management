@@ -86,22 +86,31 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json",
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://korvex-d098b.web.app",
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
+@app.middleware("http")
+async def force_cors_headers(request: Request, call_next):
+    # If it's a preflight OPTIONS check, intercept it and reply immediately
+    if request.method == "OPTIONS":
+        response = Response(status_code=200)
+        response.headers["Access-Control-Allow-Origin"] = "https://korvex-d098b.web.app"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Requested-With, Tenant-ID"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
+    
+    # For regular requests (GET, POST), add the headers to the backend response
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "https://korvex-d098b.web.app"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, X-Requested-With, Tenant-ID"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 logger = logging.getLogger("uvicorn.error")
 
 @app.middleware("http")
 async def log_request_origin(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
     origin = request.headers.get("origin")
     logger.info(f"Incoming request: {request.method} {request.url.path} | Origin: {origin or 'No Origin (Direct/Same-Origin)'}")
     response = await call_next(request)
