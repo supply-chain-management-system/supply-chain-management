@@ -33,7 +33,7 @@ spec:
               memory: "256Mi"
               cpu: "300m"
         - name: n8n
-          image: docker.n8n.io/n8nio/n8n:1.54.4
+          image: docker.n8n.io/n8nio/n8n:1.82.0
           ports:
             - containerPort: 5678
               name: n8n
