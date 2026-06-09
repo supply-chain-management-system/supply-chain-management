@@ -32,6 +32,29 @@ spec:
             limits:
               memory: "350Mi"
               cpu: "300m"
+        - name: n8n
+          image: docker.n8n.io/n8nio/n8n:latest
+          ports:
+            - containerPort: 5678
+              name: http
+          env:
+            - name: N8N_PORT
+              value: "5678"
+            - name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+              value: "true"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "300m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: n8n-storage
+              mountPath: /home/node/.n8n
+      volumes:
+        - name: n8n-storage
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
