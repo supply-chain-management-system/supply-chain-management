@@ -93,7 +93,9 @@ class PreflightASGIMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        print(f"PreflightASGIMiddleware: received scope: type={scope.get('type')}, method={scope.get('method')}, path={scope.get('path')}")
         if scope["type"] == "http" and scope["method"] == "OPTIONS":
+            print("PreflightASGIMiddleware: Intercepting OPTIONS request and sending 200 OK headers")
             headers = [
                 (b"access-control-allow-origin", b"https://korvex-d098b.web.app"),
                 (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS"),
@@ -186,4 +188,4 @@ app.include_router(S_center_ai.router, prefix="/api/v1")
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to FastAPI App"}
+    return {"message": "Welcome to FastAPI App"}
