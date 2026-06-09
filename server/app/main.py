@@ -218,8 +218,14 @@ async def chat_proxy(request: Request, path: str):
     url = f"{CHAT_SERVICE_URL}/api/v1/chat/{path}"
     params = dict(request.query_params)
     headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
-    body = await request.body()
     
+    body = None
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        try:
+            body = await request.body()
+        except Exception:
+            body = b""
+            
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
             resp = await client.request(
