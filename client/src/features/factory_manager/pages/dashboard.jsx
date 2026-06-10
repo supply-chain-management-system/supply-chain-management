@@ -1,287 +1,308 @@
-import React, { useState } from 'react';
-import Layout from '../layout/dashboarslayout';
+import React, { useState, useEffect } from 'react';
 import AlertBanner from '../component/alert';
 import { useNavigate } from 'react-router-dom';
+import api from "../../../api/api";
 import { 
   ClipboardList, 
   PlayCircle, 
   CheckCircle2, 
-  Package,
   Plus,
-  Settings,
-  AlertTriangle,
-  TrendingUp,
-  Gauge,
+  Cpu,
+  Search,
+  Filter,
+  ArrowRight,
+  Activity,
   Layers
 } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  
+  const [products, setProducts] = useState([]);
+  const [machines, setMachines] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Search and Filter States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
 
-  // Dummy State for Machines
-  const [machines] = useState([
-    { id: 'M-01', name: 'CNC Cutting Axis', status: 'In Use', temp: '42°C', load: '78%', health: 94 },
-    { id: 'M-02', name: 'Hydraulic Press B', status: 'Available', temp: '36°C', load: '0%', health: 100 },
-    { id: 'M-03', name: 'Robotic Welder 04', status: 'Maintenance', temp: '68°C', load: '0%', health: 62 },
-    { id: 'M-04', name: 'Laser Engraver X', status: 'In Use', temp: '51°C', load: '89%', health: 87 },
-  ]);
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  // Dummy State for Active Production Jobs
-  const [activeJobs] = useState([
-    { id: 'JOB-9022', product: 'Aluminum Frame V2', priority: 'High', progress: 68, quantity: '450/600 pcs' },
-    { id: 'JOB-9023', product: 'Steel Bracket Alpha', priority: 'Medium', progress: 32, quantity: '160/500 pcs' },
-  ]);
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [prodRes, machRes] = await Promise.all([
+        api.get("production/factory/products"),
+        api.get("/factory_machine/machines/")
+      ]);
+      setProducts(prodRes.data || []);
+      setMachines(machRes.data || []);
+    } catch (err) {
+      console.error("Error loading factory dashboard:", err);
+      setError("Unable to load dashboard data. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // KPI Calculations
+  const totalProductions = products.length;
+  const activeProductions = products.filter(p => p.status?.toLowerCase() === 'progress').length;
+  const completedProductions = products.filter(p => p.status?.toLowerCase() === 'completed').length;
+  
+  const totalMachines = machines.length;
+  const activeMachines = machines.filter(m => m.status?.toLowerCase() === 'active').length;
+
+  // Filtering Logic
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.product_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          product.id?.toString().includes(searchTerm);
+    const matchesStatus = statusFilter === 'all' || product.status?.toLowerCase() === statusFilter.toLowerCase();
+    const matchesPriority = priorityFilter === 'all' || product.priority?.toLowerCase() === priorityFilter.toLowerCase();
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
 
   return (
-    <Layout>
-      <div className="max-w-[1600px] mx-auto p-1 text-gray-900">
-        
-        {/* --- HEADER SECTION --- */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700 rounded-md border border-slate-200">
-                Live Factory Feed
-              </span>
-            </div>
-            <div className="flex items-center gap-3 mt-1.5">
-              <div className="w-1 h-7 rounded-full" style={{ background: 'linear-gradient(180deg, #94a3b8, #64748b)' }} />
-              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Factory Overview</h1>
-            </div>
-            <p className="text-gray-500 mt-1 ml-4 text-sm">Real-time status of production line 04 — Sector B</p>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-4">
-            <AlertBanner 
-              type="warning"
-              title="STOCK SHORTAGE"
-              message="Aluminum Grade A (Low Stock)"
-            />
-            
-            <button 
-              className="flex items-center gap-2 px-5 py-3 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all" 
-              style={{ background: 'linear-gradient(135deg, #94a3b8, #64748b)' }}
-              onClick={() => navigate('/createproduct')}
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              New Job Order
-            </button>
-          </div>
+    <div className="p-1 space-y-6">
+      {error && <AlertBanner message={error} type="error" />}
+
+      {/* Welcome & Overview Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <Cpu className="w-7 h-7 text-slate-600" />
+            Factory Manager Dashboard
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+            Real-time status of productions, machinery performance, and resources.
+          </p>
         </div>
-
-        {/* --- METRICS GRID SECTION --- */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-          {/* Card 1 */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Total Active Jobs</p>
-              <h3 className="text-2xl font-bold mt-1 text-gray-900">12 Run</h3>
-              <span className="text-xs text-green-600 font-medium flex items-center gap-1 mt-1">
-                <TrendingUp className="w-3 h-3" /> +2 schedules today
-              </span>
-            </div>
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              <ClipboardList className="w-6 h-6" />
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Line Efficiency</p>
-              <h3 className="text-2xl font-bold mt-1 text-gray-900">92.4%</h3>
-              <div className="w-24 bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: '92%' }}></div>
-              </div>
-            </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-              <Gauge className="w-6 h-6" />
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Completed Output</p>
-              <h3 className="text-2xl font-bold mt-1 text-gray-900">3,240 <span className="text-sm font-normal text-gray-400">pcs</span></h3>
-              <span className="text-xs text-gray-500 block mt-1">Target: 4,000 daily</span>
-            </div>
-            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-              <Package className="w-6 h-6" />
-            </div>
-          </div>
-
-          {/* Card 4 */}
-          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Active Faults</p>
-              <h3 className="text-2xl font-bold mt-1 text-red-600">1 Warning</h3>
-              <span className="text-xs text-amber-600 font-medium block mt-1">M-03 Maintenance due</span>
-            </div>
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-          </div>
-        </div>
-
-        {/* --- CORE CONTENT LAYOUT --- */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          
-          {/* LEFT/CENTER COLUMN: Machine Status & Analytics */}
-          <div className="xl:col-span-2 space-y-8">
-            
-            {/* Machine Status Component Block */}
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Telemetry Status Overview</h3>
-                  <p className="text-xs text-gray-500">Live operational availability metrics</p>
-                </div>
-                
-                {/* Visual Status Legend */}
-                <div className="flex items-center gap-4 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs font-medium text-gray-600">Available</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
-                    <span className="text-xs font-medium text-gray-600">In Use</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2.5 h-2.5 bg-amber-500 rounded-full"></div>
-                    <span className="text-xs font-medium text-gray-600">Maintenance</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Live Grid layout for individual machines */}
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {machines.map((machine) => (
-                  <div key={machine.id} className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 hover:border-gray-200 transition-all flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[10px] font-mono bg-gray-200 px-1.5 py-0.5 rounded text-gray-600 font-bold">{machine.id}</span>
-                        <h4 className="font-semibold text-gray-800 text-sm mt-1">{machine.name}</h4>
-                      </div>
-                      <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                        machine.status === 'Available' ? 'bg-emerald-100 text-emerald-800' :
-                        machine.status === 'In Use' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {machine.status}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-gray-100 text-center">
-                      <div>
-                        <span className="block text-[10px] text-gray-400 font-medium uppercase">Temp</span>
-                        <span className="text-xs font-bold text-gray-700">{machine.temp}</span>
-                      </div>
-                      <div>
-                        <span className="block text-[10px] text-gray-400 font-medium uppercase">Load</span>
-                        <span className="text-xs font-bold text-gray-700">{machine.load}</span>
-                      </div>
-                      <div>
-                        <span className="block text-[10px] text-gray-400 font-medium uppercase">Health</span>
-                        <span className={`text-xs font-bold ${machine.health > 80 ? 'text-emerald-600' : 'text-amber-600'}`}>{machine.health}%</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Simulated Analytics Chart Section */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Hourly Production Volatility</h3>
-                  <p className="text-xs text-gray-500">Units engineered vs baseline targets</p>
-                </div>
-                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">Updated 2m ago</span>
-              </div>
-              
-              {/* Dummy Simulated Chart Bars */}
-              <div className="h-32 flex items-end gap-3 px-2 pt-4 border-b border-l border-gray-100">
-                {[35, 45, 60, 25, 70, 85, 90, 65, 40, 55, 80, 95].map((val, idx) => (
-                  <div key={idx} className="flex-1 group relative flex flex-col items-center">
-                    <div className="absolute -top-6 bg-gray-800 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {val * 4} units
-                    </div>
-                    <div 
-                      className="w-full bg-blue-500/80 group-hover:bg-blue-600 rounded-t-sm transition-all" 
-                      style={{ height: `${val}%` }}
-                    ></div>
-                    <span className="text-[9px] text-gray-400 font-mono mt-1">{idx + 7}h</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-
-          {/* RIGHT COLUMN: Active Production Queue */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col justify-between">
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Active Queue</h3>
-                  <p className="text-xs text-gray-500">Jobs processing currently on Line 04</p>
-                </div>
-                <Layers className="w-5 h-5 text-gray-400" />
-              </div>
-
-              <div className="space-y-4 mt-6">
-                {activeJobs.map((job, idx) => (
-                  <div key={job.id} className="p-4 rounded-xl border border-gray-200 bg-white shadow-xs">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs font-mono font-bold text-blue-600">{job.id}</span>
-                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                        job.priority === 'High' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'
-                      }`}>
-                        {job.priority} Priority
-                      </span>
-                    </div>
-                    
-                    <h4 className="text-sm font-bold text-gray-800">{job.product}</h4>
-                    <p className="text-xs text-gray-400 mt-0.5">Quantity: {job.quantity}</p>
-                    
-                    <div className="mt-4">
-                      <div className="flex justify-between text-xs font-medium text-gray-600 mb-1">
-                        <span>Progress</span>
-                        <span>{job.progress}%</span>
-                      </div>
-                      <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-500 ${
-                            job.progress > 50 ? 'bg-blue-500' : 'bg-amber-500'
-                          }`}
-                          style={{ width: `${job.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Micro-Report Summary Footer inside Queue panel */}
-            <div className="mt-8 pt-4 border-t border-gray-100">
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                <div>
-                  <h5 className="text-xs font-bold text-gray-700">All shifts configured</h5>
-                  <p className="text-[11px] text-gray-400">Next roster switch scheduled at 22:00 IST</p>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-
+        <button 
+          onClick={() => navigate('/production')}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-xl text-sm font-semibold shadow-md hover:from-slate-800 hover:to-slate-900 transition-all transform hover:-translate-y-0.5"
+        >
+          <Plus className="w-4 h-4" />
+          Create New Production
+        </button>
       </div>
-    </Layout>
+
+      {/* KPI Cards Section */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-28 bg-slate-100 dark:bg-slate-800/50 rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Card 1: Total Productions */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Productions</p>
+                <h3 className="text-3xl font-black text-slate-800 dark:text-slate-100 mt-2">{totalProductions}</h3>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600">
+                <ClipboardList className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-slate-400">
+              Across all factory sectors
+            </div>
+          </div>
+
+          {/* Card 2: Active Jobs */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Productions</p>
+                <h3 className="text-3xl font-black text-amber-600 mt-2">{activeProductions}</h3>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center text-amber-600">
+                <PlayCircle className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-slate-400">
+              Currently running on floor
+            </div>
+          </div>
+
+          {/* Card 3: Completed Jobs */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Completed Jobs</p>
+                <h3 className="text-3xl font-black text-emerald-600 mt-2">{completedProductions}</h3>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-600">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-slate-400">
+              Transferred to Warehouse
+            </div>
+          </div>
+
+          {/* Card 4: Machinery cockpit */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Machinery</p>
+                <h3 className="text-3xl font-black text-indigo-600 mt-2">{activeMachines} <span className="text-sm font-medium text-slate-400">/ {totalMachines}</span></h3>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 flex items-center justify-center text-indigo-600">
+                <Activity className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-slate-400">
+              Active / Total equipment count
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Productions Table Section */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-6 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Production Runs</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Click any row to inspect production teams, machines, materials, and ELT analytics.</p>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search production..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 w-full md:w-60 transition-all text-slate-800 dark:text-slate-200"
+              />
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-400">
+              <Filter className="w-3.5 h-3.5" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="bg-transparent focus:outline-none text-xs font-semibold cursor-pointer text-slate-800 dark:text-slate-200"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+
+            {/* Priority Filter */}
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-400">
+              <Layers className="w-3.5 h-3.5" />
+              <select
+                value={priorityFilter}
+                onChange={(e) => setPriorityFilter(e.target.value)}
+                className="bg-transparent focus:outline-none text-xs font-semibold cursor-pointer text-slate-800 dark:text-slate-200"
+              >
+                <option value="all">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="space-y-3 py-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-12 bg-slate-50 dark:bg-slate-800/40 rounded-xl animate-pulse" />
+              ))}
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50">
+              <p className="text-sm text-slate-500">No production runs found matching filters.</p>
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-800 text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <th className="pb-3 pl-4">Job ID</th>
+                  <th className="pb-3">Product Name</th>
+                  <th className="pb-3 text-center">Target Qty</th>
+                  <th className="pb-3 text-center">Output Qty</th>
+                  <th className="pb-3 text-center">Scrap Qty</th>
+                  <th className="pb-3">Priority</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3 pr-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+                {filteredProducts.map((p) => {
+                  const statusColors = 
+                    p.status?.toLowerCase() === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' :
+                    p.status?.toLowerCase() === 'progress' ? 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' :
+                    'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-800';
+
+                  const priorityColors = 
+                    p.priority?.toLowerCase() === 'high' ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-950/20' :
+                    p.priority?.toLowerCase() === 'medium' ? 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/20' :
+                    'text-slate-500 bg-slate-50 dark:text-slate-400 dark:bg-slate-800/50';
+
+                  return (
+                    <tr 
+                      key={p.id}
+                      onClick={() => navigate(`/production-details/${p.id}`)}
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 cursor-pointer transition-colors group"
+                    >
+                      <td className="py-4 pl-4 font-mono font-bold text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300">
+                        #{String(p.id).padStart(4, '0')}
+                      </td>
+                      <td className="py-4 font-semibold text-slate-800 dark:text-slate-200">
+                        {p.product_name}
+                      </td>
+                      <td className="py-4 text-center font-semibold text-slate-700 dark:text-slate-300">
+                        {p.target_qty}
+                      </td>
+                      <td className="py-4 text-center font-semibold text-slate-700 dark:text-slate-300">
+                        {p.output_qty || 0}
+                      </td>
+                      <td className="py-4 text-center font-semibold text-red-500 dark:text-red-400">
+                        {p.scrap_qty || 0}
+                      </td>
+                      <td className="py-4">
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded ${priorityColors} capitalize`}>
+                          {p.priority || 'medium'}
+                        </span>
+                      </td>
+                      <td className="py-4">
+                        <span className={`px-2.5 py-1 text-xs font-semibold border rounded-full capitalize ${statusColors}`}>
+                          {p.status || 'pending'}
+                        </span>
+                      </td>
+                      <td className="py-4 pr-4 text-right">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 group-hover:bg-slate-800 dark:group-hover:bg-slate-700 group-hover:text-white transition-all">
+                          <ArrowRight className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

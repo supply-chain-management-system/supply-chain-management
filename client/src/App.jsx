@@ -33,10 +33,13 @@ import SM_Orders from './features/supplier_manager/pages/OrdersPage';
 import SM_Requests from './features/supplier_manager/pages/RequestsPage';
 
 import Factorydash from './features/factory_manager/pages/dashboard';
+import ProductionDetails from './features/factory_manager/pages/ProductionDetails';
 import ProductionManagement from './features/factory_manager/pages/production_page';
 import Team from './features/factory_manager/pages/factory_team';
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
 import ProductionELT from './features/elt/factory_elt';
+import WarehouseELT from './features/elt/warehouse_elt';
+import LogisticsELT from './features/elt/logistics_elt';
 import ProductionOutputHistory from './features/factory_manager/pages/outputlogs';
 import FactoryMaterial from './features/factory_manager/pages/factory_material';
 
@@ -69,7 +72,9 @@ import LogisticsRequestsPage from './features/logistics_manager/pages/LogisticsR
 import FactoryRequestsPage from './features/factory_manager/pages/FactoryRequestsPage';
 
 import KorvexLanding, { ContactSalesPage, SubscriptionsPage } from './components/layout/landing_page';
+import PaymentSuccess from './features/auth/pages/PaymentSuccess';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import SupplierELT from './features/elt/supplier_elt';
 
 function App() {
   return (
@@ -81,6 +86,7 @@ function App() {
           <Route path="/pricing" element={<SubscriptionsPage />} />
           <Route path="/subscriptions" element={<Navigate to="/pricing" replace />} />
           <Route path="/contact-sales" element={<ContactSalesPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
 
           {/* AUTHENTICATION / ONBOARDING */}
           <Route path="/login" element={<ProtectedRoute publicOnly><Login /></ProtectedRoute>} />
@@ -151,6 +157,7 @@ function App() {
             <Route path="/Inventory" element={<InventoryPage />} />
             <Route path="/Racks" element={<RackPage />} />
             <Route path="/stockupdate" element={<StockUpdatePage />} />
+            <Route path="/elt_warehouse" element={<WarehouseELT />} />
             <Route path="/ware_requests" element={<WarehouseRequestsPage />} />
             <Route path="/ware-chat" element={<ChatPage />} />
             <Route path="/ware_profile" element={<ProfilePage />} />
@@ -166,6 +173,7 @@ function App() {
           >
             <Route path="production" element={<ProductionManagement />} />
             <Route path="factorydash" element={<Factorydash />} />
+            <Route path="production-details/:id" element={<ProductionDetails />} />
             <Route path="factoryteam" element={<Team />} />
             <Route path="factory_machine" element={<Machine />} />
             <Route path="outputlogs" element={<ProductionOutputHistory />} />
@@ -192,6 +200,7 @@ function App() {
             <Route path="orders" element={<SM_Orders />} />
             <Route path="requests" element={<SM_Requests />} />
             <Route path="chat" element={<ChatPage />} />
+            <Route path="analytics" element={<SupplierELT />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
 
@@ -207,7 +216,7 @@ function App() {
             <Route path="/logistics_fleet" element={<LogisticsFleetPage />} />
             <Route path="/logistics_shipments" element={<LogisticsShipmentsPage />} />
             <Route path="/logistics_routes" element={<LogisticsRoutesPage />} />
-            <Route path="/logistics_analytics" element={<LogisticsAnalyticsPage />} />
+            <Route path="/logistics_analytics" element={<LogisticsELT />} />
             <Route path="/logistics_settings" element={<LogisticsSettingsPage />} />
             <Route path="/logistics_requests" element={<LogisticsRequestsPage />} />
             <Route path="/logistics_profile" element={<ProfilePage />} />

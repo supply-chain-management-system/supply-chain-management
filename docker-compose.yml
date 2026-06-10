@@ -139,6 +139,24 @@ services:
       celery -A app.core.celery.celery_app worker --loglevel=info
 
 
+  celery_beat:
+    build:
+      context: ./server
+    container_name: celery-beat
+    restart: always
+    depends_on:
+      - redis
+      - postgres
+    env_file:
+      - ./server/.env
+    volumes:
+      - ./server:/app
+    environment:
+      - PYTHONPATH=/app:/app/ai_services
+    command: >
+      celery -A app.core.celery.celery_app beat --loglevel=info
+
+
   elt-consumer:
     build:
       context: .
@@ -191,7 +209,7 @@ services:
       - PYTHONPATH=/app
     volumes:
       - ./ai_services/ai_app:/app/ai_app
-    command: celery -A ai_app.tasks.agent_tasks worker --loglevel=info
+    command: celery -A ai_app.tasks.agent_tasks worker -Q ai_queue --loglevel=info
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:

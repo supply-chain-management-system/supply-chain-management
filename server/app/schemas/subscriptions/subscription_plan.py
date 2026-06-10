@@ -25,3 +25,22 @@ class SubscriptionPlanResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PaymentRequest(BaseModel):
+    plan_slug: str  
+    user_id: str    
+
+class PaymentResponse(BaseModel):
+    success: bool
+    payment_url: str
+    transaction_id: str
+
+class WebhookResponsePayload(BaseModel):
+    response: str
+
+class TransactionStatusResponse(BaseModel):
+    transaction_id: str
+    status: str
+    plan_slug: str
+    success: bool

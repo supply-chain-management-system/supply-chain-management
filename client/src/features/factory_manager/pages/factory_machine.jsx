@@ -126,19 +126,29 @@ const HeaderTabs = ({ activeTab, setActiveTab, counts }) => {
   );
 };
 
-const SidebarPanel = ({ selectedMachine, setSelectedMachine, machines, technicians, assignments, onAssignCreated }) => {
+const SidebarPanel = ({ selectedMachine, setSelectedMachine, machines, technicians, productions, assignments, onAssignCreated }) => {
+  const [assignmentType, setAssignmentType] = useState('maintenance'); // 'maintenance' or 'production'
   const [selectedTech, setSelectedTech] = useState('');
+  const [selectedProd, setSelectedProd] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
+  const [notes, setNotes] = useState('');
 
   const handleConfirmAssignment = async () => {
     if (!selectedMachine) {
       alert("Please select a machine");
       return;
     }
-    if (!selectedTech) {
+    
+    if (assignmentType === 'maintenance' && !selectedTech) {
       alert("Please select a technician");
       return;
     }
+
+    if (assignmentType === 'production' && !selectedProd) {
+      alert("Please select a production job");
+      return;
+    }
+
     if (!scheduleDate) {
       alert("Please select a schedule date");
       return;
@@ -147,16 +157,20 @@ const SidebarPanel = ({ selectedMachine, setSelectedMachine, machines, technicia
     try {
       const payload = {
         machine_id: Number(selectedMachine.id),
-        worker_id: Number(selectedTech),
+        worker_id: selectedTech ? Number(selectedTech) : null,
+        production_id: assignmentType === 'production' && selectedProd ? Number(selectedProd) : null,
         assignment_date: new Date(scheduleDate).toISOString(),
-        notes: `Scheduled maintenance assignment`,
-        status: "pending"
+        notes: notes || `Scheduled ${assignmentType} assignment`,
+        status: "pending",
+        assignment_type: assignmentType
       };
 
       await api.post('/factory_machine/machines/assignments', payload);
       alert("Assignment confirmed successfully ✅");
       setSelectedTech('');
+      setSelectedProd('');
       setScheduleDate('');
+      setNotes('');
       if (onAssignCreated) {
         onAssignCreated();
       }
@@ -169,11 +183,39 @@ const SidebarPanel = ({ selectedMachine, setSelectedMachine, machines, technicia
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-6">
       <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Machine Scheduler</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4 font-sans">Machine Scheduler</h3>
         
+        {/* Toggle tabs for assignment type */}
+        <div className="flex bg-gray-100 p-1 rounded-xl mb-5">
+          <button
+            type="button"
+            onClick={() => setAssignmentType('maintenance')}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-1.5 ${
+              assignmentType === 'maintenance'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            <span>🛠️</span>
+            <span>Maintenance</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setAssignmentType('production')}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-1.5 ${
+              assignmentType === 'production'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            <span>🏭</span>
+            <span>Production</span>
+          </button>
+        </div>
+
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Machine</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Select Machine</label>
             <select 
               value={selectedMachine?.id || ''}
               onChange={(e) => {
@@ -191,14 +233,34 @@ const SidebarPanel = ({ selectedMachine, setSelectedMachine, machines, technicia
             </select>
           </div>
 
+          {assignmentType === 'production' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Select Production Job</label>
+              <select 
+                value={selectedProd}
+                onChange={(e) => setSelectedProd(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm bg-white"
+              >
+                <option value="">Choose a job...</option>
+                {productions.map(prod => (
+                  <option key={prod.id} value={prod.id}>
+                    {prod.product_name} (Target Qty: {prod.target_qty})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Technician</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              {assignmentType === 'production' ? 'Select Operator (Optional)' : 'Select Technician'}
+            </label>
             <select 
               value={selectedTech}
               onChange={(e) => setSelectedTech(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm bg-white"
             >
-              <option value="">Choose technician...</option>
+              <option value="">Choose worker...</option>
               {technicians.map(tech => (
                 <option key={tech.id} value={tech.id}>
                   {tech.name} - {tech.role}
@@ -208,12 +270,23 @@ const SidebarPanel = ({ selectedMachine, setSelectedMachine, machines, technicia
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Schedule Date</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Schedule Date</label>
             <input 
               type="date"
               value={scheduleDate}
               onChange={(e) => setScheduleDate(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Notes / Instructions</label>
+            <textarea 
+              rows={2}
+              placeholder={assignmentType === 'production' ? 'Instructions for production run...' : 'Details of maintenance issue...'}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm resize-none"
             />
           </div>
 
@@ -233,17 +306,35 @@ const SidebarPanel = ({ selectedMachine, setSelectedMachine, machines, technicia
         <h4 className="font-semibold text-gray-900 mb-4">Recent Assignments</h4>
         <div className="space-y-3">
           {assignments.map((assignment) => (
-            <div key={assignment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <div className="flex-1">
-                <p className="font-medium text-gray-900 text-sm">{assignment.machine_name}</p>
-                <p className="text-xs text-gray-500">{assignment.worker_name} • {new Date(assignment.assignment_date).toLocaleDateString()}</p>
+            <div key={assignment.id} className="flex flex-col p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm">
+                    {assignment.assignment_type === 'production' ? '🏭' : '🛠️'}
+                  </span>
+                  <p className="font-bold text-gray-900 text-sm">
+                    {assignment.assignment_type === 'production' 
+                      ? `Prod: ${assignment.production_name || 'Production Run'}`
+                      : `Maint: ${assignment.machine_name}`}
+                  </p>
+                </div>
+                <div className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                  assignment.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  assignment.status === 'in-progress' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {assignment.status}
+                </div>
               </div>
-              <div className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                assignment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                assignment.status === 'in-progress' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'
-              }`}>
-                {assignment.status}
+              <div className="text-xs text-gray-500">
+                <span className="font-medium text-gray-700">{assignment.machine_name}</span>
+                {assignment.worker_name && ` • Assigned to: ${assignment.worker_name}`}
+                {` • ${new Date(assignment.assignment_date).toLocaleDateString()}`}
               </div>
+              {assignment.notes && (
+                <p className="text-[11px] text-gray-600 bg-white border border-gray-100 rounded px-2 py-1 italic">
+                  {assignment.notes}
+                </p>
+              )}
             </div>
           ))}
           {assignments.length === 0 && (
@@ -435,6 +526,7 @@ export default function Machine() {
   const [machines, setMachines] = useState([]);
   const [technicians, setTechnicians] = useState([]);
   const [assignments, setAssignments] = useState([]);
+  const [productions, setProductions] = useState([]);
   const [model, showmodel] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
 
@@ -442,6 +534,7 @@ export default function Machine() {
     fetchMachines();
     fetchTechnicians();
     fetchAssignments();
+    fetchProductions();
   }, []);
 
   const fetchMachines = async () => {
@@ -468,6 +561,15 @@ export default function Machine() {
       setAssignments(res.data);
     } catch (err) {
       console.error("Failed to fetch assignments", err);
+    }
+  };
+
+  const fetchProductions = async () => {
+    try {
+      const res = await api.get('/production/factory/products');
+      setProductions(res.data);
+    } catch (err) {
+      console.error("Failed to fetch productions", err);
     }
   };
 
@@ -607,10 +709,13 @@ export default function Machine() {
                 setSelectedMachine={setSelectedMachine}
                 machines={machines}
                 technicians={technicians}
+                productions={productions}
                 assignments={assignments}
                 onAssignCreated={() => {
                   fetchAssignments();
-                  fetchTechnicians(); // Refresh technicians in case active list changes
+                  fetchTechnicians();
+                  fetchProductions();
+                  fetchMachines();
                 }}
               />
             </div>

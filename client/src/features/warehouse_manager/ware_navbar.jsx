@@ -13,6 +13,7 @@ function Ware_Navbar() {
     { label: "Racks", href: "/Racks" },
     { label: "Stock Update", href: "/stockupdate" },
     { label: "Requests", href: "/ware_requests" },
+    { label: "ELT Analytics", href: "/elt_warehouse" },
     { label: "Chat", href: "/ware-chat" },
   ];
 

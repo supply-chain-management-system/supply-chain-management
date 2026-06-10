@@ -17,7 +17,7 @@ from app.models.sub_managers.factory_manager.production import Factory,Productio
 from app.models.sub_managers.factory_manager.teams import Worker,Productionteam
 
 from app.models.sub_managers.factory_manager.factory_material import Factory_Material,Factory_MaterialTransaction,TransactionType
-from app.models.business_manager.domain import Inventory, Approval, Supplier
+from app.models.business_manager.domain import Inventory, Approval
 from app.models.business_manager.business_owners import BusinessOwners
 
 

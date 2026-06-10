@@ -36,13 +36,16 @@ class MachineAssignment(BaseTenant):
 
     id = Column(Integer, primary_key=True, index=True)
     machine_id = Column(Integer, ForeignKey("machines.id"), nullable=False)
-    worker_id = Column(Integer, ForeignKey("workers.id"), nullable=False)
+    worker_id = Column(Integer, ForeignKey("workers.id"), nullable=True)
+    production_id = Column(Integer, ForeignKey("production.id"), nullable=True)
     assignment_date = Column(DateTime, nullable=False, default=datetime.utcnow)
     notes = Column(String, nullable=True)
     status = Column(String, default="pending")  # pending, in-progress, completed
+    assignment_type = Column(String, default="maintenance")  # maintenance or production
 
     machine = relationship("Machine", back_populates="assignments")
     worker = relationship("Worker")
+    production = relationship("Production")
 
 
 @event.listens_for(Machine,'after_insert')

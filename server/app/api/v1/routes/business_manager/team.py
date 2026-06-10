@@ -67,10 +67,31 @@ def invite_link(token: str, role: str, target_id: Optional[int] = None) -> str:
 
 
 async def dispatch_invite(payload: dict):
+
+    import os
+    n8n_url = os.getenv("N8N_WEBHOOK_URL")
+    if not n8n_url:
+        n8n_url = "http://n8n:5678/webhook/invite/company/managers"
+    
+    n8n_payload = {
+        "invited_email": payload.get("email"),
+        "role": payload.get("role"),
+        "invite_link": payload.get("invite_link"),
+        "created_by": payload.get("created_by", "owner"),
+        "owner_email": payload.get("owner_email", "owner@local.invalid"),
+        "manager_card_id": payload.get("manager_card_id"),
+        "manager_card_name": payload.get("manager_card_name"),
+        "business_name": payload.get("business_name"),
+        "target_id": payload.get("target_id")
+    }
+
+
     n8n_url = "http://n8n:5678/webhook/invite-user"
+
     async with httpx.AsyncClient() as client:
         try:
-            await client.post(n8n_url, json=payload)
+            response = await client.post(n8n_url, json=n8n_payload, timeout=20.0)
+            print(f"n8n card invite dispatch response: {response.status_code} - {response.text}")
         except Exception as e:
             print(f"n8n Dispatch Error: {e}")
 
@@ -387,6 +408,12 @@ async def invite_to_manager_card(
     app_db.refresh(invite)
 
     link = invite_link(token, manager_role, invite.factory_id)
+    
+    # Resolve owner email
+    from app.models.company.company import Company
+    company = app_db.query(Company).filter(Company.id == current_user.company_id).first()
+    owner_email = company.owner_email if company else current_user.email
+
     await dispatch_invite(
         {
             "email": data.email,
@@ -396,6 +423,8 @@ async def invite_to_manager_card(
             "target_id": invite.factory_id,
             "manager_card_id": card.id,
             "manager_card_name": card.name,
+            "created_by": current_user.email,
+            "owner_email": owner_email
         }
     )
 

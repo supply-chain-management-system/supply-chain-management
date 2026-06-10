@@ -16,6 +16,7 @@ import {
   MessageSquare,
   User,
   ChevronDown,
+  BarChart3,
 } from 'lucide-react';
 
 const SupplierManagerLayout = () => {
@@ -33,6 +34,7 @@ const SupplierManagerLayout = () => {
     { name: 'Inventory', path: '/supplier-manager/inventory', icon: Package },
     { name: 'Orders', path: '/supplier-manager/orders', icon: ShoppingCart },
     { name: 'Requests', path: '/supplier-manager/requests', icon: BellRing },
+    { name: 'Analytics', path: '/supplier-manager/analytics', icon: BarChart3 },
     { name: 'Chat', path: '/supplier-manager/chat', icon: MessageSquare },
   ];
 

@@ -1,4 +1,5 @@
 
+
 from requests import get
 
 from app.db.database import engine, Base
@@ -8,6 +9,9 @@ from app.db.database import engine, Base
 
 from app.models.auth.user import User
 
+
+from fastapi import FastAPI, Depends
+
 import asyncio
 import httpx
 import websockets
@@ -16,6 +20,7 @@ import logging
 from fastapi import FastAPI, Depends, Request, Response, WebSocket
 from fastapi.responses import Response
 from starlette.types import ASGIApp, Scope, Receive, Send
+
 from app.services.auth.dependancy import require_role
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -74,7 +79,11 @@ from app.api.v1.routes.sub_managers.logistics_manager import logistics_dashboard
 
 from app.api.v1.routes.sub_managers.factory_manager import production, team,factory_machine, factory_material
 from app.api.v1.routes.sub_managers.factory_manager import analytics    
+
+from app.api.v1.routes.elt import production_elt, warehouse_elt, logistics_elt
+
 from app.api.v1.routes.elt import production_elt 
+
 
 
 
@@ -91,6 +100,17 @@ app = FastAPI(
     redoc_url="/api/v1/redoc",
     openapi_url="/api/v1/openapi.json",
 )
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(TenantMiddleware)
 
 class PreflightASGIMiddleware:
     def __init__(self, app: ASGIApp):
@@ -167,23 +187,31 @@ app.add_middleware(TenantMiddleware)
 async def preflight_handler(rest_of_path: str):
     return Response(status_code=200)
 
+
 Base.metadata.create_all(bind=engine)
 
 with SessionLocal() as db:
     seed_subscription_plans(db)
 
 
+
 # ── Core Auth ───────────────────────────────────────────────────────────────
+
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(auth_profile.router, prefix="/api/v1")
 app.include_router(company_auth.router, prefix="/api/v1/company/auth")
 app.include_router(company.router, prefix="/api/v1/company")
+
+
+app.include_router(admin_featuers.router, prefix="/api/v1", dependencies=[Depends(require_role(["admin", "owner"]))])
+app.include_router(admin_control_routes.router, prefix="/api/v1", dependencies=[Depends(require_role(["admin", "owner"]))])
 
 # ── Admin ────────────────────────────────────────────────────────────────────
 app.include_router(admin_featuers.router, prefix="/api/v1", dependencies=[Depends(require_role(["admin", "owner"]))])
 app.include_router(admin_control_routes.router, prefix="/api/v1", dependencies=[Depends(require_role(["admin", "owner"]))])
 
 # ── Business Manager ─────────────────────────────────────────────────────────
+
 app.include_router(bm_dashboard.router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager"]))])
 app.include_router(bm_dashboard.requests_router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager", "supply_manager", "warehouse_manager", "factory_manager", "logistics_manager"]))])
 app.include_router(bm_team.router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager"]))])
@@ -192,18 +220,33 @@ app.include_router(logistics_manager.router, prefix="/api/v1", dependencies=[Dep
 app.include_router(warehouse_manager.router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager"]))])
 app.include_router(supply_manager.router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager"]))])
 
+
+
 # ── Supplier Manager ─────────────────────────────────────────────────────────
+
 app.include_router(sm_suppliers.router, prefix="/api/v1", dependencies=[Depends(require_role(["supply_manager", "owner", "business_manager"]))])
 app.include_router(sm_inventory.router, prefix="/api/v1/supplier-manager", dependencies=[Depends(require_role(["supply_manager", "owner", "business_manager"]))])
 app.include_router(sm_orders.router, prefix="/api/v1/supplier-manager", dependencies=[Depends(require_role(["supply_manager", "owner", "business_manager"]))])
 
+
+
 # ── Factory Sub-Manager ──────────────────────────────────────────────────────
+
 app.include_router(production.router, prefix="/api/v1/production", dependencies=[Depends(require_role(["factory_manager", "owner", "business_manager"]))])
 app.include_router(team.router, prefix="/api/v1/factory_team", dependencies=[Depends(require_role(["factory_manager", "owner", "business_manager"]))])
 app.include_router(factory_machine.router, prefix="/api/v1/factory_machine", dependencies=[Depends(require_role(["factory_manager", "owner", "business_manager"]))])
 app.include_router(factory_material.router, prefix="/api/v1/factory_material", dependencies=[Depends(require_role(["factory_manager", "owner", "business_manager"]))])
 app.include_router(analytics.router, prefix="/api/v1/factory_analytics", dependencies=[Depends(require_role(["factory_manager", "owner", "business_manager"]))])
 app.include_router(production_elt.router, prefix="/api/v1/elt", dependencies=[Depends(require_role(["factory_manager", "owner", "business_manager"]))])
+
+app.include_router(warehouse_elt.router, prefix="/api/v1/elt", dependencies=[Depends(require_role(["warehouse_manager", "owner", "business_manager"]))])
+app.include_router(logistics_elt.router, prefix="/api/v1/elt", dependencies=[Depends(require_role(["logistics_manager", "owner", "business_manager"]))])
+
+app.include_router(api_warehouse.router, prefix="/api/v1", dependencies=[Depends(require_role(["warehouse_manager", "owner", "business_manager"]))])
+
+app.include_router(logistics_dashboard.router, prefix="/api/v1", dependencies=[Depends(require_role(["logistics_manager", "owner", "business_manager"]))])
+
+
 
 # ── Warehouse Sub-Manager ────────────────────────────────────────────────────
 app.include_router(api_warehouse.router, prefix="/api/v1", dependencies=[Depends(require_role(["warehouse_manager", "owner", "business_manager"]))])
@@ -212,10 +255,13 @@ app.include_router(api_warehouse.router, prefix="/api/v1", dependencies=[Depends
 app.include_router(logistics_dashboard.router, prefix="/api/v1", dependencies=[Depends(require_role(["logistics_manager", "owner", "business_manager"]))])
 
 # ── Shared / Other ───────────────────────────────────────────────────────────
+
 app.include_router(request.router, prefix="/api/v1", dependencies=[Depends(require_role(["factory_manager", "warehouse_manager", "owner", "business_manager"]))])
 app.include_router(business_card.router, prefix="/api/v1", dependencies=[Depends(require_role(["admin", "owner", "business_manager"]))])
 app.include_router(subscriptions.router, prefix="/api/v1")
 app.include_router(S_center_ai.router, prefix="/api/v1")
+
+
 
 
 CHAT_SERVICE_URL = "http://chat-service:8002"
@@ -289,6 +335,7 @@ async def chat_websocket_proxy(websocket: WebSocket, room_id: str):
     finally:
         if websocket.client_state != WebSocketState.DISCONNECTED:
             await websocket.close()
+
 
 @app.get("/")
 def root():

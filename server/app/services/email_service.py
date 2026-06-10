@@ -60,3 +60,47 @@ async def send_verification_otp_email(email_to: str, user_name: str, otp: str):
 
     fm = FastMail(conf)
     await fm.send_message(message)
+
+
+async def send_subscription_expired_email(email_to: str, company_name: str, expired_plan: str):
+    print(f"Preparing to send subscription expiration email to {email_to}")
+    """
+    Send subscription expiration/downgrade notification email to company owner
+    """
+
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2 style="color: #e11d48;">Subscription Expired</h2>
+
+        <p>Dear Customer,</p>
+        <p>Your subscription for <strong>{company_name}</strong> under the <strong>{expired_plan.capitalize()}</strong> plan has expired.</p>
+        <p>As a result, your account has been automatically downgraded to the <strong>Free</strong> plan.</p>
+        <p>Your existing data is safe, but some features and resource additions may be locked until you renew or upgrade your subscription.</p>
+
+        <p style="margin-top: 20px;">
+            <a href="http://localhost:5173/pricing" style="
+                background-color: #2563eb;
+                color: #ffffff;
+                padding: 10px 20px;
+                text-decoration: none;
+                border-radius: 6px;
+                font-weight: bold;
+                display: inline-block;
+            ">Renew Subscription</a>
+        </p>
+
+        <p style="margin-top: 30px; font-size: 12px; color: #64748b;">
+            © NexusGrid
+        </p>
+    </div>
+    """
+
+    message = MessageSchema(
+        subject="Your Subscription Has Expired - Korvex",
+        recipients=[email_to],
+        body=html_content,
+        subtype=MessageType.html,
+    )
+
+    fm = FastMail(conf)
+    await fm.send_message(message)

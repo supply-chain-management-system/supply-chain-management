@@ -16,12 +16,22 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from collections import defaultdict
 
+from app.services.auth.dependancy import get_current_user
+from app.models.auth.user import User
+from app.services.subscriptions.limit_checker import check_employee_limit
+
 router = APIRouter(prefix='/factory', tags=['factory'])
 
 
 @router.post('/create_worker')
-
-def create_worker(data: worker_create, db: Session = Depends(get_tenant_db)):
+def create_worker(
+    data: worker_create, 
+    db: Session = Depends(get_tenant_db),
+    app_db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.company_id:
+        check_employee_limit(app_db, db, current_user.company_id, module="factory")
 
     work=Worker(
         name=data.name,
@@ -32,11 +42,6 @@ def create_worker(data: worker_create, db: Session = Depends(get_tenant_db)):
         hourly_rate=data.hourly_rate
     )
 
-
-
-
-
-
     db.add(work)
     db.commit()
     db.refresh(work)
@@ -45,11 +50,13 @@ def create_worker(data: worker_create, db: Session = Depends(get_tenant_db)):
 
 @router.get('/get_worker', response_model=list[get_worker])
 def get_available_workers(db: Session = Depends(get_tenant_db)):  
-    assigned_worker_ids = db.query(Productionteam.worker_id).subquery()
+    active_worker_ids = db.query(Productionteam.worker_id).join(
+        Production, Production.id == Productionteam.production_id
+    ).filter(
+        Production.status != 'completed'
+    ).subquery()
 
-  
-    workers = db.query(Worker).filter(Worker.id.not_in(assigned_worker_ids)).all()
-
+    workers = db.query(Worker).filter(Worker.id.not_in(active_worker_ids)).all()
     print('Available workers:', workers)
     return workers
 
@@ -142,7 +149,13 @@ def get_all_production_teams(db: Session = Depends(get_tenant_db)):
 @router.get('/find_wroker')
 def worker_search(search: str = '', db: Session = Depends(get_tenant_db)):
     print('je', search)
-    query = db.query(Worker)
+    active_worker_ids = db.query(Productionteam.worker_id).join(
+        Production, Production.id == Productionteam.production_id
+    ).filter(
+        Production.status != 'completed'
+    ).subquery()
+
+    query = db.query(Worker).filter(Worker.id.not_in(active_worker_ids))
     if search:
         query = query.filter(Worker.name.ilike(f"%{search}%"))
     print('seagc', query.all())
