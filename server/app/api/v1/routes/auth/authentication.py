@@ -95,11 +95,27 @@ def login(user: UserLogin, response: Response, db: Session = Depends(get_tenant_
     description="Logs out user and clears tokens from cookies",
 )
 def logout(response: Response):
-    response.delete_cookie(key="access_token")
-    response.delete_cookie(key="refresh_token")
     # Explicitly force delete by setting max_age=0 and expires=0
-    response.set_cookie(key="access_token", value="", max_age=0, expires=0, httponly=True)
-    response.set_cookie(key="refresh_token", value="", max_age=0, expires=0, httponly=True)
+    response.set_cookie(
+        key="access_token",
+        value="",
+        max_age=0,
+        expires=0,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/"
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value="",
+        max_age=0,
+        expires=0,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/"
+    )
     return {"message": "Logout successful"}
 
 
@@ -164,8 +180,8 @@ async def google_auth(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60 * 30,
         path="/",
     )
@@ -173,8 +189,8 @@ async def google_auth(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60 * 60 * 24 * 7,
         path="/",
     )

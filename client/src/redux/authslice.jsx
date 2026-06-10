@@ -197,6 +197,11 @@ const authSlice = createSlice({
       state.error = null;
     },
 
+    cancelAuthCheck: (state) => {
+      state.loading = false;
+      state.isAuthenticated = false;
+    },
+
     setCompany: (state, action) => {
       if (state.user) {
         state.user.companyId = action.payload.id;
@@ -235,6 +240,7 @@ const authSlice = createSlice({
         state.remember = action.payload.remember;
 
         state.error = null;
+        localStorage.setItem("has_session", "true");
       })
 
       .addCase(loginUser.rejected, (state, action) => {
@@ -264,6 +270,7 @@ const authSlice = createSlice({
         };
         state.role = action.payload.user.role;
         state.error = null;
+        localStorage.setItem("has_session", "true");
       })
 
       .addCase(loginGoogle.rejected, (state, action) => {
@@ -295,6 +302,7 @@ const authSlice = createSlice({
         state.role = action.payload.user.role;
 
         state.error = null;
+        localStorage.setItem("has_session", "true");
       })
 
       .addCase(fetchMe.rejected, (state) => {
@@ -304,6 +312,7 @@ const authSlice = createSlice({
         state.role = null;
 
         state.isAuthenticated = false;
+        localStorage.removeItem("has_session");
       })
 
 
@@ -321,6 +330,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
         state.remember = false;
+        localStorage.removeItem("has_session");
       })
 
       .addCase(logoutUser.rejected, (state) => {
@@ -330,6 +340,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
         state.remember = false;
+        localStorage.removeItem("has_session");
       });
   },
 });
@@ -337,6 +348,7 @@ const authSlice = createSlice({
 export const {
   clearError,
   setCompany,
+  cancelAuthCheck,
 } = authSlice.actions;
 
 export default authSlice.reducer;

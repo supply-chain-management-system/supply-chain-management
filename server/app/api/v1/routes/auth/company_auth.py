@@ -38,6 +38,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 
 @router.post("/invite/send")
+@router.post("/invite/send/")
 async def send_invite(
     payload: InviteRequest,
     current_user: User = Depends(get_current_user),

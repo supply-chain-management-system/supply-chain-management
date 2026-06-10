@@ -51,16 +51,16 @@ def login_user(db: Session, email: str, password: str, response: Response):
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60 * 30,
     )
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
         max_age=60 * 60 * 24 * 7,
     )
 
@@ -112,8 +112,8 @@ def refresh_access_token(request, response: Response):
             key="access_token",
             value=new_access_token,
             httponly=True,
-            secure=False,
-            samesite="lax",
+            secure=True,
+            samesite="none",
             max_age=60 * 30,
         )
 

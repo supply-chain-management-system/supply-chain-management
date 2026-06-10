@@ -61,10 +61,13 @@ class ManagerCardInvite(BaseModel):
 
 
 def invite_link(token: str, role: str, target_id: Optional[int] = None) -> str:
-    return f"http://localhost:5173/register?token={token}&role={role}&tid={target_id or 0}"
+    import os
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    return f"{frontend_url}/register?token={token}&role={role}&tid={target_id or 0}"
 
 
 async def dispatch_invite(payload: dict):
+
     import os
     n8n_url = os.getenv("N8N_WEBHOOK_URL")
     if not n8n_url:
@@ -81,6 +84,9 @@ async def dispatch_invite(payload: dict):
         "business_name": payload.get("business_name"),
         "target_id": payload.get("target_id")
     }
+
+
+    n8n_url = "http://n8n:5678/webhook/invite-user"
 
     async with httpx.AsyncClient() as client:
         try:

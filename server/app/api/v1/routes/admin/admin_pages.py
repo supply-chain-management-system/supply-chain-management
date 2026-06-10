@@ -22,7 +22,9 @@ async def create_invite(data: InviteRequest, db: Session = Depends(get_db)):
     db.add(invite)
     db.commit()
 
-    link = f"http://localhost:5173/register?token={token}"
+    import os
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    link = f"{frontend_url}/register?token={token}"
 
     await send_invite_email(data.email, link)
 

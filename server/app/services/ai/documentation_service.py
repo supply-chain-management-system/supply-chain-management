@@ -3,7 +3,8 @@ from app.db.database import SessionLocal
 from app.models.sub_managers.factory_manager.production import Production
 from sqlalchemy import text
 
-AI_SERVICE_URL = "http://ai_service:8001/api/v1/factory/generate-production-doc"
+import os
+AI_SERVICE_URL = os.getenv("AI_SERVICE_URL", "http://ai-service:8001").rstrip("/") + "/api/v1/factory/generate-production-doc"
 
 def generate_production_doc_task_logic(production_id: int,schema_name: str):
     db = SessionLocal()
