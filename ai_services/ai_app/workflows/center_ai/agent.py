@@ -70,19 +70,18 @@ CENTRAL_AI_PROMPT = (
 )
 
 # 1️ Bind Base Models
+cohere_base = ChatCohere(model="command-r-plus-08-2024")
 groq_base = ChatGroq(model="llama-3.3-70b-versatile")
 openai_base = ChatOpenAI(model="gpt-4o-mini")
-cohere_base = ChatCohere(model="command-r-plus-08-2024")
 
 # 2️ Combine Prompts and Tools
+cohere_chain = cohere_base.bind_tools(central_tools)
 groq_chain = groq_base.bind_tools(central_tools, system_prompt=CENTRAL_AI_PROMPT)
 openai_chain = openai_base.bind_tools(central_tools, system_prompt=CENTRAL_AI_PROMPT)
-cohere_chain = cohere_base.bind_tools(central_tools)
 
-# 3️ Build the Redundant Smart Chain (Now catching BOTH Groq and OpenAI errors)
-smart_llm_chain = groq_chain.with_fallbacks(
-    fallbacks=[openai_chain, cohere_chain],
-    exceptions_to_handle=(GroqError, openai.OpenAIError)  #  Catch Groq limits AND OpenAI quota issues!
+# 3️ Build the Redundant Smart Chain
+smart_llm_chain = cohere_chain.with_fallbacks(
+    fallbacks=[groq_chain, openai_chain]
 )
 
 # 4️ Global MongoDB Connection Checkpointer

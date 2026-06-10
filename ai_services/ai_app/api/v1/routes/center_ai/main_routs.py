@@ -4,6 +4,8 @@ from pymongo import MongoClient
 import msgpack
 from ai_app.core.celery_config import ai_celery_app
 import os
+from ai_app.workflows.center_ai.agent import agent_executor
+from langchain_core.messages import HumanMessage
 router = APIRouter()
 MONGO_URL = os.getenv("MONGO_URL", "mongodb://mongodb:27017")
 mongo_client = MongoClient(MONGO_URL)
@@ -22,18 +24,20 @@ async def chat_with_central_agent(
 ):
     print("hello",chat_request.user_role)
     try:
-
-        task = ai_celery_app.send_task(
-            "ai_app.tasks.run_central_agent",
-            kwargs={
-                "user_input": chat_request.user_input,
-                "session_id": session_id,
+        config = {
+            "configurable": {
+                "thread_id": session_id,
                 "tenant_schema": chat_request.tenant_schema,
-                "user_role": chat_request.user_role,
-            }
-        )
-
-        ai_reply = task.get(timeout=55)
+                "user_role": chat_request.user_role
+            },
+            "recursion_limit": 5  # STOPS INFINITE LOOPS! Protects your API credits.
+        }
+        
+        input_data = {"messages": [HumanMessage(content=chat_request.user_input)]}
+        
+        # Invoke the LangGraph agent synchronously in the web process
+        response = agent_executor.invoke(input_data, config=config)
+        ai_reply = response["messages"][-1].content
 
         return {
             "reply": ai_reply

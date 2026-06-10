@@ -1321,7 +1321,9 @@ async def create_invite(data: InviteCreateSchema, db: Session = Depends(get_db))
     db.commit()
     db.refresh(invite)
 
-    link = f"http://localhost:5173/register?token={token}&role={data.role}"
+    import os
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    link = f"{frontend_url}/register?token={token}&role={data.role}"
     try:
         await send_invite_email(data.email, link)
     except Exception as e:

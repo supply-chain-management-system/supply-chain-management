@@ -98,9 +98,16 @@ class PreflightASGIMiddleware:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
+            # Extract origin header
+            origin = b"https://korvex-d098b.web.app"
+            for k, v in scope.get("headers", []):
+                if k.lower() == b"origin":
+                    origin = v
+                    break
+
             if scope["method"] == "OPTIONS":
                 headers = [
-                    (b"access-control-allow-origin", b"https://korvex-d098b.web.app"),
+                    (b"access-control-allow-origin", origin),
                     (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS"),
                     (b"access-control-allow-headers", b"Authorization, Content-Type, X-Requested-With, Tenant-ID"),
                     (b"access-control-allow-credentials", b"true"),
@@ -128,7 +135,7 @@ class PreflightASGIMiddleware:
                     headers = [h for h in headers if h[0].lower() not in cors_keys]
                     
                     headers.extend([
-                        (b"access-control-allow-origin", b"https://korvex-d098b.web.app"),
+                        (b"access-control-allow-origin", origin),
                         (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS"),
                         (b"access-control-allow-headers", b"Authorization, Content-Type, X-Requested-With, Tenant-ID"),
                         (b"access-control-allow-credentials", b"true")

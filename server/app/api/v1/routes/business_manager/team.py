@@ -61,7 +61,9 @@ class ManagerCardInvite(BaseModel):
 
 
 def invite_link(token: str, role: str, target_id: Optional[int] = None) -> str:
-    return f"http://localhost:5173/register?token={token}&role={role}&tid={target_id or 0}"
+    import os
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    return f"{frontend_url}/register?token={token}&role={role}&tid={target_id or 0}"
 
 
 async def dispatch_invite(payload: dict):

@@ -12,7 +12,7 @@ data:
   # Core Backend Settings
   PYTHONPATH: "/app"
   SECRET_KEY: "hve1rhfLe6NmBMr5s6GKx9tjneqWton8nwJST63r5-w"
-  FRONTEND_URL: "http://localhost:5173"
+  FRONTEND_URL: "https://korvex-d098b.web.app"
 
   # Database Connection Details (Fallback)
   DB_TYPE: "postgresdb"
@@ -32,10 +32,11 @@ data:
   GOOGLE_CLIENT_ID: "723580086987-d8s8sh2qt5bss0ut2f7b2hfdhr1ssecm.apps.googleusercontent.com"
 
   # API Integrations
-  OPENAI_API_KEY: "sk-proj-placeholder-key"
-  GROQ_API_KEY: "gsk_placeholder_key"
-  GOOGLE_API_KEY: "AIzaSy_placeholder_key"
-  COHERE_API_KEY: "cohere_placeholder_key"
+  OPENAI_API_KEY: "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"
+  GROQ_API_KEY: "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"
+  GOOGLE_API_KEY: "AIzaSyDO1X8tfeRj6zJdxUs9mP9lZBAQhDZgqHw"
+  COHERE_API_KEY: "HqoOw6eCEyWzH5ZnQQ80mp0G3zgeOpedH2qBPhrI"
 
   # Other integrations
   N8N_WEBHOOK_URL: "http://n8n:5678/webhook/invite/company/managers"
+  AI_SERVICE_URL: "http://ai-service:8001"

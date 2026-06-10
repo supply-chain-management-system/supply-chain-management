@@ -19,13 +19,13 @@ const AuthProvider = ({ children }) => {
       dispatch(cancelAuthCheck());
     }
 
-    // Setup periodic real-time session validation checks
+    // Setup periodic real-time session validation checks (every 5 minutes)
     const interval = setInterval(() => {
       const activeSession = localStorage.getItem("has_session") === "true" || localStorage.getItem("token");
       if (activeSession) {
         dispatch(fetchMe());
       }
-    }, 10000);
+    }, 300000);
 
     return () => clearInterval(interval);
   }, [dispatch]);
