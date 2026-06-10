@@ -33,6 +33,7 @@ import SM_Orders from './features/supplier_manager/pages/OrdersPage';
 import SM_Requests from './features/supplier_manager/pages/RequestsPage';
 
 import Factorydash from './features/factory_manager/pages/dashboard';
+import ProductionDetails from './features/factory_manager/pages/ProductionDetails';
 import ProductionManagement from './features/factory_manager/pages/production_page';
 import Team from './features/factory_manager/pages/factory_team';
 import LayoutFactory from './features/factory_manager/layout/dashboarslayout';
@@ -73,6 +74,7 @@ import FactoryRequestsPage from './features/factory_manager/pages/FactoryRequest
 import KorvexLanding, { ContactSalesPage, SubscriptionsPage } from './components/layout/landing_page';
 import PaymentSuccess from './features/auth/pages/PaymentSuccess';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import SupplierELT from './features/elt/supplier_elt';
 
 function App() {
   return (
@@ -171,6 +173,7 @@ function App() {
           >
             <Route path="production" element={<ProductionManagement />} />
             <Route path="factorydash" element={<Factorydash />} />
+            <Route path="production-details/:id" element={<ProductionDetails />} />
             <Route path="factoryteam" element={<Team />} />
             <Route path="factory_machine" element={<Machine />} />
             <Route path="outputlogs" element={<ProductionOutputHistory />} />
@@ -197,6 +200,7 @@ function App() {
             <Route path="orders" element={<SM_Orders />} />
             <Route path="requests" element={<SM_Requests />} />
             <Route path="chat" element={<ChatPage />} />
+            <Route path="analytics" element={<SupplierELT />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
 

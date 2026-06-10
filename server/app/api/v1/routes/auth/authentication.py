@@ -12,6 +12,7 @@ from app.schemas.auth.user import (
     ForgotPasswordSchema,
     ResetPasswordSchema,
 )
+from app.models.subscriptions.user_subscription import CompanySubscription
 from datetime import datetime, timedelta, timezone
 from app.schemas.auth.user import UserCreate, UserLogin
 from app.services.auth.user_crud import create_user, get_user_by_email
@@ -178,6 +179,16 @@ async def google_auth(
         path="/",
     )
 
+ 
+    active_plan = "free"
+    if user.company_id:
+        sub = db.query(CompanySubscription).filter(
+            CompanySubscription.company_id == user.company_id,
+            CompanySubscription.status == "ACTIVE"
+        ).first()
+        if sub:
+            active_plan = sub.plan_slug
+
     return {
         "message": "Google login successful",
         "user": {
@@ -189,6 +200,7 @@ async def google_auth(
             "public_id": user.company.public_id if user.company else None,
             "company_name": user.company.name if user.company else None,
             "company_verified": (user.company.is_verified if user.company else False),
+            "active_plan": active_plan,
         },
     }
 
@@ -346,6 +358,16 @@ def get_me(
     db: Session = Depends(get_db),
 ):
 
+  
+    active_plan = "free"
+    if current_user.company_id:
+        sub = db.query(CompanySubscription).filter(
+            CompanySubscription.company_id == current_user.company_id,
+            CompanySubscription.status == "ACTIVE"
+        ).first()
+        if sub:
+            active_plan = sub.plan_slug
+
     return {
         "user": {
             "id": current_user.id,
@@ -358,5 +380,6 @@ def get_me(
             "is_verified": current_user.is_verified,
             "is_active": current_user.is_active,
             "business_id": current_user.business_id,
+            "active_plan": active_plan,
         }
     }

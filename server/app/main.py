@@ -100,17 +100,14 @@ with SessionLocal() as db:
     seed_subscription_plans(db)
 
 
-# ── Core Auth ───────────────────────────────────────────────────────────────
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(auth_profile.router, prefix="/api/v1")
 app.include_router(company_auth.router, prefix="/api/v1/company/auth")
 app.include_router(company.router, prefix="/api/v1/company")
 
-# ── Admin ────────────────────────────────────────────────────────────────────
 app.include_router(admin_featuers.router, prefix="/api/v1", dependencies=[Depends(require_role(["admin", "owner"]))])
 app.include_router(admin_control_routes.router, prefix="/api/v1", dependencies=[Depends(require_role(["admin", "owner"]))])
 
-# ── Business Manager ─────────────────────────────────────────────────────────
 app.include_router(bm_dashboard.router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager"]))])
 app.include_router(bm_dashboard.requests_router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager", "supply_manager", "warehouse_manager", "factory_manager", "logistics_manager"]))])
 app.include_router(bm_team.router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager"]))])
@@ -119,12 +116,10 @@ app.include_router(logistics_manager.router, prefix="/api/v1", dependencies=[Dep
 app.include_router(warehouse_manager.router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager"]))])
 app.include_router(supply_manager.router, prefix="/api/v1", dependencies=[Depends(require_role(["owner", "business_manager"]))])
 
-# ── Supplier Manager ─────────────────────────────────────────────────────────
 app.include_router(sm_suppliers.router, prefix="/api/v1", dependencies=[Depends(require_role(["supply_manager", "owner", "business_manager"]))])
 app.include_router(sm_inventory.router, prefix="/api/v1/supplier-manager", dependencies=[Depends(require_role(["supply_manager", "owner", "business_manager"]))])
 app.include_router(sm_orders.router, prefix="/api/v1/supplier-manager", dependencies=[Depends(require_role(["supply_manager", "owner", "business_manager"]))])
 
-# ── Factory Sub-Manager ──────────────────────────────────────────────────────
 app.include_router(production.router, prefix="/api/v1/production", dependencies=[Depends(require_role(["factory_manager", "owner", "business_manager"]))])
 app.include_router(team.router, prefix="/api/v1/factory_team", dependencies=[Depends(require_role(["factory_manager", "owner", "business_manager"]))])
 app.include_router(factory_machine.router, prefix="/api/v1/factory_machine", dependencies=[Depends(require_role(["factory_manager", "owner", "business_manager"]))])
@@ -134,13 +129,10 @@ app.include_router(production_elt.router, prefix="/api/v1/elt", dependencies=[De
 app.include_router(warehouse_elt.router, prefix="/api/v1/elt", dependencies=[Depends(require_role(["warehouse_manager", "owner", "business_manager"]))])
 app.include_router(logistics_elt.router, prefix="/api/v1/elt", dependencies=[Depends(require_role(["logistics_manager", "owner", "business_manager"]))])
 
-# ── Warehouse Sub-Manager ────────────────────────────────────────────────────
 app.include_router(api_warehouse.router, prefix="/api/v1", dependencies=[Depends(require_role(["warehouse_manager", "owner", "business_manager"]))])
 
-# ── Logistics Sub-Manager ────────────────────────────────────────────────────
 app.include_router(logistics_dashboard.router, prefix="/api/v1", dependencies=[Depends(require_role(["logistics_manager", "owner", "business_manager"]))])
 
-# ── Shared / Other ───────────────────────────────────────────────────────────
 app.include_router(request.router, prefix="/api/v1", dependencies=[Depends(require_role(["factory_manager", "warehouse_manager", "owner", "business_manager"]))])
 app.include_router(business_card.router, prefix="/api/v1", dependencies=[Depends(require_role(["admin", "owner", "business_manager"]))])
 app.include_router(subscriptions.router, prefix="/api/v1")

@@ -50,11 +50,13 @@ def create_worker(
 
 @router.get('/get_worker', response_model=list[get_worker])
 def get_available_workers(db: Session = Depends(get_tenant_db)):  
-    assigned_worker_ids = db.query(Productionteam.worker_id).subquery()
+    active_worker_ids = db.query(Productionteam.worker_id).join(
+        Production, Production.id == Productionteam.production_id
+    ).filter(
+        Production.status != 'completed'
+    ).subquery()
 
-  
-    workers = db.query(Worker).filter(Worker.id.not_in(assigned_worker_ids)).all()
-
+    workers = db.query(Worker).filter(Worker.id.not_in(active_worker_ids)).all()
     print('Available workers:', workers)
     return workers
 
@@ -147,7 +149,13 @@ def get_all_production_teams(db: Session = Depends(get_tenant_db)):
 @router.get('/find_wroker')
 def worker_search(search: str = '', db: Session = Depends(get_tenant_db)):
     print('je', search)
-    query = db.query(Worker)
+    active_worker_ids = db.query(Productionteam.worker_id).join(
+        Production, Production.id == Productionteam.production_id
+    ).filter(
+        Production.status != 'completed'
+    ).subquery()
+
+    query = db.query(Worker).filter(Worker.id.not_in(active_worker_ids))
     if search:
         query = query.filter(Worker.name.ilike(f"%{search}%"))
     print('seagc', query.all())

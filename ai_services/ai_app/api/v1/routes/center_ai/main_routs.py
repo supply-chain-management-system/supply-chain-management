@@ -30,7 +30,8 @@ async def chat_with_central_agent(
                 "session_id": session_id,
                 "tenant_schema": chat_request.tenant_schema,
                 "user_role": chat_request.user_role,
-            }
+            },
+            queue="ai_queue"
         )
 
         ai_reply = task.get(timeout=55)

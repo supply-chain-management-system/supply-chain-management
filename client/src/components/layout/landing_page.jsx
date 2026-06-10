@@ -270,10 +270,24 @@ function PricingCard({ plan, index, billingCycle }) {
   const currentUser = useSelector((state) => state.auth.user);
   const Icon = planIcons[plan.icon_key] || Warehouse;
   const pricing = getPlanPricing(plan, billingCycle);
+  const isActive = currentUser && currentUser.company_id && currentUser.active_plan === plan.slug;
 
   // 2. Handle the click event to trigger the PhonePe API
   const handleUpgradeClick = async (e) => {
     e.preventDefault();
+
+    // Prevent orphan payments if the user is not authenticated or hasn't completed company setup
+    if (!currentUser) {
+      alert("Please login to your account to purchase a plan.");
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!currentUser.company_id) {
+      alert("Please complete your company onboarding first before upgrading.");
+      window.location.href = "/company-onboarding";
+      return;
+    }
 
     // If it's a Free or Custom plan (no price), act like a normal link
     if (!plan.monthly_price) {
@@ -311,16 +325,23 @@ function PricingCard({ plan, index, billingCycle }) {
       whileInView="visible"
       viewport={{ once: true, amount: 0.25 }}
       variants={cardMotion}
-      whileHover={{ y: -6 }}
+      whileHover={isActive ? {} : { y: -6 }}
       className={`relative flex h-full flex-col rounded-2xl border p-6 transition-shadow ${
-        plan.is_popular
+        isActive
+          ? "border-emerald-500 bg-emerald-500/5 shadow-md shadow-emerald-500/5 dark:border-emerald-500/50"
+          : plan.is_popular
           ? "border-gray-900 bg-gray-900 text-white shadow-lg dark:border-gray-600 dark:bg-gray-800"
           : "border-gray-200 bg-white text-gray-900 shadow-sm hover:shadow-lg dark:border-gray-800 dark:bg-gray-900 dark:text-white"
       }`}
     >
-      {plan.is_popular && (
+      {plan.is_popular && !isActive && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-white px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-gray-900 shadow-sm dark:bg-gray-200">
           Most Popular
+        </div>
+      )}
+      {isActive && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-3.5 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-white shadow-sm flex items-center gap-1.5">
+          <Check size={11} strokeWidth={3} /> Active Plan
         </div>
       )}
 
@@ -329,7 +350,7 @@ function PricingCard({ plan, index, billingCycle }) {
         <div>
           <p
             className={`text-xs font-medium ${
-              plan.is_popular
+              plan.is_popular && !isActive
                 ? "text-gray-400"
                 : "text-gray-500 dark:text-gray-400"
             }`}
@@ -342,7 +363,9 @@ function PricingCard({ plan, index, billingCycle }) {
         </div>
         <div
           className={`grid h-10 w-10 place-items-center rounded-xl ${
-            plan.is_popular
+            isActive
+              ? "bg-emerald-500/10 text-emerald-400"
+              : plan.is_popular
               ? "bg-white/10 text-gray-300"
               : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
           }`}
@@ -359,7 +382,7 @@ function PricingCard({ plan, index, billingCycle }) {
           </span>
           <span
             className={`pb-1 text-sm ${
-              plan.is_popular
+              plan.is_popular && !isActive
                 ? "text-gray-400"
                 : "text-gray-400 dark:text-gray-500"
             }`}
@@ -370,7 +393,7 @@ function PricingCard({ plan, index, billingCycle }) {
         {pricing.note && (
           <p
             className={`mt-2 text-xs font-medium ${
-              plan.is_popular
+              plan.is_popular && !isActive
                 ? "text-gray-400"
                 : "text-gray-500 dark:text-gray-400"
             }`}
@@ -389,7 +412,9 @@ function PricingCard({ plan, index, billingCycle }) {
           >
             <span
               className={`mt-0.5 grid h-4.5 w-4.5 shrink-0 place-items-center rounded-full ${
-                plan.is_popular
+                isActive
+                  ? "bg-emerald-500/10 text-emerald-400"
+                  : plan.is_popular
                   ? "bg-white/15 text-white"
                   : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
               }`}
@@ -398,7 +423,7 @@ function PricingCard({ plan, index, billingCycle }) {
             </span>
             <span
               className={
-                plan.is_popular
+                plan.is_popular && !isActive
                   ? "text-gray-300"
                   : "text-gray-600 dark:text-gray-400"
               }
@@ -412,15 +437,18 @@ function PricingCard({ plan, index, billingCycle }) {
       {/* 3. Replaced <a> tag with <button> to handle the API call and loading state */}
       <button
         onClick={handleUpgradeClick}
-        disabled={isLoading}
+        disabled={isLoading || isActive}
         className={`mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all ${
-          plan.is_popular
+          isActive
+            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 cursor-default"
+            : plan.is_popular
             ? "bg-white text-gray-900 shadow-sm hover:bg-gray-100"
             : "bg-gray-900 text-white shadow-sm hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100"
-        } ${isLoading ? "cursor-not-allowed opacity-70" : "hover:-translate-y-0.5"}`}
+        } ${isLoading ? "cursor-not-allowed opacity-70" : isActive ? "" : "hover:-translate-y-0.5"}`}
       >
-        {isLoading ? "Securely Connecting..." : plan.cta} 
-        {!isLoading && <ArrowRight size={14} />}
+        {isLoading ? "Securely Connecting..." : isActive ? "Current Plan" : plan.cta} 
+        {!isLoading && !isActive && <ArrowRight size={14} />}
+        {isActive && <Check size={14} className="text-emerald-400" />}
       </button>
     </motion.article>
   );

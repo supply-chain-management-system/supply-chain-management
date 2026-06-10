@@ -46,6 +46,99 @@ def get_product(db: session = Depends(get_tenant_db)):
     return products
 
 
+@router.get('/products/{product_id}')
+def get_product_detail(product_id: int, db: session = Depends(get_tenant_db)):
+    product = db.query(Production).filter(Production.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    # Fetch team members
+    from app.models.sub_managers.factory_manager.teams import Productionteam, Worker
+    team_members = db.query(Productionteam, Worker).join(
+        Worker, Worker.id == Productionteam.worker_id
+    ).filter(Productionteam.production_id == product_id).all()
+
+    team_data = []
+    for pt, w in team_members:
+        team_data.append({
+            "id": pt.id,
+            "team_name": pt.team_name,
+            "role": pt.role,
+            "worker": {
+                "id": w.id,
+                "name": w.name,
+                "email": w.email,
+                "phone": w.phone,
+                "role": w.role.value if hasattr(w.role, 'value') else w.role,
+                "status": w.status.value if hasattr(w.status, 'value') else w.status
+            }
+        })
+
+    # Fetch machinery assigned
+    from app.models.sub_managers.factory_manager.factory_machinery import MachineAssignment, Machine
+    machinery = db.query(MachineAssignment, Machine).join(
+        Machine, Machine.id == MachineAssignment.machine_id
+    ).filter(MachineAssignment.production_id == product_id).all()
+
+    machinery_data = []
+    for ma, m in machinery:
+        machinery_data.append({
+            "id": ma.id,
+            "assignment_date": ma.assignment_date.isoformat() if ma.assignment_date else None,
+            "notes": ma.notes,
+            "status": ma.status,
+            "assignment_type": ma.assignment_type,
+            "machine": {
+                "id": m.id,
+                "machine_code": m.machine_code,
+                "name": m.name,
+                "status": m.status,
+                "efficiency": m.efficiency,
+                "location": m.location,
+                "category": m.category
+            }
+        })
+
+    # Fetch materials consumed
+    from app.models.sub_managers.factory_manager.factory_material import Factory_MaterialTransaction, Factory_Material
+    materials = db.query(Factory_MaterialTransaction, Factory_Material).join(
+        Factory_Material, Factory_Material.id == Factory_MaterialTransaction.material_id
+    ).filter(Factory_MaterialTransaction.production_id == product_id).all()
+
+    materials_data = []
+    for fmt, fm in materials:
+        materials_data.append({
+            "id": fmt.id,
+            "transaction_type": fmt.transaction_type,
+            "quantity": fmt.quantity,
+            "timestamp": fmt.timestamp.isoformat() if fmt.timestamp else None,
+            "material": {
+                "id": fm.id,
+                "name": fm.name,
+                "unit": fm.unit
+            }
+        })
+
+    return {
+        "production": {
+            "id": product.id,
+            "product_name": product.product_name,
+            "target_qty": product.target_qty,
+            "output_qty": product.output_qty,
+            "scrap_qty": product.scrap_qty,
+            "status": product.status.value if hasattr(product.status, 'value') else product.status,
+            "priority": product.priority,
+            "notes": product.notes,
+            "created_at": product.created_at.isoformat() if product.created_at else None,
+            "doc": product.doc
+        },
+        "team": team_data,
+        "machinery": machinery_data,
+        "materials": materials_data
+    }
+
+
+
 @router.get('/user')
 def get_user(db: session = Depends(get_tenant_db)):
     factories = db.query(Factory).all()
@@ -94,10 +187,11 @@ def complete_product(product_id: int,data: production_complete,request: Request,
             detail="Product not found"
         )
 
+    from app.models.sub_managers.factory_manager.production import Production_status
     product.output_qty = data.output_qty
     product.scrap_qty = data.scrap_qty
     product.notes = data.notes
-    product.status = "completed"
+    product.status = Production_status.COMPLETED
 
     # Auto-transfer completed production quantity to warehouse inventory
     try:
@@ -168,7 +262,36 @@ def complete_product(product_id: int,data: production_complete,request: Request,
                     db.flush()
                     print(f"BOM Consumption: Deducted {consumed_qty} of '{fm_material.name}' from Factory stock.")
     except Exception as ie:
-        print(f"Error auto-transferring completed production output to warehouse inventory: {str(ie)}")
+        db.rollback()
+        print(f"[ELT ERROR] Auto-transfer to warehouse failed: {str(ie)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Warehouse inventory update failed: {str(ie)}"
+        )
+
+    # 5. Free up assigned machinery and workers
+    try:
+        from app.models.sub_managers.factory_manager.factory_machinery import MachineAssignment
+        mach_assignments = db.query(MachineAssignment).filter(
+            MachineAssignment.production_id == product_id
+        ).all()
+        for ma in mach_assignments:
+            ma.status = "completed"
+            if ma.machine:
+                ma.machine.status = "active"
+        
+        from app.models.sub_managers.factory_manager.teams import Productionteam
+        team_members = db.query(Productionteam).filter(
+            Productionteam.production_id == product_id
+        ).all()
+        for tm in team_members:
+            if tm.worker:
+                tm.worker.status = "active"
+        
+        db.flush()
+        print(f"Successfully freed up machinery and workers for production {product_id}.")
+    except Exception as fe:
+        print(f"Error freeing up resources for production {product_id}: {str(fe)}")
 
     db.commit()
     db.refresh(product)

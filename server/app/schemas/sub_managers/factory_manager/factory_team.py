@@ -1,13 +1,16 @@
 from pydantic import BaseModel
 from typing import List
 from enum import Enum
-
-
 from typing import Optional
+
+class WorkerRole(str, Enum):
+    worker = "worker"
+    operator = "operator"
+    supervisor = "supervisor"
 
 class worker_create(BaseModel):
     name: str
-    role: str
+    role: WorkerRole
     factory_id: int
     email: Optional[str] = None
     phone: Optional[str] = None
@@ -23,15 +26,9 @@ class get_worker(BaseModel):
     phone: Optional[str]
     hourly_rate: float
 
-    class config:
+    class Config:
         from_attributes = True
 
-
-
-class WorkerRole(str, Enum):
-    worker = "worker"
-    operator = "operator"
-    supervisor = "supervisor"
 
 
 class team_create(BaseModel):
@@ -40,7 +37,7 @@ class team_create(BaseModel):
 
 class worker_update(BaseModel):
     name: Optional[str] = None
-    role: Optional[str] = None
+    role: Optional[WorkerRole] = None
     factory_id: Optional[int] = None
     email: Optional[str] = None
     phone: Optional[str] = None

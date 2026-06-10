@@ -202,6 +202,9 @@ const authSlice = createSlice({
         state.user.companyId = action.payload.id;
         state.user.companyName = action.payload.name;
         state.user.companyVerified = action.payload.is_verified;
+        state.user.company_id = action.payload.id;
+        state.user.company_name = action.payload.name;
+        state.user.company_verified = action.payload.is_verified;
       }
     },
   },

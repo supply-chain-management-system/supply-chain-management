@@ -29,10 +29,30 @@ const ROLES = [
 
 export default function Team() {
   const [selectedRole, setSelectedRole] = useState([]);
-const [groupedTeam, setGroupedTeam] = useState({});
+  const [groupedTeam, setGroupedTeam] = useState({});
   const [autoAssign, setAutoAssign] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const [productionJobs, setProductionJobs] = useState([]);
+  const [selectedProductionId, setSelectedProductionId] = useState('');
+
+  const fetchTeams = async () => {
+    try {
+      const res = await api.get("factory_team/factory/all_team");
+      setGroupedTeam(res.data);
+    } catch (err) {
+      console.error("Failed to fetch teams:", err);
+    }
+  };
+
+  const fetchProductionJobs = async () => {
+    try {
+      const res = await api.get("production/factory/products");
+      setProductionJobs(res.data);
+    } catch (err) {
+      console.error("Failed to fetch production jobs:", err);
+    }
+  };
 
   const [workers, setWorkers] = useState([]);
   const [newWorker, setNewWorker] = useState({
@@ -140,34 +160,33 @@ const handleUpdateWorker = async (e) => {
 useEffect(() => {
   api.get('factory_team/factory/get_worker')
     .then((res) => {
-     
       setWorkers(res.data);
       console.log(res.data)
     })
     .catch((err) => console.log(err));
 
+  fetchTeams();
+  fetchProductionJobs();
 }, []);
 
 const handleRemoveMember = async (mem_id) => {
- 
-    console.log(mem_id,'ajss')
+  console.log(mem_id,'ajss')
   try {
     await api.delete(`factory_team/factory/removemember/${mem_id}`);
 
-
-   
+    // Update state locally
     setGroupedTeam((prev) => {
       const updated = { ...prev };
-
       Object.keys(updated).forEach((productionId) => {
         updated[productionId] = updated[productionId].filter(
           (m) => m.id !== mem_id
         );
       });
-
       return updated;
     });
 
+    // Sync with backend
+    fetchTeams();
     alert("Member removed successfully");
   } catch (error) {
     console.error(error);
@@ -175,29 +194,22 @@ const handleRemoveMember = async (mem_id) => {
   }
 };
 
-useEffect(() => {
-  api.get("factory_team/factory/all_team")
-    .then((res) => {
-      console.log('haid',res.data);
-      setGroupedTeam(res.data,'hai iam ansil')
-
-
-    });
-}, []);
-
-
-
 const handleAssignTeam = async () => {
-    console.log('hai ian',selectedRole)
+  if (!selectedProductionId) {
+    alert("Please select a target production job.");
+    return;
+  }
+  if (selectedUsers.length === 0) {
+    alert("Please select at least one worker to assign.");
+    return;
+  }
+
   try {
     const payload = {
-      production_id: 2, 
-      workers: selectedUsers, 
-      
-   
-      
+      production_id: Number(selectedProductionId),
+      workers: selectedUsers,
     };
-    console.log(payload,'hao')
+    console.log('Assigning payload:', payload);
 
     const res = await api.post(
       "factory_team/factory/assign_team",
@@ -205,9 +217,12 @@ const handleAssignTeam = async () => {
     );
 
     console.log("Assigned:", res.data);
-
     alert("Team assigned successfully");
-
+    
+    // Clear selection
+    setSelectedUsers([]);
+    // Reload team allocations
+    fetchTeams();
   } catch (error) {
     console.error(error);
     alert("Error assigning team");
@@ -459,13 +474,34 @@ console.log(workers.id)
             </div> */}
 
        
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-slate-700 block">
+              Select Production Job
+            </label>
+            <div className="relative">
+              <select
+                value={selectedProductionId}
+                onChange={(e) => setSelectedProductionId(e.target.value)}
+                className="w-full appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer text-sm font-medium"
+              >
+                <option value="">Choose a Production Job</option>
+                {productionJobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.product_name} (ID: {job.id}) — {job.status}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+
           <button 
-  onClick={handleAssignTeam}
-  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
->
-  <Plus className="w-5 h-5" />
-  Assign Team
-</button>
+            onClick={handleAssignTeam}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Assign Team
+          </button>
           </div>
 
       

@@ -6,9 +6,9 @@ def parse_date(date_raw):
     try:
         if isinstance(date_raw, (int, float)):
             # Handle timestamps in microseconds, milliseconds, or seconds
-            if date_raw > 1e12: 
+            if date_raw > 1e14: 
                 return datetime.fromtimestamp(date_raw / 1e6)
-            elif date_raw > 1e9:  
+            elif date_raw > 1e11:  
                 return datetime.fromtimestamp(date_raw / 1e3)
             else:  
                 return datetime.fromtimestamp(date_raw)

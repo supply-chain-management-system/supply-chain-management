@@ -12,6 +12,11 @@ from elt_pipeline.transformers.inventory_ware import InventoryWareTransformer
 from elt_pipeline.transformers.logistics_vehicle import LogisticsVehicleTransformer
 from elt_pipeline.transformers.logistics_shipment import LogisticsShipmentTransformer
 from elt_pipeline.transformers.logistics_activity import LogisticsActivityTransformer
+from elt_pipeline.transformers.supplier import (
+    SupplierTransformer,
+    RawMaterialInventoryTransformer,
+    PurchaseOrderTransformer,
+)
 
 TRANSFORMER_REGISTRY = {
     "factories": FactoryTransformer,
@@ -28,4 +33,7 @@ TRANSFORMER_REGISTRY = {
     "logistics_vehicles": LogisticsVehicleTransformer,
     "logistics_shipments": LogisticsShipmentTransformer,
     "logistics_activities": LogisticsActivityTransformer,
+    "suppliers": SupplierTransformer,
+    "raw_material_inventory": RawMaterialInventoryTransformer,
+    "purchase_orders": PurchaseOrderTransformer,
 }

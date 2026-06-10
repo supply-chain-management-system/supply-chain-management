@@ -143,6 +143,21 @@ PHONEPE_UAT_URL = os.getenv("PHONEPE_UAT_URL", "https://api-preprod.phonepe.com/
 PHONEPE_CALLBACK_URL = os.getenv("PHONEPE_CALLBACK_URL", "https://your-ngrok-url.app/webhook")
 
 def generate_phonepe_payment(db: Session, plan_slug: str, user_id: str):
+    try:
+        user_id_int = int(user_id)
+        user = db.query(User).filter(User.id == user_id_int).first()
+    except ValueError:
+        user = None
+
+    if not user:
+        raise HTTPException(status_code=400, detail="User not found.")
+
+    if not user.company_id:
+        raise HTTPException(
+            status_code=400,
+            detail="You must set up your company profile first before upgrading. Please complete company onboarding."
+        )
+
     plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.slug == plan_slug).first()
     
     if not plan:

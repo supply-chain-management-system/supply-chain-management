@@ -82,6 +82,16 @@ def setup_company(
     db_user.role = RoleEnum.owner
     db_user.is_approved_company = True
 
+    # Create default free subscription
+    from app.models.subscriptions.user_subscription import CompanySubscription
+    company_sub = CompanySubscription(
+        company_id=company.id,
+        plan_slug="free",
+        status="ACTIVE",
+        billing_cycle="monthly",
+    )
+    db.add(company_sub)
+
     db.commit()
 
     db.refresh(company)

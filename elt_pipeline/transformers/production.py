@@ -3,14 +3,14 @@ from elt_pipeline.utils.date_parser import parse_date
 class ProductionTransformer:
 
     def transform(self, event):
-        data = event["data"]
+        data = event.get("data")
         if not data:
             return None
 
         product_name = data.get("product_name", "").strip()
         target_qty = int(data.get("target_qty") or 0)
         output_qty = int(data.get("output_qty") or 0)
-        status = (data.get("status") or "").lower()
+        status = (data.get("status") or "").lower().strip()
         
         created_at = parse_date(data.get("created_at"))
 

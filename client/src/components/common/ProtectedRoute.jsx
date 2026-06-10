@@ -2,7 +2,14 @@ import { useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
-const getDashboardRedirect = (role) => {
+const userNeedsOnboarding = (role, companyVerified) => {
+  return (role === 'owner' || role === 'business_manager') && companyVerified !== true;
+};
+
+const getDashboardRedirect = (role, companyVerified) => {
+  if (userNeedsOnboarding(role, companyVerified)) {
+    return '/company-onboarding';
+  }
   switch (role) {
     case 'admin':
     case 'owner':
@@ -23,7 +30,7 @@ const getDashboardRedirect = (role) => {
 };
 
 const ProtectedRoute = ({ children, allowedRoles, publicOnly = false }) => {
-  const { isAuthenticated, loading, role } = useSelector((state) => state.auth);
+  const { isAuthenticated, loading, role, user } = useSelector((state) => state.auth);
   const location = useLocation();
 
   if (loading) {
@@ -37,9 +44,12 @@ const ProtectedRoute = ({ children, allowedRoles, publicOnly = false }) => {
     );
   }
 
+  const companyVerified = user?.company_verified;
+  const needsOnboarding = userNeedsOnboarding(role, companyVerified);
+
   if (publicOnly) {
     if (isAuthenticated) {
-      return <Navigate to={getDashboardRedirect(role)} replace />;
+      return <Navigate to={getDashboardRedirect(role, companyVerified)} replace />;
     }
     return children;
   }
@@ -48,8 +58,18 @@ const ProtectedRoute = ({ children, allowedRoles, publicOnly = false }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Redirect to onboarding if required and not currently on it
+  if (needsOnboarding && location.pathname !== '/company-onboarding') {
+    return <Navigate to="/company-onboarding" replace />;
+  }
+
+  // Redirect away from onboarding if onboarding is already complete
+  if (!needsOnboarding && location.pathname === '/company-onboarding') {
+    return <Navigate to={getDashboardRedirect(role, companyVerified)} replace />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return <Navigate to={getDashboardRedirect(role)} replace />;
+    return <Navigate to={getDashboardRedirect(role, companyVerified)} replace />;
   }
 
   return children;
