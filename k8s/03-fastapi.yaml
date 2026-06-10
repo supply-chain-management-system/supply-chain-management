@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi
+  namespace: supply-chain
+  labels:
+    app: fastapi
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: fastapi
+  template:
+    metadata:
+      labels:
+        app: fastapi
+    spec:
+      containers:
+        - name: fastapi
+          image: shiyasdx/supply-chain-fastapi:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "384Mi"
+              cpu: "400m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastapi
+  namespace: supply-chain
+  labels:
+    app: fastapi
+spec:
+  type: ClusterIP
+  selector:
+    app: fastapi
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http

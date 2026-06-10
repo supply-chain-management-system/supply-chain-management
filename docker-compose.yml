@@ -2,7 +2,7 @@
 services:
 
   postgres:
-    image: postgres:latest
+    image: postgres:15
     container_name: postgres
     restart: always
     env_file:
@@ -10,13 +10,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-
-      - postgres_data:/var/lib/postgresql
-    command: >
-      postgres -c wal_level=logical
-
-      
-
+      - postgres_data:/var/lib/postgresql/data
+    command: postgres -c wal_level=logical
   mongodb:
     image: mongo:latest
     container_name: mongodb
@@ -54,7 +49,6 @@ services:
       - ./ai_services/.env
     environment:
       - PYTHONPATH=/app:/server_code
-      - PYTHONPATH=/app
       - QDRANT_URL=http://qdrant:6333
     volumes:
       - ./ai_services/ai_app:/app/ai_app
@@ -152,13 +146,18 @@ services:
     container_name: elt_consumer
     depends_on:
       - kafka
+      - connect
+      - clickhouse
+    env_file:
+      - ./server/.env
     environment:
-      KAFKA_BROKER: kafka:9092
+      - KAFKA_BROKER=kafka:9092
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
     command: >
       sh -c "python -m elt_pipeline.core.debzium.registry &&
              python -m elt_pipeline.main"
     restart: on-failure
-    
     volumes:
       - .:/app
   clickhouse:

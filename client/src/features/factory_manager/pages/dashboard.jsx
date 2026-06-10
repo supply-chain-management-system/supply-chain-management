@@ -40,12 +40,15 @@ const Dashboard = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 rounded-md border border-blue-200">
+              <span className="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700 rounded-md border border-slate-200">
                 Live Factory Feed
               </span>
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-900 mt-1 tracking-tight">Factory Overview</h1>
-            <p className="text-gray-500 mt-0.5 text-sm">Real-time status of production line 04 — Sector B</p>
+            <div className="flex items-center gap-3 mt-1.5">
+              <div className="w-1 h-7 rounded-full" style={{ background: 'linear-gradient(180deg, #94a3b8, #64748b)' }} />
+              <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Factory Overview</h1>
+            </div>
+            <p className="text-gray-500 mt-1 ml-4 text-sm">Real-time status of production line 04 — Sector B</p>
           </div>
           
           <div className="flex flex-wrap items-center gap-4">
@@ -56,7 +59,8 @@ const Dashboard = () => {
             />
             
             <button 
-              className="flex items-center gap-2 px-5 py-3 bg-blue-600 text-white font-medium text-sm rounded-xl shadow-sm hover:bg-blue-700 active:scale-95 transition-all" 
+              className="flex items-center gap-2 px-5 py-3 text-white font-medium text-sm rounded-xl shadow-sm hover:shadow-md active:scale-95 transition-all" 
+              style={{ background: 'linear-gradient(135deg, #94a3b8, #64748b)' }}
               onClick={() => navigate('/createproduct')}
             >
               <Plus className="w-4 h-4 stroke-[3]" />

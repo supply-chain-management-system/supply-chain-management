@@ -11,13 +11,14 @@ import {
   toggleForm,
   updateForm,
   clearToast,
+  updateSupplier,
 } from '../../../redux/supplierSlice';
 
 import {
   Building2, Star, Clock, AlertTriangle, Plus, X,
   ChevronLeft, ChevronRight, ArrowLeft, Mail, Phone,
   Trash2, BarChart2, PackageSearch, ShieldCheck,
-  TrendingUp, ShoppingCart, BadgeCheck, Grid, List
+  TrendingUp, ShoppingCart, BadgeCheck, Grid, List, Edit2
 } from 'lucide-react';
 
 import SMAnalyticsPage from './SMAnalyticsPage';
@@ -106,7 +107,7 @@ const Toast = ({ toast, onClear }) => {
    SUPPLIER CARD
 ═══════════════════════════════════════════════ */
 
-const SupplierCard = ({ supplier, onAnalytics, onRemove }) => {
+const SupplierCard = ({ supplier, onAnalytics, onEdit, onRemove }) => {
   const bannerColor = CAT_COLOR[supplier.category] || 'from-rose-900/30 to-rose-700/10';
   const initial     = supplier.name?.charAt(0)?.toUpperCase() || '?';
 
@@ -155,12 +156,21 @@ const SupplierCard = ({ supplier, onAnalytics, onRemove }) => {
           >
             <BarChart2 size={12} /> Analytics
           </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onRemove(supplier.id); }}
-            className="text-[11px] font-semibold text-red-400 hover:text-red-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <Trash2 size={12} /> Remove
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(supplier); }}
+              className="text-[11px] font-semibold text-slate-400 hover:text-white flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Edit Supplier"
+            >
+              <Edit2 size={12} /> Edit
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onRemove(supplier.id); }}
+              className="text-[11px] font-semibold text-red-400 hover:text-red-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <Trash2 size={12} /> Remove
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -233,14 +243,14 @@ const LivePreview = ({ form }) => {
 const inputCls = "w-full border border-white/10 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500/10 focus:border-red-500 bg-white/5 text-white placeholder:text-gray-600";
 const labelCls = "block text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-1.5";
 
-const CreateForm = ({ form, onUpdate, onSubmit, onClose, loading }) => (
+const CreateForm = ({ form, onUpdate, onSubmit, onClose, loading, isEdit }) => (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-4">
     <div className="bg-[#140b0b]/95 border border-white/15 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div>
-          <h2 className="font-bold text-white">Onboard New Supplier</h2>
-          <p className="text-[11px] text-gray-500 mt-0.5">Directly onboard a vendor into the registry</p>
+          <h2 className="font-bold text-white">{isEdit ? 'Edit Supplier' : 'Onboard New Supplier'}</h2>
+          <p className="text-[11px] text-gray-500 mt-0.5">{isEdit ? 'Modify details of the supplier in the registry' : 'Directly onboard a vendor into the registry'}</p>
         </div>
         <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 transition-colors">
           <X size={16} className="text-gray-400" />
@@ -303,7 +313,7 @@ const CreateForm = ({ form, onUpdate, onSubmit, onClose, loading }) => (
           {loading
             ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             : <Plus size={14} />}
-          {loading ? 'Onboarding…' : 'Onboard Supplier'}
+          {loading ? (isEdit ? 'Saving…' : 'Onboarding…') : (isEdit ? 'Save Changes' : 'Onboard Supplier')}
         </button>
       </div>
     </div>
@@ -313,7 +323,7 @@ const CreateForm = ({ form, onUpdate, onSubmit, onClose, loading }) => (
 /* ═══════════════════════════════════════════════
    LIST VIEW TABLE
 ═══════════════════════════════════════════════ */
-const SuppliersTable = ({ suppliers, onRowClick, onRemove }) => {
+const SuppliersTable = ({ suppliers, onRowClick, onEdit, onRemove }) => {
   return (
     <div className="bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-2xl overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
@@ -379,6 +389,13 @@ const SuppliersTable = ({ suppliers, onRowClick, onRemove }) => {
                       <BarChart2 size={12} />
                     </button>
                     <button
+                      onClick={(e) => { e.stopPropagation(); onEdit(s); }}
+                      className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-red-500/20 text-slate-400 hover:text-white transition-all"
+                      title="Edit Supplier"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                    <button
                       onClick={(e) => { e.stopPropagation(); onRemove(s.id); }}
                       className="p-2 rounded-lg bg-white/5 border border-white/10 hover:border-red-500/20 text-gray-500 hover:text-red-400 transition-all"
                       title="Remove Supplier"
@@ -413,6 +430,7 @@ const SuppliersPage = () => {
   } = useSelector(s => s.supplier);
 
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [editingSupplierId, setEditingSupplierId] = useState(null);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   useEffect(() => {
@@ -436,9 +454,26 @@ const SuppliersPage = () => {
     }
   }, [dispatch]);
 
+  const handleEdit = useCallback((supplier) => {
+    dispatch(updateForm({
+      name: supplier.name,
+      category: supplier.category,
+      contact_email: supplier.contact_email,
+      phone: supplier.phone || '',
+      lead_time_days: supplier.lead_time_days,
+    }));
+    setEditingSupplierId(supplier.id);
+    dispatch(toggleForm());
+  }, [dispatch]);
+
   const handleSubmit = useCallback(() => {
-    dispatch(createSupplier(form));
-  }, [dispatch, form]);
+    if (editingSupplierId) {
+      dispatch(updateSupplier({ supplierId: editingSupplierId, formData: form }));
+      setEditingSupplierId(null);
+    } else {
+      dispatch(createSupplier(form));
+    }
+  }, [dispatch, form, editingSupplierId]);
 
   /* — Analytics view — */
   if (view === 'analytics' && selectedSupplier) {
@@ -541,6 +576,7 @@ const SuppliersPage = () => {
               key={s.id}
               supplier={s}
               onAnalytics={handleAnalytics}
+              onEdit={handleEdit}
               onRemove={handleRemove}
             />
           ))}
@@ -549,6 +585,7 @@ const SuppliersPage = () => {
         <SuppliersTable
           suppliers={suppliers}
           onRowClick={handleAnalytics}
+          onEdit={handleEdit}
           onRemove={handleRemove}
         />
       )}
@@ -582,8 +619,9 @@ const SuppliersPage = () => {
           form={form}
           onUpdate={(patch) => dispatch(updateForm(patch))}
           onSubmit={handleSubmit}
-          onClose={() => dispatch(toggleForm())}
+          onClose={() => { dispatch(resetForm()); setEditingSupplierId(null); }}
           loading={createLoading}
+          isEdit={!!editingSupplierId}
         />
       )}
 

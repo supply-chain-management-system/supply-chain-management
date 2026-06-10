@@ -18,33 +18,29 @@ export const loginUser = createAsyncThunk(
       console.log("Login response:", response.data);
 
       const role = response.data.user.role;
+      const companyVerified = response.data.user.company_verified;
 
-      if (response.data.user.company_verified === true) {
+      // Only check company_verified for business manager and owner roles
+      const needsOnboarding = (role === "owner" || role === "business_manager") && companyVerified !== true;
 
-        if (role === "admin") {
+      if (needsOnboarding) {
+        navigate("/company-onboarding");
+      } else {
+        if (role === "admin" || role === "owner") {
           navigate("/admindashboard");
-
         } else if (role === "business_manager") {
           navigate("/business-manager/dashboard");
-
         } else if (role === "warehouse_manager") {
           navigate("/ware_dashboard");
-
         } else if (role === "factory_manager") {
           navigate("/factorydash");
-
         } else if (role === "supply_manager") {
           navigate("/supplier-manager/dashboard");
-
         } else if (role === "logistics_manager") {
           navigate("/logistics_dashboard");
-
         } else {
           navigate("/");
         }
-
-      } else {
-        navigate("/company-onboarding");
       }
 
       return {
@@ -72,6 +68,57 @@ export const loginUser = createAsyncThunk(
       return rejectWithValue(
         err.response?.data || {
           detail: "Something went wrong. Please try again.",
+        }
+      );
+    }
+  }
+);
+
+
+// ─────────────────────────────
+// GOOGLE LOGIN
+// ─────────────────────────────
+export const loginGoogle = createAsyncThunk(
+  "auth/loginGoogle",
+  async ({ code, navigate }, { rejectWithValue }) => {
+    try {
+      const response = await api.post("/google", { code });
+
+      console.log("Google login response:", response.data);
+
+      const role = response.data.user.role;
+      const companyVerified = response.data.user.company_verified;
+
+      // Only check company_verified for business manager and owner roles
+      const needsOnboarding = (role === "owner" || role === "business_manager") && companyVerified !== true;
+
+      if (needsOnboarding) {
+        navigate("/company-onboarding");
+      } else {
+        if (role === "admin" || role === "owner") {
+          navigate("/admindashboard");
+        } else if (role === "business_manager") {
+          navigate("/business-manager/dashboard");
+        } else if (role === "warehouse_manager") {
+          navigate("/ware_dashboard");
+        } else if (role === "factory_manager") {
+          navigate("/factorydash");
+        } else if (role === "supply_manager") {
+          navigate("/supplier-manager/dashboard");
+        } else if (role === "logistics_manager") {
+          navigate("/logistics_dashboard");
+        } else {
+          navigate("/");
+        }
+      }
+
+      return response.data;
+
+    } catch (err) {
+      console.log(err);
+      return rejectWithValue(
+        err.response?.data || {
+          detail: "Google login failed. Please try again.",
         }
       );
     }
@@ -150,6 +197,11 @@ const authSlice = createSlice({
       state.error = null;
     },
 
+    cancelAuthCheck: (state) => {
+      state.loading = false;
+      state.isAuthenticated = false;
+    },
+
     setCompany: (state, action) => {
       if (state.user) {
         state.user.companyId = action.payload.id;
@@ -185,6 +237,7 @@ const authSlice = createSlice({
         state.remember = action.payload.remember;
 
         state.error = null;
+        localStorage.setItem("has_session", "true");
       })
 
       .addCase(loginUser.rejected, (state, action) => {
@@ -197,12 +250,43 @@ const authSlice = createSlice({
           "Login failed. Please try again.";
       })
 
+      // ─────────────────────────────
+      // GOOGLE LOGIN
+      // ─────────────────────────────
+      .addCase(loginGoogle.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(loginGoogle.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.user = {
+          ...action.payload.user,
+          public_id: action.payload.user.public_id,
+        };
+        state.role = action.payload.user.role;
+        state.error = null;
+        localStorage.setItem("has_session", "true");
+      })
+
+      .addCase(loginGoogle.rejected, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = false;
+        state.error =
+          action.payload?.detail ||
+          "Google login failed. Please try again.";
+      })
+
 
       // ─────────────────────────────
       // FETCH ME
       // ─────────────────────────────
       .addCase(fetchMe.pending, (state) => {
-        state.loading = true;
+        // Do not set loading to true on background polling if we are already authenticated
+        if (!state.isAuthenticated) {
+          state.loading = true;
+        }
       })
 
       .addCase(fetchMe.fulfilled, (state, action) => {
@@ -215,6 +299,7 @@ const authSlice = createSlice({
         state.role = action.payload.user.role;
 
         state.error = null;
+        localStorage.setItem("has_session", "true");
       })
 
       .addCase(fetchMe.rejected, (state) => {
@@ -224,6 +309,7 @@ const authSlice = createSlice({
         state.role = null;
 
         state.isAuthenticated = false;
+        localStorage.removeItem("has_session");
       })
 
 
@@ -241,6 +327,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
         state.remember = false;
+        localStorage.removeItem("has_session");
       })
 
       .addCase(logoutUser.rejected, (state) => {
@@ -250,6 +337,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
         state.remember = false;
+        localStorage.removeItem("has_session");
       });
   },
 });
@@ -257,6 +345,7 @@ const authSlice = createSlice({
 export const {
   clearError,
   setCompany,
+  cancelAuthCheck,
 } = authSlice.actions;
 
 export default authSlice.reducer;

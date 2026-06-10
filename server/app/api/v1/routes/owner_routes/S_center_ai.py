@@ -25,10 +25,12 @@ async def copilot_chat(
 
     try:
 
+        import os
+        ai_service_url = os.getenv("AI_SERVICE_URL", "http://ai-service:8001")
         async with httpx.AsyncClient() as client:
             print("SENDING REQUEST TO AI SERVICE")
             response = await client.post(
-                f"http://ai_service:8001/api/v1/internal/chat/{session_id}",
+                f"{ai_service_url}/api/v1/internal/chat/{session_id}",
                 json={
                     "user_input": body["user_input"],
                     "tenant_schema": schema,
@@ -61,10 +63,12 @@ async def get_copilot_history(
         )
 
     try:
+        import os
+        ai_service_url = os.getenv("AI_SERVICE_URL", "http://ai-service:8001")
         async with httpx.AsyncClient() as client:
             print("FETCHING HISTORY FROM INTERNAL AI SERVICE")
             response = await client.get(
-                f"http://ai_service:8001/api/v1/internal/chat/history/{session_id}"
+                f"{ai_service_url}/api/v1/internal/chat/history/{session_id}"
             )
         
         return response.json()
