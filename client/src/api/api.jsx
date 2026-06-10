@@ -86,9 +86,38 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (
+      error.response?.status === 401 &&
+      originalRequest.url?.includes("/refresh")
+    ) {
+      // Circuit-breaker guard: if refresh itself fails, clear session and redirect cleanly
+      localStorage.removeItem("has_session");
+      localStorage.removeItem("token");
+      isRefreshing = false;
+      failedQueue = [];
+
+      const isPublicPath = [
+        "/login",
+        "/signup",
+        "/forgot-password",
+        "/reset-password",
+        "/verify-email",
+        "/invite",
+        "/pricing",
+        "/contact-sales"
+      ].some(path => window.location.pathname.startsWith(path)) || window.location.pathname === "/";
+
+      const isAlreadyOnLoginPage = window.location.pathname.includes("/login");
+
+      if (!isPublicPath && !isAlreadyOnLoginPage && !isRedirecting) {
+        isRedirecting = true;
+        window.location.href = "/login";
+      }
+      return Promise.reject(error);
+    }
+
+    if (
       error.response?.status !== 401 ||
       originalRequest._retry ||
-      originalRequest.url?.includes("/refresh") ||
       originalRequest.url?.includes("/login") ||
       originalRequest.url?.includes("/signup")
     ) {
@@ -115,6 +144,9 @@ api.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError);
 
+      localStorage.removeItem("has_session");
+      localStorage.removeItem("token");
+
       const isPublicPath = [
         "/login",
         "/signup",
@@ -126,7 +158,6 @@ api.interceptors.response.use(
         "/contact-sales"
       ].some(path => window.location.pathname.startsWith(path)) || window.location.pathname === "/";
 
-      // If no token is found, or if request returns 401, do not trigger automatic redirect if already on /login
       const isAlreadyOnLoginPage = window.location.pathname.includes("/login");
 
       if (!isPublicPath && !isAlreadyOnLoginPage && !isRedirecting) {

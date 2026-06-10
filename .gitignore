@@ -1,4 +1,7 @@
 # --- Environments ---
+# n8n temp credential files (never commit these)
+n8n-*.json
+
 .env
 .env.local
 .env.*.local

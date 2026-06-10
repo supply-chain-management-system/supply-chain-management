@@ -29,9 +29,9 @@ openai_with_tools = openai_model.bind_tools(tools)
 cohere_with_tools = cohere_model.bind_tools(tools)
 
 # 6. Multi-provider fallback sequence
-smart_llm_chain = groq_with_tools.with_fallbacks([
-    openai_with_tools,
-    cohere_with_tools
+smart_llm_chain = cohere_with_tools.with_fallbacks([
+    groq_with_tools,
+    openai_with_tools
 ])
 
 # 7. Use ExitStack to properly unpack the Mongo Context Manager globally

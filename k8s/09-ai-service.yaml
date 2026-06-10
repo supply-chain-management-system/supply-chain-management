@@ -1,32 +1,40 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fastapi
+  name: ai-service
   namespace: supply-chain
   labels:
-    app: fastapi
+    app: ai-service
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: fastapi
+      app: ai-service
   template:
     metadata:
       labels:
-        app: fastapi
+        app: ai-service
     spec:
+      nodeName: ip-10-10-12-51.ec2.internal
       containers:
-        - name: fastapi
-          image: shiyasdx/supply-chain-fastapi:latest
+        - name: ai-service
+          image: 802320707919.dkr.ecr.us-east-1.amazonaws.com/supply-chain-ai:latest
           imagePullPolicy: Always
+          command: ["uvicorn"]
+          args: ["ai_app.main:app", "--host", "0.0.0.0", "--port", "8001"]
           ports:
-            - containerPort: 8000
+            - containerPort: 8001
               name: http
           envFrom:
             - configMapRef:
                 name: backend-config
+          env:
+            - name: MONGO_URL
+              value: "mongodb://mongodb.supply-chain.svc.cluster.local:27017"
+            - name: PORT
+              value: "8001"
           resources:
             requests:
               memory: "128Mi"
@@ -38,16 +46,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: fastapi
+  name: ai-service
   namespace: supply-chain
   labels:
-    app: fastapi
+    app: ai-service
 spec:
   type: ClusterIP
   selector:
-    app: fastapi
+    app: ai-service
   ports:
-    - port: 8000
-      targetPort: 8000
+    - port: 8001
+      targetPort: 8001
       protocol: TCP
       name: http
