@@ -1,0 +1,107 @@
+name: Supply Chain Dev CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-frontend:
+    name: Build & Deploy Frontend to Firebase
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build Frontend
+        working-directory: client
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting
+        working-directory: client
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --token "${{ secrets.FIREBASE_TOKEN }}" --only hosting
+
+  build-push-dockerhub:
+    name: Build & Push Backend Services to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build & Push FastAPI Gateway
+        run: |
+          docker build -t shiyasdx/supply-chain-fastapi:latest -f server/Dockerfile server
+          docker push shiyasdx/supply-chain-fastapi:latest
+
+      - name: Build & Push Chat Service
+        run: |
+          docker build -t shiyasdx/supply-chain-chat-service:latest -f chat_service/Dockerfile chat_service
+          docker push shiyasdx/supply-chain-chat-service:latest
+
+  build-push-ecr:
+    name: Build & Push AI Service to AWS ECR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & Push AI Service
+        run: |
+          docker build -t 802320707919.dkr.ecr.us-east-1.amazonaws.com/supply-chain-ai:latest -f ai_services/Dockerfile ai_services
+          docker push 802320707919.dkr.ecr.us-east-1.amazonaws.com/supply-chain-ai:latest
+
+  deploy-eks:
+    name: Deploy & Restart Services on AWS EKS
+    runs-on: ubuntu-latest
+    needs: [build-push-dockerhub, build-push-ecr]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Update Kubeconfig
+        run: |
+          aws eks update-kubeconfig --name supply-chain-dev-eks --region us-east-1
+
+      - name: Rollout Restart EKS Services
+        run: |
+          kubectl rollout restart deployment fastapi chat-service ai-service -n supply-chain
