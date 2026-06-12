@@ -66,6 +66,16 @@ def login_user(db: Session, email: str, password: str, response: Response):
 
     company = db_user.company
 
+    from app.models.subscriptions.user_subscription import CompanySubscription
+    active_plan = "free"
+    if db_user.company_id:
+        sub = db.query(CompanySubscription).filter(
+            CompanySubscription.company_id == db_user.company_id,
+            CompanySubscription.status == "ACTIVE"
+        ).first()
+        if sub:
+            active_plan = sub.plan_slug
+
     return {
         "message": "Login successful",
         "user": {
@@ -79,6 +89,7 @@ def login_user(db: Session, email: str, password: str, response: Response):
             "company_verified": (
                 db_user.company.is_verified if db_user.company else False
             ),
+            "active_plan": active_plan,
         },
     }
 

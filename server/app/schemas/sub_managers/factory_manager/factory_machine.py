@@ -44,20 +44,25 @@ class MachineResponse(MachineBase):
 
 class MachineAssignmentCreate(BaseModel):
     machine_id: int
-    worker_id: int
+    worker_id: Optional[int] = None
+    production_id: Optional[int] = None
     assignment_date: datetime
     notes: Optional[str] = None
     status: Optional[str] = "pending"
+    assignment_type: Optional[str] = "maintenance"
 
 class MachineAssignmentResponse(BaseModel):
     id: int
     machine_id: int
-    worker_id: int
+    worker_id: Optional[int] = None
+    production_id: Optional[int] = None
     assignment_date: datetime
     notes: Optional[str]
     status: str
+    assignment_type: str
     machine_name: Optional[str] = None
     worker_name: Optional[str] = None
+    production_name: Optional[str] = None
 
     class Config:
         from_attributes = True

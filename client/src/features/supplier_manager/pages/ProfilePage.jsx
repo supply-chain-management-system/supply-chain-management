@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import api from "../../../api/api";
-import { logoutUser } from "../../../redux/authSlice";
+import { logoutUser } from "../../../redux/authslice";
 import {
   User,
   Phone,

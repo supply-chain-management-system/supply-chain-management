@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useState, useRef, useEffect } from 'react';
-import { logoutUser } from '../../../redux/authSlice';
+import { logoutUser } from '../../../redux/authslice';
 import LogoutConfirmModal from '../../../components/profile/LogoutConfirmModal';
 import { 
   LayoutDashboard, 
@@ -16,6 +16,7 @@ import {
   MessageSquare,
   User,
   ChevronDown,
+  BarChart3,
 } from 'lucide-react';
 
 const SupplierManagerLayout = () => {
@@ -33,6 +34,7 @@ const SupplierManagerLayout = () => {
     { name: 'Inventory', path: '/supplier-manager/inventory', icon: Package },
     { name: 'Orders', path: '/supplier-manager/orders', icon: ShoppingCart },
     { name: 'Requests', path: '/supplier-manager/requests', icon: BellRing },
+    { name: 'Analytics', path: '/supplier-manager/analytics', icon: BarChart3 },
     { name: 'Chat', path: '/supplier-manager/chat', icon: MessageSquare },
   ];
 
