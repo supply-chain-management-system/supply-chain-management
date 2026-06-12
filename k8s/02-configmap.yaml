@@ -22,6 +22,7 @@ data:
 
   # Mail Configuration
   MAIL_USERNAME: "a9dcc6001@smtp-brevo.com"
+  MAIL_PASSWORD: "xsmtpsib-4570100d6a66e65ce34135ae0d7c4e4e69907c3f43d138be6af514ba82425de0-qNatkowZx7W2kLA3"
   MAIL_FROM: "korvexchain@gmail.com"
   MAIL_PORT: "587"
   MAIL_SERVER: "smtp-relay.brevo.com"
@@ -30,6 +31,7 @@ data:
 
   # OAuth Configuration
   GOOGLE_CLIENT_ID: "723580086987-d8s8sh2qt5bss0ut2f7b2hfdhr1ssecm.apps.googleusercontent.com"
+  GOOGLE_CLIENT_SECRET: "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"
 
   # API Integrations
   OPENAI_API_KEY: "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"

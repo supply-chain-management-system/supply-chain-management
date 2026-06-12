@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import LogisticsSidebar from './LogisticsSidebar';
 import { Bell, Search, ChevronDown, LogOut, User, Settings } from 'lucide-react';
-import { logoutUser } from '../../../redux/authSlice';
+import { logoutUser } from '../../../redux/authslice';
 import LogoutConfirmModal from '../../../components/profile/LogoutConfirmModal';
 
 const routeLabels = {
