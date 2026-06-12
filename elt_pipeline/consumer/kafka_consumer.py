@@ -1,6 +1,7 @@
 from kafka import KafkaConsumer
 import json
 import time
+from datetime import datetime
 from kafka.errors import NoBrokersAvailable
 
 from elt_pipeline.consumer.config import KAFKA_BROKER, GROUP_ID
@@ -117,6 +118,8 @@ class KafkaELTConsumer:
                 if not transformed:
                     logger.warning("Transformation returned empty result")
                     continue
+
+                transformed["processed_at"] = datetime.utcnow()
 
                 logger.info(f"⚡ Transformed Data: {transformed}")
 

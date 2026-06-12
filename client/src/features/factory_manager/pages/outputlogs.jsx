@@ -41,17 +41,11 @@ export default function OutputLogs() {
       });
   }, []);
 
- useEffect(() => {
-  fetch("/api/v1/analytics/production-report")
-    .then(async (res) => {
-      if (!res.ok) {
-        throw new Error("API Error: " + res.status);
-      }
-      return res.json();
-    })
-    .then((data) => console.log(data,'hai aima'))
-    .catch((err) => console.error(err));
-}, []);
+  useEffect(() => {
+    api.get("factory_analytics/factory/production-report")
+      .then((res) => console.log(res.data, 'hai aima'))
+      .catch((err) => console.error(err));
+  }, []);
 
   // Helper to convert Markdown to Word-friendly HTML
   const convertToWordHTML = (md) => {

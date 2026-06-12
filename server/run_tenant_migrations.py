@@ -87,6 +87,11 @@ def run_migrations():
                     conn.execute(text(f'ALTER TABLE "{schema_name}".production ADD COLUMN IF NOT EXISTS priority VARCHAR DEFAULT \'medium\''))
                     conn.execute(text(f'ALTER TABLE "{schema_name}".production ADD COLUMN IF NOT EXISTS notes TEXT'))
 
+                    # Machine Assignments alters
+                    conn.execute(text(f'ALTER TABLE "{schema_name}".machine_assignments ALTER COLUMN worker_id DROP NOT NULL'))
+                    conn.execute(text(f'ALTER TABLE "{schema_name}".machine_assignments ADD COLUMN IF NOT EXISTS assignment_type VARCHAR DEFAULT \'maintenance\''))
+                    conn.execute(text(f'ALTER TABLE "{schema_name}".machine_assignments ADD COLUMN IF NOT EXISTS production_id INTEGER'))
+
                     # Manager group-card role columns
                     conn.execute(text(f'ALTER TABLE "{schema_name}".warehouse_managers ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT \'warehouse_manager\''))
                     conn.execute(text(f'ALTER TABLE "{schema_name}".logistics_managers ADD COLUMN IF NOT EXISTS role VARCHAR DEFAULT \'logistics_manager\''))

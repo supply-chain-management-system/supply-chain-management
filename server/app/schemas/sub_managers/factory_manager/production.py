@@ -25,7 +25,7 @@ class productget(BaseModel):
     priority: str
     notes: Optional[str] = None
 
-    class config:
+    class Config:
         from_attributes = True
 
 

@@ -27,6 +27,8 @@ from datetime import datetime, timedelta, timezone
 from app.services.email_service import send_verification_otp_email
 from .otp import generate_otp
 
+from app.services.subscriptions.limit_checker import check_invite_limit
+
 router = APIRouter(tags=["Company Invitations"])
 
 load_dotenv()
@@ -56,6 +58,9 @@ async def send_invite(
             )
 
         validate_invite_permission(current_user, payload)
+
+        if current_user.company_id and current_user.company.schema_name:
+            check_invite_limit(db, current_user.company_id, current_user.company.schema_name, payload.role)
 
         event_id = str(uuid.uuid4())
 

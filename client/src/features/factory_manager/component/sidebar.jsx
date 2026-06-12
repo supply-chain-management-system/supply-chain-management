@@ -8,9 +8,9 @@ import {
   Package,
   ClipboardList,
   FileOutput,
-  Settings,
   User,
-  Cpu
+  Cpu,
+  Activity
 } from 'lucide-react';
 
 // ─── Silver/Metallic color palette ─────────────────────────────────────
@@ -31,7 +31,7 @@ const menuItems = [
   { icon: Package, label: 'Materials', path: '/factory_material' },
   { icon: ClipboardList, label: 'Requests', path: '/factory_requests' },
   { icon: FileOutput, label: 'Output Logs', path: '/outputlogs' },
-  { icon: Settings, label: 'Settings', path: '/elt_production' },
+  { icon: Activity, label: 'ELT Analytics', path: '/elt_production' },
   { icon: User, label: 'Profile', path: '/factory_profile' },
 ];
 
