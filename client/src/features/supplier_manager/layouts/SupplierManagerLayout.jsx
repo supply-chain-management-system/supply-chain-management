@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useState, useRef, useEffect } from 'react';
-import { logoutUser } from '../../../redux/authSlice';
+import { logoutUser } from '../../../redux/authslice';
 import LogoutConfirmModal from '../../../components/profile/LogoutConfirmModal';
 import { 
   LayoutDashboard, 

@@ -2,7 +2,7 @@
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useState, useRef, useEffect } from "react";
-import { logoutUser } from "../../../redux/authSlice";
+import { logoutUser } from "../../../redux/authslice";
 import LogoutConfirmModal from "../../../components/profile/LogoutConfirmModal";
 import CopilotWidget from "../components/CopilotWidget";
 import {
